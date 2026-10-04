@@ -8,7 +8,7 @@ An opt-in pass inside `modes/pdf.md`, run at Step 20 — between the fact gate a
 
 Put a tailored CV in front of an adversarial, research-grounded reviewer before it becomes a PDF.
 
-The fact gate at `pdf` Step 19 (`verify-cv-facts.mjs`) is **mechanical**: it diffs generated output against `cv.md` and `article-digest.md` to catch invented metrics. It cannot judge whether a truthful bullet is the *right* bullet — buried lede, wrong altitude, wrong vocabulary, or answering a requirement the JD never raised. This pass answers a different question: *"Would the person who screens this actually advance it?"*
+The fact gate at `pdf` Step 19 (`verify-cv-facts.mjs`) is **mechanical**: it diffs generated output against `cv.md`, `article-digest.md`, and only approved entries from `data/career-evidence.yml` to catch unsupported claims. It cannot judge whether a truthful bullet is the *right* bullet — buried lede, wrong altitude, wrong vocabulary, or answering a requirement the JD never raised. This pass answers a different question: *"Would the person who screens this actually advance it?"*
 
 Two properties are load-bearing, and neither works without the other:
 
@@ -32,14 +32,14 @@ Requires a tailored CV produced by `modes/pdf.md`. Normally that CV was just bui
    3. A path the user supplies explicitly.
 
    Only if none of those resolve, fall back to the newest `output/cv-*-{company}.html` — and say so, because a company with two open roles produces several files whose names carry the candidate and company but not the role. Auditing the wrong CV silently is worse than asking. When reading HTML, take the `<li>` items, which the generator emits only for experience and project bullets.
-5. **Factual floor** — run `node jd-skill-gap.mjs jds/{slug}.md --summary` for the zero-LLM classification of every JD requirement into `existing` / `supportedByResume` / `gap`.
+5. **Factual floor** — run `node enhanced/jd-evidence-gap.mjs jds/{slug}.md --summary` for the zero-LLM classification of every JD requirement into `existing` / `supportedByResume` / `supportedByEvidence` / `gap`. Treat `skill_only` evidence as skills-list authority only; it is not permission to invent a work-history bullet.
 
    If it prints a `🚨 LOW CONFIDENCE` diagnosis (`no-requirements-section`, `no-skill-candidates`, or `empty-jd`), the check did not run and an empty `gap` list is **not** "no gaps." Treat the classification as unavailable and brief the reviewer per Step 3 — never hand over empty buckets, which read as fit confirmation the check never established.
-6. **Scope of truth** — `cv.md`, `article-digest.md`, `config/profile.yml`, `modes/_profile.md`. These bound what the reviewer may recommend.
+6. **Scope of truth** — `cv.md`, `article-digest.md`, `config/profile.yml`, `modes/_profile.md`, plus approved `data/career-evidence.yml` entries within their declared resume scope. These bound what the reviewer may recommend.
 
 ## Step 1 — Gather
 
-Resolve the role to a report. Locate the tailored CV artifact per Input 4. Run `jd-skill-gap.mjs`. Load the scope-of-truth files.
+Resolve the role to a report. Locate the tailored CV artifact per Input 4. Run `enhanced/jd-evidence-gap.mjs`. Load the scope-of-truth files.
 
 If the tailored CV is missing, stop here:
 
