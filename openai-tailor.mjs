@@ -20,6 +20,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { getCareerOpsRoot } from './path-resolver.mjs';
+import { evidenceVaultSourceText, loadEvidenceVault } from './enhanced/evidence-vault.mjs';
 import * as yaml from 'js-yaml';
 
 try {
@@ -193,6 +194,7 @@ const pdfModeLogic   = readFile(PATHS.pdfMode, 'modes/pdf.md', false);
 const cvContent      = readFile(PATHS.cv, 'cv.md', true);
 const profileContent = readFile(PATHS.profile, 'config/profile.yml', true);
 const templateHtml   = readFile(PATHS.template, 'templates/cv-template.html', true);
+const evidenceContext = evidenceVaultSourceText(loadEvidenceVault({ root: DATA_ROOT }));
 
 // ---------------------------------------------------------------------------
 // Build system prompt
@@ -230,15 +232,19 @@ ${cvContent}
 [config/profile.yml]
 ${profileContent}
 
+[data/career-evidence.yml — APPROVED RESUME AUTHORITY ONLY]
+${evidenceContext || '[no approved supplemental evidence]'}
+
 ═══════════════════════════════════════════════════════
 IMPORTANT OPERATING RULES FOR THIS SESSION
 ═══════════════════════════════════════════════════════
-1. NEVER invent skills, metrics, or experience the candidate does not have.
-2. Inject keywords naturally by reformulating the real experience using JD vocabulary.
-3. Apply the 6-second clarity gate: strongest matching evidence first.
-4. Replace all {{PLACEHOLDERS}} in the HTML Template exactly as instructed.
-5. Your final output MUST be the complete, raw, tailored HTML document.
-6. Do NOT include markdown formatting like \`\`\`html or conversational filler. Output the raw HTML starting with <!DOCTYPE html> and ending with </html>.`;
+1. NEVER invent skills, metrics, or experience the candidate does not have. A JD keyword is never evidence by itself.
+2. Supplemental evidence is already filtered to approved entries. scope: skill_only authorizes only a skill/competency mention; scope: contextual_claim authorizes only wording within its saved context.
+3. Inject keywords naturally by reformulating real or approved contextual experience using JD vocabulary.
+4. Apply the 6-second clarity gate: strongest matching evidence first.
+5. Replace all {{PLACEHOLDERS}} in the HTML Template exactly as instructed.
+6. Your final output MUST be the complete, raw, tailored HTML document.
+7. Do NOT include markdown formatting like \`\`\`html or conversational filler. Output the raw HTML starting with <!DOCTYPE html> and ending with </html>.`;
 
 // ---------------------------------------------------------------------------
 // Prompt caching (#1709, closing the gap in #2432) — same shape as
@@ -268,7 +274,7 @@ if (Number.isNaN(timeoutMs) || timeoutMs <= 0) {
   process.exit(1);
 }
 
-console.log(`\n🔒  Privacy: your cv.md + JD will be sent to ${endpointHost}.`);
+console.log(`\n🔒  Privacy: your cv.md + JD${evidenceContext ? ' + approved Career Evidence Vault entries' : ''} will be sent to ${endpointHost}.`);
 console.log(`🤖  Calling ${modelName} via ${endpointHost}... this may take a minute.\n`);
 
 const headers = { 'Content-Type': 'application/json' };
