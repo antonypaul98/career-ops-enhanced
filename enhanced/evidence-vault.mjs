@@ -8,6 +8,9 @@
  * tailoring even when they are absent from the master CV.
  *
  * User data lives at data/career-evidence.yml and is ignored by Git.
+ *
+ * Workflow-enable marker: 2026-10-04. This comment intentionally creates a
+ * fresh PR synchronization event after Actions was enabled on the fork.
  */
 
 import { createHash } from 'node:crypto';
