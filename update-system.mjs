@@ -306,6 +306,8 @@ const SYSTEM_PATHS = [
   'cv-sync-check.mjs',
   'i18n-drift.mjs',
   'verify-cv-facts.mjs',
+  'enhanced/evidence-vault.mjs',
+  'enhanced/jd-evidence-gap.mjs',
   'verify-cv-structure.mjs',
   'verify-ats.mjs',
   'ats-payload.mjs',
