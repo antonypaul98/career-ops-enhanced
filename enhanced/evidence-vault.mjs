@@ -185,12 +185,16 @@ export function addEvidenceEntry(vault, {
 
 export function evidenceVaultSourceText(vault) {
   return usableEvidenceEntries(vault).map((entry) => {
+    // Resume scope is an authority boundary, not presentation metadata.
+    // skill_only exposes ONLY the named skill/aliases to downstream fact gates.
+    // The provenance quote may contain employers, metrics, or project details
+    // that the user did not authorize for resume reuse, so it is audit-only.
     const lines = [
       'kind: ' + entry.kind,
-      'claim: ' + entry.claim,
-      entry.aliases?.length ? 'aliases: ' + entry.aliases.join(', ') : '',
+      entry.resume_scope === 'skill_only'
+        ? 'Technologies: ' + [entry.claim, ...(entry.aliases ?? [])].join(', ')
+        : 'claim: ' + entry.claim,
       entry.resume_scope === 'contextual_claim' ? 'context: ' + entry.context : '',
-      'evidence: ' + entry.provenance.quote,
     ];
     return lines.filter(Boolean).join('\n');
   }).join('\n\n');
