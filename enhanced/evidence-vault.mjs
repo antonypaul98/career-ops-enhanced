@@ -191,6 +191,7 @@ export function evidenceVaultSourceText(vault) {
     // that the user did not authorize for resume reuse, so it is audit-only.
     const lines = [
       'kind: ' + entry.kind,
+      'scope: ' + entry.resume_scope,
       entry.resume_scope === 'skill_only'
         ? 'Technologies: ' + [entry.claim, ...(entry.aliases ?? [])].join(', ')
         : 'claim: ' + entry.claim,
