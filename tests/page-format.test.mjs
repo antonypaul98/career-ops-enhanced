@@ -243,6 +243,7 @@ function coverSandbox() {
   // exits 0 having done nothing (#3165).
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'career-ops-cover-format-')));
   mkdirSync(join(dir, 'lib'), { recursive: true });
+  mkdirSync(join(dir, 'enhanced'), { recursive: true });
   mkdirSync(join(dir, 'providers'), { recursive: true });
   mkdirSync(join(dir, 'templates'), { recursive: true });
   mkdirSync(join(dir, 'output'), { recursive: true });
@@ -250,6 +251,7 @@ function coverSandbox() {
     copyFileSync(join(ROOT, f), join(dir, f));
   }
   copyFileSync(join(ROOT, 'lib', 'is-main-module.mjs'), join(dir, 'lib', 'is-main-module.mjs'));
+  copyFileSync(join(ROOT, 'enhanced', 'evidence-vault.mjs'), join(dir, 'enhanced', 'evidence-vault.mjs'));
   // cv-templates.mjs decodes HTML entities when it reads a template's meta
   // block, so the sandbox needs this too. Without it the copied script dies at
   // module load with ERR_MODULE_NOT_FOUND and the format assertion below never
