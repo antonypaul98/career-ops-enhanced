@@ -4,10 +4,11 @@ Export a tailored, ATS-optimized CV as a `.tex` file and compile it to PDF via `
 
 ## Pipeline
 
-1. Read `cv.md` as source of truth
+1. Read `cv.md` as the master CV and, when present, approved `data/career-evidence.yml` entries as supplemental source-of-truth within their declared `skill_only` / `contextual_claim` scope
 2. Read `config/profile.yml` for candidate identity and contact info
 3. Ask the user for the JD if not already in context (text or URL)
 4. Extract 15-20 keywords from the JD
+4a. Archive the JD as required by `pdf` mode, then run `node enhanced/jd-evidence-gap.mjs jds/{slug}.md --summary`. Treat `existing`, `supportedByResume`, and correctly scoped `supportedByEvidence` as usable; treat `gap` as unsupported. If the user confirms genuine experience missing from the master CV, save it through `enhanced/evidence-vault.mjs` and rerun before using it.
 5. Detect JD language → CV language (EN default)
 6. Detect role archetype → adapt framing
 7. Rewrite Professional Summary injecting JD keywords (same rules as `pdf` mode — NEVER invent skills)
@@ -176,7 +177,9 @@ Emphasis is not a substitute for evidence — bold reorders attention, it does n
 
 Same ethical rules as `modes/pdf.md`:
 - NEVER add skills the candidate doesn't have
-- Only reformulate existing experience using JD vocabulary
+- A technology absent from `cv.md` is usable only when an approved Career Evidence Vault entry supports it; `skill_only` permits a skills-list/competency mention only, while `contextual_claim` permits only wording within its approved context
+- A JD keyword by itself is never evidence
+- Only reformulate existing or approved contextual experience using JD vocabulary
 - Examples:
   - JD says "RAG pipelines" → reword "LLM workflows with retrieval" to "RAG pipeline design"
   - JD says "MLOps" → reword "observability, evals" to "MLOps and observability"
