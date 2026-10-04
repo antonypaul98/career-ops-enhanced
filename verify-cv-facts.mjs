@@ -14,8 +14,10 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { isAbsolute, join, basename } from 'path';
+import * as yaml from 'js-yaml';
 import { isMainModule } from './lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
+import { evidenceVaultSourceText, validateEvidenceVault } from './enhanced/evidence-vault.mjs';
 
 // Two roots, because this gate compares user-layer files against a user-layer
 // config and previously resolved neither from the user's data root.
@@ -37,7 +39,11 @@ import { getCareerOpsRoot } from './path-resolver.mjs';
 // So one invocation both invented failures and silently skipped half its
 // checks. --source and --config still override; only the defaults move.
 const DATA_ROOT = getCareerOpsRoot();
-const DEFAULT_SOURCES = [join(DATA_ROOT, 'cv.md'), join(DATA_ROOT, 'article-digest.md')];
+const DEFAULT_SOURCES = [
+  join(DATA_ROOT, 'cv.md'),
+  join(DATA_ROOT, 'article-digest.md'),
+  join(DATA_ROOT, 'data', 'career-evidence.yml'),
+];
 const DEFAULT_CONFIG = join(DATA_ROOT, 'config', 'cv-facts.json');
 const TOOL_PROSE_WORDS = new Set([
   'a', 'an', 'and', 'at', 'built', 'by', 'containerized', 'deployment',
@@ -177,7 +183,14 @@ const SIMPLE_CLAIM_PATTERNS = [
 
 /** Read a UTF-8 file when it exists, otherwise return an empty string. */
 function readIfExists(path) {
-  return existsSync(path) ? readFileSync(path, 'utf-8') : '';
+  if (!existsSync(path)) return '';
+  const text = readFileSync(path, 'utf-8');
+  if (basename(path) !== 'career-evidence.yml') return text;
+
+  const parsed = yaml.load(text);
+  const errors = validateEvidenceVault(parsed);
+  if (errors.length) throw new Error(`Invalid Career Evidence Vault in ${path}:\n- ${errors.join('\n- ')}`);
+  return evidenceVaultSourceText(parsed);
 }
 
 // Unicode decimal-digit blocks, by the code point of their zero. Every claim
@@ -1055,7 +1068,7 @@ function usage() {
 Checks generated candidate-facing text for unsupported metrics and explicitly asserted
 non-metric facts (employers, titles, tools, and delegated-work authorship) absent
 from source files.
-Default sources: cv.md, article-digest.md
+Default sources: cv.md, article-digest.md, approved entries in data/career-evidence.yml
 Default config:  config/cv-facts.json (optional)`;
 }
 
