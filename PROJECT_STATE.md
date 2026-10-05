@@ -1,22 +1,32 @@
 # Enhanced Career Ops — verified state
 
-Repository: `antonypaul98/career-ops-enhanced` (public).
+Public repository: `antonypaul98/career-ops-enhanced`.
 
-## C02: in validation, not accepted
+## C02 accepted
 
-Starting main: `b866e4b4be1223b27d078facacce7f073e90c31b`.
-PR #1: `work/evidence-aware-tailoring-foundation`.
-The handoff's `752196f2bd56da185a64e46e9af7f455d3d75128` is superseded.
-Repair commit `6f8f7eca2240e92bdf86246059ba30c901b19e56` completes the cover-letter sandbox dependencies and fetches authentic upstream release tags for the upgrade harness. Tests now also run on pushes to main.
+PR #1 final head: `a980bbd8ed26fc609c5bd3a9a055134d931adf6f`.
+Merge: `78e1bfc8dd679745d5f449d63cf1ba36b5ce902e`.
+PR Tests run `37302419530` passed all three OSes, CV visual and upgrade validation.
+Merged-main Tests `37303751631` and Web CI `37303751613` passed.
+Acceptance-record main `de3cde6c90a9ad35de35fb5136b9ae806e39fb7f` also passed Tests `37331732154`.
 
-The original Tests run `37239381359` failed page-format on all OSes; its upgrade job failed because this fork had no release tags. The local repair passed 28 targeted tests and the two-leg upgrade harness. Follow-up scope/concurrency regressions now have 31 passing targeted tests and the fact gate's 88 self-tests pass. Full-suite/CI evidence for the final follow-up is still required.
+## C03 in validation
 
-Additional fixes: provenance quotes cannot widen approved context; vault read/modify/write is locked; skill-only evidence is blocked from recognized work-experience assertions. The existing fact validator is heuristic, not a semantic proof of arbitrary prose; C05/C06 must retain source bindings and explicitly report coverage limits.
+PR #2 uses the existing `work/c03-jd-requirements-v2` branch, initially
+`af546bbd489d2032a1a732c93fc6b29f31e23cba`. Shared upstream section parsing
+and skill vocabulary now provide exact original-source spans, conservative
+strength, explicit review reasons, and deterministic duplicate grouping.
+Every JD record remains employer information with `candidate_evidence: false`.
+Acceptance requires green current-head and merged-main validation.
 
-The inherited Gemini test contacted a real API with a synthetic key. It now uses a local fetch stub and isolated synthetic data root, verifying the actual encoded request. The archive egress test now stubs its public DNS answer while preserving private-IP and DNS-blocking assertions.
+## Boundaries and outstanding acceptance
 
-No merge or Mac acceptance has been performed in this session yet. Do not treat upstream features as completed enhanced checkpoints without integration and validation evidence.
+Only synthetic fixtures are committed. Runtime career profiles and evidence
+stay private. No applications or Mac installation have been performed.
+The inherited release publisher lacks upstream GitHub App credentials; it is
+separate from build acceptance and no upstream package has been published.
+The upstream fact gate is heuristic; later tailoring/validation must retain
+claim-to-evidence bindings and report its limits.
 
-## Resume protocol
-
-Fetch origin, read AGENTS.md and CHECKPOINT_STATE.json, then reconcile with live PR and Actions. Required checks must pass at the current PR head before merging. Verify merged-main Tests and applicable Web CI before accepting C02 and proceeding sequentially. Use the roadmap in docs/ENHANCED_ROADMAP.md. Private career inputs stay in the user layer; test fixtures must be synthetic. Never submit applications during this build.
+Next: finish PR #2 validation/merge, verify main, record C03 acceptance, and
+implement C04 over the upstream Master Career Profile and scoped Vault.

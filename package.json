@@ -73,7 +73,8 @@
     "postinstall": "npx playwright install chromium || npx playwright install chromium",
     "manifesto": "node manifesto.mjs",
     "career-evidence": "node enhanced/evidence-vault.mjs",
-    "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs"
+    "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs",
+    "jd:requirements": "node enhanced/jd-requirements.mjs"
   },
   "keywords": [
     "ai",

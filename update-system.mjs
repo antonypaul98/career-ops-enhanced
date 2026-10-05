@@ -312,6 +312,7 @@ const SYSTEM_PATHS = [
   'verify-cv-facts.mjs',
   'enhanced/evidence-vault.mjs',
   'enhanced/jd-evidence-gap.mjs',
+  'enhanced/jd-requirements.mjs',
   'verify-cv-structure.mjs',
   'verify-ats.mjs',
   'ats-payload.mjs',

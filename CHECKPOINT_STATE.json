@@ -13,7 +13,10 @@
       "merged_main_web_ci_run": 37303751613
     },
     "C03": {
-      "status": "pending"
+      "status": "in_validation",
+      "pr": 2,
+      "branch": "work/c03-jd-requirements-v2",
+      "initial_head": "af546bbd489d2032a1a732c93fc6b29f31e23cba"
     },
     "C04": {
       "status": "pending"
@@ -57,5 +60,5 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Begin C03 structured JD technology/requirement extraction after inspecting upstream capabilities; preserve JD-as-requirement, never-evidence boundary."
+  "next_action": "Validate C03 PR #2 current head, merge only after required checks pass, verify merged-main CI, then begin C04."
 }
