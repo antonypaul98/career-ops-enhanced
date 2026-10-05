@@ -76,8 +76,14 @@ async function proxyFor(url) {
  */
 async function fetchWithTimeout(url, opts = {}, consume, allowManualRedirectResponse = false) {
   const targetHost = new URL(url).hostname.replace(/^\[|\]$/g, '');
+  // A process-wide proxy can resolve remotely without invoking our DNS hook.
+  // Known loopback names and private literals must fail BEFORE any transport,
+  // regardless of whether the provider explicitly opted into proxy egress.
+  const hostname = targetHost.toLowerCase().replace(/\.$/, '');
+  if ((isIP(targetHost) && isBlockedAddress(targetHost)) || hostname === 'localhost' || hostname.endsWith('.localhost')) {
+    throw blockedAddressError(targetHost, isIP(targetHost) ? targetHost : '127.0.0.1');
+  }
   const { dispatcher, proxyHost } = await proxyFor(url);
-  if (dispatcher && isIP(targetHost) && isBlockedAddress(targetHost)) throw blockedAddressError(targetHost, targetHost);
   // Mark this request as provider traffic for the whole of its async life, so
   // the patched dns.lookup validates the addresses it resolves (#3096). The
   // guard is scoped rather than global because _dns-cache.mjs patches

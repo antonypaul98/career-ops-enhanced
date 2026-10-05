@@ -16799,7 +16799,15 @@ try {
         // The signal distinguishes a timeout/kill from an assertion failure —
         // run()'s default 30s is short for six suites in one child process.
         const killed = lastRunFailure()?.signal;
-        fail(`web pdf write-scope unit suites failed${killed ? ` (killed: ${killed})` : ''} (run: node --experimental-strip-types --test ${webUnits.join(' ')})`);
+        // Surface the child's own output, for the same reason the per-file
+        // node:test path does (see runDiscovered): a bare "failed" is not
+        // actionable. It matters MORE here, because this is one child running
+        // every suite under web/tests/lib — so the rerun command this prints is
+        // a ~100-file line, and without the excerpt there is nothing to say
+        // which of the hundred broke. A flake that only reproduces on a slow
+        // runner is then undiagnosable by construction, which is the half of
+        // #4017 that outlived its own test.
+        fail(`web pdf write-scope unit suites failed${killed ? ` (killed: ${killed})` : ''} (run: node --experimental-strip-types --test ${webUnits.join(' ')})${formatRunFailure()}`);
       }
 
       // Parity: everything web/package.json would run must be something we DO run.

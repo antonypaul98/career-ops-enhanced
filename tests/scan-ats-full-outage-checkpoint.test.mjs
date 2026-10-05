@@ -77,6 +77,20 @@ dns.lookup = (hostname, options, callback) => {
   err.hostname = hostname;
   process.nextTick(cb, err);
 };
+// Exercise the scanner's actual DNS-outage/retry/checkpoint flow without a
+// process-wide proxy resolving the fixture hosts remotely. No network request
+// can leave this sandbox, and the real DNS cache/guard still wraps this lookup.
+globalThis.fetch = async (url) => {
+  const target = new URL(url);
+  if (!/^(boards-api|boards|job-boards)\\.greenhouse\\.io$/.test(target.hostname)) {
+    throw new Error('Unexpected network destination in DNS-outage fixture');
+  }
+  await new Promise((resolve, reject) => dns.lookup(target.hostname, { all: true }, (error, result) => {
+    if (error) reject(new TypeError('fetch failed', { cause: error }));
+    else resolve(result);
+  }));
+  throw new Error('DNS-outage fixture unexpectedly resolved');
+};
 process.argv[1] = ${JSON.stringify(join(ROOT, 'scan-ats-full.mjs'))};
 await import(${JSON.stringify(scanUrl)});
 `, 'utf-8');
