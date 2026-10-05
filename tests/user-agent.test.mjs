@@ -2,8 +2,7 @@
 // (no package-version churn: a UA that moves on every release is an
 // unintended fingerprint variable introduced into every scan without anyone
 // deciding it should be there — see PR #2536 review) and must actually be
-// the header value sent on the wire.
-import { createServer } from 'node:http';
+// the header value handed to the fetch transport.
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { pass, fail, ROOT } from './helpers.mjs';
@@ -33,26 +32,19 @@ const EXPECTED_MACOS_BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_
 if (MACOS_BROWSER_LIKE_USER_AGENT === EXPECTED_MACOS_BROWSER_UA) pass('MACOS_BROWSER_LIKE_USER_AGENT matches the pinned literal');
 else fail(`MACOS_BROWSER_LIKE_USER_AGENT drifted from the pinned literal: got ${MACOS_BROWSER_LIKE_USER_AGENT}`);
 
-// 2. The header that actually goes out on the wire matches the constant —
-// checks 1 above only inspect the exported string in isolation, which
-// wouldn't catch it if _http.mjs's internal fetchWithTimeout (not exported,
-// so not importable here directly) stopped applying it or applied a mutated
-// copy. Drive it through fetchJson, the public entry point that wraps it.
+// 2. Drive the public entry point and inspect its actual transport headers.
+// The synthetic public URL keeps this independent of process-wide proxy setup
+// and the production prohibition on private provider destinations.
 {
   let receivedUA = null;
-  const server = createServer((req, res) => {
-    receivedUA = req.headers['user-agent'];
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end('{"ok":true}');
-  });
-  await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const base = `http://127.0.0.1:${server.address().port}`;
-
+  const originalFetch = globalThis.fetch;
   try {
-    await fetchJson(base, { timeoutMs: 2_000 });
-  } finally {
-    await new Promise((r) => server.close(r));
-  }
+    globalThis.fetch = async (_url, options) => {
+      receivedUA = new Headers(options.headers).get('user-agent');
+      return new Response('{"ok":true}', { headers: { 'content-type': 'application/json' } });
+    };
+    await fetchJson('https://public.example/user-agent-fixture', { timeoutMs: 2_000 });
+  } finally { globalThis.fetch = originalFetch; }
 
   if (receivedUA === DEFAULT_USER_AGENT) pass('fetchJson sends DEFAULT_USER_AGENT verbatim as the User-Agent header');
   else fail(`fetchJson sent an unexpected User-Agent: ${receivedUA}`);
