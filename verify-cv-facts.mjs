@@ -14,8 +14,10 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { isAbsolute, join, basename } from 'path';
+import * as yaml from 'js-yaml';
 import { isMainModule } from './lib/is-main-module.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
+import { evidenceVaultSourceText, validateEvidenceVault, usableEvidenceEntries } from './enhanced/evidence-vault.mjs';
 
 // Two roots, because this gate compares user-layer files against a user-layer
 // config and previously resolved neither from the user's data root.
@@ -37,7 +39,11 @@ import { getCareerOpsRoot } from './path-resolver.mjs';
 // So one invocation both invented failures and silently skipped half its
 // checks. --source and --config still override; only the defaults move.
 const DATA_ROOT = getCareerOpsRoot();
-const DEFAULT_SOURCES = [join(DATA_ROOT, 'cv.md'), join(DATA_ROOT, 'article-digest.md')];
+const DEFAULT_SOURCES = [
+  join(DATA_ROOT, 'cv.md'),
+  join(DATA_ROOT, 'article-digest.md'),
+  join(DATA_ROOT, 'data', 'career-evidence.yml'),
+];
 const DEFAULT_CONFIG = join(DATA_ROOT, 'config', 'cv-facts.json');
 const TOOL_PROSE_WORDS = new Set([
   'a', 'an', 'and', 'at', 'built', 'by', 'containerized', 'deployment',
@@ -177,7 +183,14 @@ const SIMPLE_CLAIM_PATTERNS = [
 
 /** Read a UTF-8 file when it exists, otherwise return an empty string. */
 function readIfExists(path) {
-  return existsSync(path) ? readFileSync(path, 'utf-8') : '';
+  if (!existsSync(path)) return '';
+  const text = readFileSync(path, 'utf-8');
+  if (basename(path) !== 'career-evidence.yml') return text;
+
+  const parsed = yaml.load(text);
+  const errors = validateEvidenceVault(parsed);
+  if (errors.length) throw new Error(`Invalid Career Evidence Vault in ${path}:\n- ${errors.join('\n- ')}`);
+  return evidenceVaultSourceText(parsed);
 }
 
 // Unicode decimal-digit blocks, by the code point of their zero. Every claim
@@ -978,10 +991,36 @@ export function verifyFacts(targetText, {
   const targetClaims = metricClaims(targetText);
   const invented = [...targetClaims].filter(claim => !allowed.has(claim));
   const sourceNormalized = normalizeFact(stripMarkup(sourceText));
+  // A skill-only vault entry cannot establish hands-on work experience. Keep
+  // the upstream heuristic fact gate, but do not let its flat allow-list erase
+  // this explicit authority boundary. Independently sourced skills take priority.
+  const resolvedSources = sourcePaths.map(path => resolveInputPath(path, cwd));
+  const primaryText = resolvedSources.filter(path => basename(path) !== 'career-evidence.yml')
+    .map(readIfExists).join('\n');
+  const vaultEntries = resolvedSources.filter(path => basename(path) === 'career-evidence.yml' && existsSync(path))
+    .flatMap(path => usableEvidenceEntries(yaml.load(readFileSync(path, 'utf-8'))));
+  const contextualText = evidenceVaultSourceText({ entries: vaultEntries.filter(e => e.resume_scope === 'contextual_claim') });
+  const independent = normalizeFact(stripMarkup(primaryText + '\n' + contextualText));
+  const scopedFacts = [];
+  for (const entry of vaultEntries.filter(e => e.resume_scope === 'skill_only')) {
+    for (const label of [entry.claim, ...(entry.aliases ?? [])]) {
+      const value = normalizeFact(label);
+      if (sourceContainsFact(independent, value)) continue;
+      for (const statement of factStatements(targetText)) {
+        if (sourceContainsFact(normalizeFact(statement), value) &&
+            /\b(?:built|developed|implemented|deployed|maintained|managed|led|delivered|designed|orchestrated|migrated|used|using|worked with|experience (?:in|with))\b/i.test(statement)) {
+          scopedFacts.push({ kind: 'evidence_scope', value });
+        }
+      }
+    }
+  }
   const allowedFacts = new Set(config.allow_facts.map(normalizeFact));
   const unsupportedFacts = [...factClaims(targetText, sourceNormalized), ...delegatedAuthorshipClaims(targetText, sourceText)]
     .filter(({ value }) => !sourceContainsFact(sourceNormalized, value) && !allowedFacts.has(value))
     .filter((claim, index, claims) => claims.findIndex(other => other.kind === claim.kind && other.value === claim.value) === index);
+  // Scope violations cannot be waived through the flat allow_facts escape hatch.
+  unsupportedFacts.push(...scopedFacts.filter((claim, index, claims) =>
+    claims.findIndex(other => other.value === claim.value) === index));
   const forbidden = config.forbidden_phrases
       .filter(Boolean)
       .filter(phrase => stripMarkup(targetText).toLowerCase().includes(String(phrase).toLowerCase()));
@@ -1055,7 +1094,7 @@ function usage() {
 Checks generated candidate-facing text for unsupported metrics and explicitly asserted
 non-metric facts (employers, titles, tools, and delegated-work authorship) absent
 from source files.
-Default sources: cv.md, article-digest.md
+Default sources: cv.md, article-digest.md, approved entries in data/career-evidence.yml
 Default config:  config/cv-facts.json (optional)`;
 }
 

@@ -150,6 +150,10 @@ const SYSTEM_PATHS = [
   // on an existing install, silently (once text=auto is live, git status stays
   // clean and only a second update would repair it).
   '.gitattributes',
+  // Enhanced build metadata contains public repository/CI evidence only.
+  // Private career profiles and evidence remain in the protected user layer.
+  'CHECKPOINT_STATE.json',
+  'PROJECT_STATE.md',
   'dead-boards.mjs',
   'modes/README.md',
   'modes/_shared.md',
@@ -306,6 +310,8 @@ const SYSTEM_PATHS = [
   'cv-sync-check.mjs',
   'i18n-drift.mjs',
   'verify-cv-facts.mjs',
+  'enhanced/evidence-vault.mjs',
+  'enhanced/jd-evidence-gap.mjs',
   'verify-cv-structure.mjs',
   'verify-ats.mjs',
   'ats-payload.mjs',

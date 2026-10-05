@@ -71,7 +71,9 @@
     "build:dashboard": "node build-dashboard.mjs",
     "serve:dashboard": "cd dashboard && go run .",
     "postinstall": "npx playwright install chromium || npx playwright install chromium",
-    "manifesto": "node manifesto.mjs"
+    "manifesto": "node manifesto.mjs",
+    "career-evidence": "node enhanced/evidence-vault.mjs",
+    "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs"
   },
   "keywords": [
     "ai",

@@ -33,6 +33,7 @@ User-facing content (CV, cover letters, application emails, form answers, recrui
 **Primary / user-authored (full trust — the ground truth for facts):**
 
 - `cv.md` · `article-digest.md` · `config/profile.yml` · `modes/_profile.md` · `writing-samples/`
+- `data/career-evidence.yml` — only entries with `status: user_confirmed` or `status: source_verified`; `skill_only` authorizes only the named skill/technology, while `contextual_claim` authorizes only wording supported by its recorded context
 - `modes/_custom.md` (procedural/style rules only — never introduces factual claims)
 - `voice-dna.md` (voice/style only — never introduces factual claims)
 
@@ -46,9 +47,11 @@ User-facing content (CV, cover letters, application emails, form answers, recrui
 
 Everything else is **out of scope for content generation**: auto-memory (see below), any directory outside the career-ops project (parent/sibling repos, other codebases on the machine), knowledge from other Claude Code projects on the same machine, and cross-session inferences not written into an in-scope file.
 
-**One narrow exception — `intake`.** Documents the user drops in `documents/` may be read *during the `intake` mode only*, and only to propose **source-annotated** additions to the in-scope files above. They are never a source for generated user-facing content directly, the no-fabrication rule applies unchanged (a proposal must restate what the document says), and nothing is written without the user's explicit confirmation. Once confirmed, the claim lives in `config/profile.yml` / `cv.md` / `modes/_profile.md` and is in scope because it is *there*, not because it was in `documents/`.
+**One narrow exception — `intake`.** Documents the user drops in `documents/` may be read *during the `intake` mode only*, and only to propose **source-annotated** additions to the in-scope files above. They are never a source for generated user-facing content directly, the no-fabrication rule applies unchanged (a proposal must restate what the document says), and nothing is written without the user's explicit confirmation. Once confirmed, the claim lives in `config/profile.yml` / `cv.md` / `modes/_profile.md` / `data/career-evidence.yml` and is in scope because it is *there*, not because it was in `documents/`.
 
 **Rule from the original design:** *"Keywords get reformulated, never fabricated."* Reorder, reframe, emphasise — but never invent. If a claim isn't backed by an in-scope file, ask the user; if they don't add it, the output goes without it. Silence on a topic is fine; manufactured detail is not.
+
+**Evidence-vault confirmation rule:** a JD mentioning a technology is never evidence that the candidate has used it. If a required technology is absent from `cv.md` but the user says they genuinely know or used it, record that statement in `data/career-evidence.yml` with `node enhanced/evidence-vault.mjs add ... --confirm`, then rerun the evidence-aware gap check. Never auto-confirm a JD keyword. A `skill_only` entry may appear in Skills/competencies but may not be turned into an experience bullet; a `contextual_claim` entry may be phrased only within the recorded context. Rejected or `needs_review` entries are unusable.
 
 **Authorship claims are non-negotiable.** Never claim the user authored a project, repo, library, tool, framework, or open-source artefact unless explicitly attributed to them in `cv.md` or `article-digest.md`. Tool-of-trade conflation (the user uses X → the user built X) is the most common fabrication pattern and is explicitly forbidden.
 

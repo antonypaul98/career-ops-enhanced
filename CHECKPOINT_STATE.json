@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "repository": "antonypaul98/career-ops-enhanced",
+  "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
+  "current_checkpoint": "C02",
+  "checkpoints": {
+    "C02": {
+      "status": "in_validation"
+    },
+    "C03": {
+      "status": "pending"
+    },
+    "C04": {
+      "status": "pending"
+    },
+    "C05": {
+      "status": "pending"
+    },
+    "C06": {
+      "status": "pending"
+    },
+    "C07": {
+      "status": "pending"
+    },
+    "C08": {
+      "status": "pending"
+    },
+    "C09": {
+      "status": "pending"
+    },
+    "C10": {
+      "status": "pending"
+    },
+    "C11": {
+      "status": "pending"
+    },
+    "C12": {
+      "status": "pending"
+    },
+    "C13": {
+      "status": "pending"
+    },
+    "C14": {
+      "status": "pending"
+    },
+    "C15": {
+      "status": "pending"
+    }
+  },
+  "acceptance_metric": {
+    "accepted": 0,
+    "total": 14,
+    "method": "equal checkpoint count; not effort or upstream-feature completion"
+  },
+  "next_action": "Validate PR #1 final head; merge only after required checks pass, then verify merged-main CI."
+}
