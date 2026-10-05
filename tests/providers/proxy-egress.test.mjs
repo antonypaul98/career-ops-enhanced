@@ -56,13 +56,25 @@ test(`opted-in provider request uses a scoped proxy (empty lowercase: ${emptyLow
 }
 
 test('unrelated fetch is never assigned the provider proxy', async () => {
-  const server = http.createServer((_req, res) => res.end('LOCAL'));
-  const url = await listening(server);
+  const { getGlobalDispatcher } = await import('undici');
+  const originalFetch = globalThis.fetch;
+  const originalDispatcher = getGlobalDispatcher();
+  const calls = [];
   try {
-    await withProxyEnv({ CAREER_OPS_TRUST_PROXY_EGRESS: '1', HTTP_PROXY: url, NO_PROXY: '' }, async () => {
-      assert.equal(await (await fetch(url)).text(), 'LOCAL');
+    globalThis.fetch = async (url, options) => {
+      calls.push({ url, dispatcher: options?.dispatcher });
+      return new Response(options?.dispatcher ? 'PROVIDER' : 'UNRELATED');
+    };
+    const fixtureFetch = globalThis.fetch;
+    await withProxyEnv({ CAREER_OPS_TRUST_PROXY_EGRESS: '1', HTTP_PROXY: 'http://127.0.0.1:3128', NO_PROXY: '' }, async () => {
+      assert.equal(await fetchText('http://public.example/provider'), 'PROVIDER');
+      assert.equal(await (await fetch('http://public.example/unrelated')).text(), 'UNRELATED');
+      assert.equal(globalThis.fetch, fixtureFetch);
+      assert.equal(getGlobalDispatcher(), originalDispatcher);
+      assert.ok(calls[0].dispatcher);
+      assert.equal(calls[1].dispatcher, undefined);
     });
-  } finally { server.close(); }
+  } finally { globalThis.fetch = originalFetch; }
 });
 
 test('proxied manual redirects remain inspectable only through fetchResponse', async () => {
@@ -162,4 +174,20 @@ test('credential-bearing HTTPS proxies remain available to provider requests', a
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('known private destinations are rejected before any process-wide fetch transport', async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  try {
+    globalThis.fetch = async () => { called = true; throw new Error('transport must not run'); };
+    for (const trust of ['0', '1']) {
+      await withProxyEnv({ CAREER_OPS_TRUST_PROXY_EGRESS: trust, HTTP_PROXY: 'http://127.0.0.1:3128' }, async () => {
+        for (const host of ['localhost', 'LOCALHOST.', 'test.localhost', '127.0.0.1', '10.0.0.1', '[::1]', '[::ffff:7f00:1]']) {
+          await assert.rejects(fetchText(`http://${host}/job`), error => error.code === 'ECAREEROPS_BLOCKED_ADDRESS');
+        }
+      });
+    }
+    assert.equal(called, false);
+  } finally { globalThis.fetch = originalFetch; }
 });
