@@ -1,6 +1,8 @@
 name: Tests
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   # The merge queue builds a temporary merge commit per group and needs the
@@ -92,6 +94,10 @@ jobs:
         with:
           fetch-depth: 0            # harness needs release tags
           persist-credentials: false # the harness only ever touches a local mirror
+      # GitHub forks do not inherit release tags. Fetch genuine upstream tags
+      # without force; the harness still requires an ancestor of the tested SHA.
+      - name: Fetch upstream release history for upgrade validation
+        run: git fetch --no-tags https://github.com/career-ops-hq/career-ops.git 'refs/tags/career-ops-v*:refs/tags/career-ops-v*'
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
