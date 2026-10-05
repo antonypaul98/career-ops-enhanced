@@ -23,6 +23,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 import { execFileSync, spawnSync } from 'child_process';
 import { pass, fail, warn, ROOT, NODE } from './helpers.mjs';
 
@@ -168,12 +169,23 @@ function inDataRoot(dir, expr, extraEnv = {}) {
   const dir = makeDataRoot();
   mkdirSync(join(dir, 'modes'), { recursive: true });
   writeFileSync(join(dir, 'modes', 'apply.md'), 'apply mode\n');
+  const stub = join(dir, 'offline-models.mjs');
+  writeFileSync(stub, `
+globalThis.fetch = async (url) => {
+  if (String(url) !== 'https://openrouter.ai/api/v1/models') {
+    throw new Error('Unexpected model call in offline report-lookup test');
+  }
+  return new Response(JSON.stringify({ data: [{ id: 'fixture/model:free',
+    pricing: { prompt: '0', completion: '0' } }] }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+`);
 
   // spawnSync, not execFileSync: "Report not found" is written with console.error
   // and cmdApply then RETURNS, so the process exits 0. execFileSync hands back only
   // stdout on a zero exit, which silently discards the very marker this assertion
   // looks for -- the leg then skipped instead of failing against the bug.
-  const r = spawnSync(NODE, [join(ROOT, 'openrouter-runner.mjs'), 'apply', '1'], {
+  const r = spawnSync(NODE, ['--import', pathToFileURL(stub).href, join(ROOT, 'openrouter-runner.mjs'), 'apply', '1'], {
     cwd: ROOT, env: env(dir, { OPENROUTER_API_KEY: '' }), encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'], timeout: 60_000,
   });
@@ -187,18 +199,16 @@ function inDataRoot(dir, expr, extraEnv = {}) {
   const notFound = /Report not found: 1/.test(out);
   const pastLookup = /Generating application form answers/.test(out);
 
-  // The runner fetches its model list from OpenRouter before either marker. That
-  // is a network call this assertion does not need and must not depend on, so a
-  // run that reaches neither marker is a skip, not a failure -- the source-level
-  // assertions above cover the same lines deterministically, offline.
+  // The model catalog is stubbed above, so missing both markers is a failure,
+  // never an environment-dependent skip. No live model request is permitted.
   if (notFound) {
     fail('`apply 1` reported "Report not found: 1" although reports/001-… exists '
       + 'in the data root — the lookup is reading the wrong directory');
   } else if (pastLookup) {
     pass('`apply 1` finds report 001 in the data root and proceeds past the lookup');
   } else {
-    warn('openrouter-runner apply: reached neither marker (likely no network for '
-      + `the model list) — behavioural leg skipped. Output: ${out.slice(0, 160)}`);
+    fail('openrouter-runner apply: reached neither marker with the offline model '
+      + `catalog. Output: ${out.slice(0, 160)}`);
   }
 }
 

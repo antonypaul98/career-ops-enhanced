@@ -139,7 +139,8 @@ export function evidenceEntrySupportsSkill(entry, skill) {
   if (labels.some((value) => canonicalSkill(value) === target)) return true;
 
   if (entry.resume_scope === 'contextual_claim') {
-    const text = [entry.claim, entry.context, entry.provenance?.quote].filter(Boolean).join(' ');
+    // Provenance is audit material, not an extension of the approved scope.
+    const text = [entry.claim, entry.context].filter(Boolean).join(' ');
     if (boundaryMention(skill, text)) return true;
   }
   return false;
@@ -204,13 +205,18 @@ export function evidenceVaultSourceText(vault) {
   }).join('\n\n');
 }
 
-async function saveVault(path, vault) {
-  await withPipelineLock(path, () => {
+export async function saveEvidenceEntry(root, options) {
+  const path = getEvidenceVaultPath(root);
+  return withPipelineLock(path, () => {
+    // Reload INSIDE the lock. Locking only the final write loses entries when
+    // two processes preview against the same old snapshot before saving.
+    const { vault, entry } = addEvidenceEntry(loadEvidenceVault({ root }), options);
     mkdirSync(dirname(path), { recursive: true });
     const tmp = path + '.tmp';
     try {
       writeFileSync(tmp, yaml.dump(vault, { noRefs: true, lineWidth: 120 }), 'utf8');
       renameSync(tmp, path);
+      return entry;
     } catch (error) {
       try { rmSync(tmp, { force: true }); } catch { /* preserve original error */ }
       throw error;
@@ -306,7 +312,7 @@ async function main() {
 
   const status = values['source-verified'] ? 'source_verified' : 'user_confirmed';
   const current = loadEvidenceVault({ root });
-  const { vault, entry } = addEvidenceEntry(current, {
+  const options = {
     kind: values.kind,
     claim: values.claim,
     context: values.context ?? '',
@@ -315,7 +321,8 @@ async function main() {
     quote: values.quote,
     status,
     aliases,
-  });
+  };
+  const { entry } = addEvidenceEntry(current, options);
 
   console.log(yaml.dump(entry, { noRefs: true, lineWidth: 120 }).trimEnd());
   if (!values.confirm) {
@@ -323,7 +330,7 @@ async function main() {
     return;
   }
 
-  await saveVault(path, vault);
+  await saveEvidenceEntry(root, options);
   console.log('Saved evidence to ' + path);
 }
 

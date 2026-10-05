@@ -1807,7 +1807,15 @@ try {
 
   // 2. The guard is registered on the context for every request, not just the
   //    page's first hop — a page-scoped route wouldn't cover the whole flow.
-  const registration = await runGuard('https://example.com/assets/logo.png');
+  // Resolve the mock browser's public URL locally too; real DNS makes this
+  // otherwise isolated test fail on offline/restricted runners.
+  const restorePublicResolver = setHostResolver(async () => ['93.184.216.34']);
+  let registration;
+  try {
+    registration = await runGuard('https://example.com/assets/logo.png');
+  } finally {
+    restorePublicResolver();
+  }
   if (registration.registered && registration.pattern === '**/*') {
     pass('archive-posting registers the egress guard on the context for all requests');
   } else {
@@ -19120,10 +19128,10 @@ try {
   mkdirSync(configDir, { recursive: true });
   mkdirSync(modesDir, { recursive: true });
 
-  // 1. Create a profile.yml setting modes_dir to modes/tr
+  // 1. Modes are code-root-relative; point explicitly at this synthetic tree.
   writeFileSync(
     join(configDir, 'profile.yml'),
-    '\uFEFFlanguage:\n  modes_dir: modes/tr\n', // Starts with a UTF-8 BOM
+    `\uFEFFlanguage:\n  modes_dir: ${basename(geminiTmp)}/modes/tr\n`, // UTF-8 BOM
     'utf-8'
   );
 
@@ -19141,15 +19149,34 @@ try {
   const jdPath = join(geminiTmp, 'mock-jd.txt');
   writeFileSync(jdPath, '\uFEFFJob in Türkiye Čeština with BOM', 'utf-8');
 
+  // This is an encoding/context test, not a live API integration test. A
+  // synthetic key must not send even synthetic prompts to Google or depend on
+  // its availability. Intercept fetch in the child and inspect the real request.
+  const apiStub = join(geminiTmp, 'api-stub.mjs');
+  writeFileSync(apiStub, `
+globalThis.fetch = async (url, options) => {
+  const body = JSON.stringify(JSON.parse(options.body));
+  if (!String(url).includes(':generateContent') ||
+      !body.includes('Türkiye Čeština logic') ||
+      !body.includes('Job in Türkiye Čeština with BOM') ||
+      !body.includes('My CV')) throw new Error('Synthetic API request lost context or encoding');
+  console.log('Synthetic API request preserved context and encoding');
+  return new Response(JSON.stringify({ error: { message: 'API key not valid (offline fixture)', status: 'INVALID_ARGUMENT' } }),
+    { status: 400, headers: { 'Content-Type': 'application/json' } });
+};
+`, 'utf-8');
+
   // Run ROOT/gemini-eval.mjs directly with cwd: geminiTmp.
   let stdout = '';
   let stderr = '';
   try {
-    stdout = execFileSync(NODE, [join(ROOT, 'gemini-eval.mjs'), '--file', jdPath, '--no-save'], {
+    stdout = execFileSync(NODE, ['--import', pathToFileURL(apiStub).href, join(ROOT, 'gemini-eval.mjs'), '--file', jdPath, '--no-save'], {
       cwd: geminiTmp,
       env: {
         ...process.env,
-        GEMINI_API_KEY: 'mock-api-key-12345'
+        GEMINI_API_KEY: 'mock-api-key-12345',
+        CAREER_OPS_ROOT: geminiTmp,
+        CAREER_OPS_DATA_DIR: geminiTmp,
       },
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -19161,6 +19188,11 @@ try {
   }
 
   // Assertions:
+  if (stdout.includes('Synthetic API request preserved context and encoding')) {
+    pass('Gemini request preserves localized context and JD without network access');
+  } else {
+    fail('Gemini offline API fixture did not receive the expected encoded context');
+  }
   if (stdout.includes('Loading context files...')) {
     pass('Gemini evaluator loads files phase started');
   } else {

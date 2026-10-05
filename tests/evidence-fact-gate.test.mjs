@@ -54,7 +54,7 @@ test('approved off-CV skill evidence satisfies the fact gate', () => {
       configPath: config,
     });
     assert.notEqual(result.verdict, 'block', JSON.stringify(result));
-    assert.equal(result.unsupportedFacts.some((claim) => claim.value === 'apache airflow'), false);
+    assert.equal(result.unsupportedFacts.some((claim) => claim.kind === 'tool' && claim.value === 'apache airflow'), false);
   });
 });
 
@@ -80,7 +80,7 @@ test('skill_only provenance cannot leak metrics or titles into resume authority'
     assert.equal(result.verdict, 'block', JSON.stringify(result));
     assert.ok(result.invented.includes('50%'));
     assert.ok(result.unsupportedFacts.some((claim) => claim.value === 'principal engineer'));
-    assert.equal(result.unsupportedFacts.some((claim) => claim.value === 'apache airflow'), false);
+    assert.equal(result.unsupportedFacts.some((claim) => claim.kind === 'tool' && claim.value === 'apache airflow'), false);
   });
 });
 
@@ -114,5 +114,21 @@ test('contextual_claim authorizes only the explicitly approved context', () => {
     });
     assert.equal(expanded.verdict, 'block', JSON.stringify(expanded));
     assert.ok(expanded.invented.includes('75%'));
+  });
+});
+
+test('skill_only evidence cannot become a work-experience bullet', () => {
+  withFixture(({ cv, evidence, config }) => {
+    writeVault(evidence, skillEntry());
+    for (const text of ['Built pipelines using Apache Airflow.', '<li>Deployed Apache Airflow.</li>']) {
+      const result = verifyFacts(text, { sourcePaths: [cv, evidence], configPath: config });
+      assert.equal(result.verdict, 'block', JSON.stringify(result));
+      assert.ok(result.unsupportedFacts.some(c => c.kind === 'evidence_scope'));
+    }
+    writeFileSync(cv, '# Experience\nBuilt pipelines using Apache Airflow.\n');
+    const result = verifyFacts('Built pipelines using Apache Airflow.', {
+      sourcePaths: [cv, evidence], configPath: config,
+    });
+    assert.notEqual(result.verdict, 'block', JSON.stringify(result));
   });
 });
