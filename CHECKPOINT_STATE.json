@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C03",
+  "current_checkpoint": "C04",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -13,13 +13,16 @@
       "merged_main_web_ci_run": 37303751613
     },
     "C03": {
-      "status": "in_validation",
+      "status": "accepted",
       "pr": 2,
-      "branch": "work/c03-jd-requirements-v2",
-      "initial_head": "af546bbd489d2032a1a732c93fc6b29f31e23cba"
+      "final_head": "243c7ea6eeca41f21bc12e2cf74f9d79bfb63bbf",
+      "merge_commit": "9f5c6dbf7fea059f1c89d67449179b601bb7e830",
+      "pr_tests_run": 37380214208,
+      "merged_main_tests_run": 37381633159
     },
     "C04": {
-      "status": "pending"
+      "status": "in_progress",
+      "branch": "work/c04-multi-persona-resume"
     },
     "C05": {
       "status": "pending"
@@ -56,9 +59,9 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 1,
+    "accepted": 2,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Validate C03 PR #2 current head, merge only after required checks pass, verify merged-main CI, then begin C04."
+  "next_action": "Implement C04 multi-persona selection over verified Master Career Profile and approved Evidence Vault facts; personas may select/reorder evidence but never manufacture claims."
 }
