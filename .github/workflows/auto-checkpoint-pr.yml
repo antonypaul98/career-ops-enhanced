@@ -1,0 +1,68 @@
+name: Auto checkpoint PR
+
+on:
+  push:
+    branches:
+      - 'work/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or reuse checkpoint PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head = context.ref.replace('refs/heads/', '');
+            const base = 'main';
+
+            const existing = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${head}`,
+              base,
+            });
+
+            if (existing.data.length) {
+              core.info(`PR #${existing.data[0].number} already exists for ${head}`);
+              return;
+            }
+
+            const compare = await github.rest.repos.compareCommits({
+              owner,
+              repo,
+              base,
+              head,
+            });
+
+            if ((compare.data.ahead_by || 0) < 1) {
+              core.info(`${head} has no commits ahead of ${base}; no PR needed`);
+              return;
+            }
+
+            const checkpoint = head.split('/').find(p => /^c\d+/i.test(p));
+            const label = checkpoint ? checkpoint.toUpperCase() : 'Checkpoint';
+
+            const pr = await github.rest.pulls.create({
+              owner,
+              repo,
+              head,
+              base,
+              title: `${label}: ${head.replace(/^work\//, '').replace(/-/g, ' ')}`,
+              body: [
+                'Automatically opened for a pushed Career Ops checkpoint branch.',
+                '',
+                'Acceptance remains gated on required exact-head CI, privacy/evidence safeguards, merge verification, and merged-main CI.',
+                '',
+                'A JD keyword is never candidate evidence. Synthetic fixtures only; no private user career data belongs in this public repository.'
+              ].join('\n')
+            });
+
+            core.info(`Opened PR #${pr.data.number}`);
