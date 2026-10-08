@@ -21,7 +21,7 @@
       "merged_main_tests_run": 37381633159
     },
     "C04": {
-      "status": "merged_awaiting_main_validation",
+      "status": "accepted",
       "branch": "work/c04-multi-persona-resume",
       "pr": 3,
       "final_head": "b916a91abbd0de7061ac7f9e530cdbc914b8492e",
@@ -29,21 +29,69 @@
       "pr_tests_run": 37838802520,
       "merged_main_tests_run": 37853186830,
       "main_attempt_1": "failure: Windows web unit suite; all other required jobs passed",
-      "main_attempt_2": "in_progress: retry only failed Windows job"
+      "merged_main_tests_attempt": 2,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "windows-latest": {
+          "job": 113574438372,
+          "result": "11685 passed, 0 failed, 11 warnings"
+        },
+        "ubuntu-latest": {
+          "job": 113574439641,
+          "result": "11687 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113574439683,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 113574439848,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113574438633,
+          "conclusion": "success"
+        }
+      }
     },
     "C05": {
-      "status": "in_validation",
+      "status": "implemented_awaiting_ci",
       "branch": "work/c05-evidence-bound-tailoring",
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
-        "targeted_tests": "35 passed, 0 failed, 0 skipped; evidence-tailor, persona-selector, career-profile",
-        "full_regression": "running: node test-all.mjs --quick",
-        "syntax": "running: npm run lint"
+        "targeted_tests": "52 passed, 0 failed, 0 skipped; includes 22 evidence-tailor tests plus profile/persona/Vault/fact-gate/gap regression",
+        "full_regression": "node test-all.mjs --quick: 11688 passed, 0 failed, 12 environment/upstream warnings",
+        "syntax": "npm run lint: 1035 .mjs files passed"
       },
       "scope": "Source-bound proposal gate, scoped private authority, upstream OpenAI/HTML/LaTeX integration, text adapter, deterministic exclusions and evidence gaps",
       "limitations": [
         "Uses approved wording only; semantic paraphrases require candidate approval as new evidence",
         "Contradiction detection is conservative for explicit negations of recognized technologies; arbitrary semantic conflicts require review"
+      ],
+      "pr": 4,
+      "initial_remote_head": "e05fff60c32eb7d456de1e670ea1d689f4f0d94b",
+      "preserved_local_commit": "2e907619588fa250b7e9f7d1d9807e317a06c576",
+      "initial_remote_tree": "40fa0c84883a27ff006cfda5810fbccedfc92771",
+      "ci_at_initial_head": {
+        "Tests": {
+          "run": 37855279217,
+          "conclusion": "action_required"
+        },
+        "No user data in PRs": {
+          "run": 37855278232,
+          "conclusion": "action_required"
+        },
+        "Direction gate": {
+          "run": 37855278259,
+          "conclusion": "action_required"
+        },
+        "Dependency Review": {
+          "run": 37855278296,
+          "conclusion": "action_required"
+        }
+      },
+      "blockers": [
+        "Initial PR-head workflows require GitHub Actions approval. Refresh live checks after the final branch synchronization before requesting owner help. C05 is not accepted and must not merge without successful exact-head checks."
       ]
     },
     "C06": {
@@ -78,11 +126,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 2,
+    "accepted": 3,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Finish C04 exact merged-main validation; finish C05 full regression and exact PR-head CI, merge only after all required checks pass, verify exact merged-main CI. C06 remains pending.",
+  "next_action": "Refresh live PR #4 exact head and its required CI. If action_required remains, Antony must approve the pending GitHub Actions runs. After all required checks succeed, merge with an expected-head SHA and verify the exact merged-main Tests result before accepting C05. C06 remains pending until then.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",

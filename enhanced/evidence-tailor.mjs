@@ -118,6 +118,8 @@ export function tailorBoundResume({ proposal, authority, jdText = '' }) {
   if (shape.errors.length) throw new Error('Unusable tailored payload: ' + shape.errors.join('; '));
   const requirements = extractStructuredRequirements(jdText);
   const supportedSkills = new Set(Object.keys(bindings).flatMap(path => {
+    const record = records.get(bindings[path].ref);
+    if (record?.kind === 'identity' || record?.heading) return [];
     const value = path.slice(1).split('/').reduce((item, part) => item?.[part], payload);
     return extractSkillMentions(String(value ?? '')).map(m => m.skill);
   }));

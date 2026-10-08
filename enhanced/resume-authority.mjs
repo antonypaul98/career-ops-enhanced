@@ -75,7 +75,7 @@ export function loadResumeAuthority({ root, persona }) {
   const parents = new Map();
   for (const section of ['experiences', 'projects', 'education']) {
     for (const parent of profile[section]) {
-      if (parent.review_status === 'needs_review' || !anchored(root, parent.evidence)) {
+      if (parent.review_status !== 'verified' || !anchored(root, parent.evidence)) {
         excluded.push({ source: 'master_profile', id: parent.id, reason: 'parent-unreviewed-or-stale' });
         continue;
       }

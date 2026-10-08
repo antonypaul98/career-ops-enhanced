@@ -181,6 +181,23 @@ test('non-primary JD source anchors cannot masquerade as reviewed profile eviden
   assert.deepEqual(build(f).payload.skills[0].items, ['Apache Airflow']);
 }));
 
+test('unreviewed employment headings cannot authorize employer or role fields', () => withFixture(f => {
+  delete f.profile.experiences[0].review_status; f.save();
+  assert.deepEqual(build(f).payload.experience, []);
+}));
+
+test('identity and employer names cannot satisfy technical skill gaps', () => withFixture(f => {
+  writeFileSync(join(f.root, 'config/profile.yml'), 'name: Kubernetes Person\nemail: synthetic@example.com\n');
+  f.proposal.payload.candidate.name = 'Kubernetes Person';
+  const result = build(f);
+  assert.equal(result.payload.candidate.name, 'Kubernetes Person');
+  assert.equal(result.gaps.find(gap => gap.requirement === 'Kubernetes').reason, 'unsupported');
+}));
+
+test('LaTeX adaptation never invents an institution from a degree title', () => {
+  assert.deepEqual(latexPayload({ education: [{ title: 'Bachelor of Science' }] }).education, []);
+});
+
 test('malformed authority and ambiguous ids fail instead of silently approving', () => withFixture(f => {
   f.profile.skills.push({ ...f.profile.skills[0] }); f.save();
   assert.throws(() => build(f), /duplicate id/);

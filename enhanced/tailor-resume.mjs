@@ -18,6 +18,11 @@ export function textPayload(payload) {
   if (payload.candidate?.title) lines.push(payload.candidate.title);
   const contacts = ['location', 'email', 'phone'].map(field => payload.candidate?.[field]).filter(Boolean);
   if (contacts.length) lines.push(contacts.join(' | '));
+  for (const field of ['linkedin', 'github', 'portfolio']) {
+    const link = payload.candidate?.[field];
+    if (typeof link === 'string') lines.push(link);
+    else if (link?.url) lines.push(`[${link.display ?? link.url}](${link.url})`);
+  }
   if (payload.summary) lines.push('## Professional Summary', payload.summary);
   if (payload.competencies?.length) lines.push('## Core Competencies', payload.competencies.join(', '));
   for (const [section, heading] of [['experience', 'Work Experience'], ['projects', 'Projects'], ['education', 'Education'],
@@ -56,8 +61,8 @@ export function latexPayload(payload) {
     projects: (payload.projects ?? []).map(({ name, tech, description, bullets, url, badge }) =>
       ({ name, ...(tech ? { context: tech } : {}), ...(url ? { url } : {}),
         bullets: [...(description ? [description] : []), ...(badge ? [badge] : []), ...(bullets ?? [])] })),
-    education: (payload.education ?? []).map(({ title, org, location, year, description }) =>
-      ({ institution: org ?? title, degree: title, ...(location ? { location } : {}), ...(year ? { dates: year } : {}),
+    education: (payload.education ?? []).filter(entry => entry.org).map(({ title, org, location, year, description }) =>
+      ({ institution: org, degree: title, ...(location ? { location } : {}), ...(year ? { dates: year } : {}),
         ...(description ? { coursework: [description] } : {}) })),
     awards: payload.awards ?? [], skills: payload.skills ?? [] };
   return result;
@@ -85,6 +90,8 @@ export function renderBoundResume({ root, result, format = 'html', output = `out
     }
     const artifactText = readFileSync(artifact, 'utf8');
     const audit = { ...result, render: { format, payload_sha256: digest(renderPayload), artifact_sha256: digest(artifactText),
+      omitted_entries: format === 'latex' ? (result.payload.education ?? []).flatMap((entry, index) =>
+        entry.org ? [] : [{ path: `/education/${index}`, reason: 'latex-requires-bound-institution' }]) : [],
       omitted_sections: format === 'latex' ? ['summary', 'certifications', 'competencies', 'interests'].filter(section =>
         result.payload[section]?.length) : [] } };
     const auditPath = stem + '.evidence.json';
