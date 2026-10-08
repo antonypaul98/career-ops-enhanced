@@ -79,6 +79,27 @@ test('unsupported employer/title removes the whole invented experience', () => w
   assert.ok(!Object.keys(result.bindings).some(path => path.startsWith('/experience/')));
 }));
 
+test('approved heading parts cannot be swapped between employer, role and dates', () => withFixture(f => {
+  for (const [field, value] of [['company', 'Analyst'], ['role', 'Synthetic Employer'], ['dates', 'Analyst']]) {
+    const proposal = structuredClone(f.proposal);
+    proposal.payload.experience[0][field] = value;
+    const result = tailorBoundResume({ proposal, authority: loadResumeAuthority({ root: f.root, persona }), jdText: JD });
+    assert.ok(result.excluded.some(item => item.path.endsWith('/' + field) && item.reason === 'unsupported-wording'));
+    assert.notEqual(result.payload.experience?.[0]?.[field], value);
+  }
+}));
+
+test('a spaced date range stays one date field and never becomes a location', () => withFixture(f => {
+  f.lines[4] = '### Synthetic Employer — Analyst — 2022 – 2024';
+  f.profile.experiences[0].label = f.lines[4].slice(4);
+  f.profile.experiences[0].evidence.quote = f.lines[4];
+  writeFileSync(join(f.root, 'cv.md'), f.lines.join('\n')); f.save();
+  f.proposal.payload.experience[0].dates = '2022 – 2024';
+  const authority = loadResumeAuthority({ root: f.root, persona });
+  assert.equal(authority.records.find(r => r.ref === 'master_profile:employer').field_values.location, undefined);
+  assert.equal(tailorBoundResume({ proposal: f.proposal, authority, jdText: JD }).payload.experience[0].dates, '2022 – 2024');
+}));
+
 test('skill-only evidence cannot be promoted to experience, ownership or a summary claim', () => withFixture(f => {
   f.proposal.payload.experience[0].bullets.push('Apache Airflow');
   f.proposal.bindings['/experience/0/bullets/1'] = 'evidence_vault:airflow';

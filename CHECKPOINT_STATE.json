@@ -55,11 +55,11 @@
       }
     },
     "C05": {
-      "status": "implemented_awaiting_ci",
+      "status": "implemented_awaiting_heading_safety_ci",
       "branch": "work/c05-evidence-bound-tailoring",
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
-        "targeted_tests": "57 passed, 0 failed, 0 skipped; includes 27 evidence-tailor tests and profile/persona/Vault/fact-gate/gap regressions",
+        "targeted_tests": "59 passed, 0 failed, 0 skipped; includes 29 evidence-tailor tests. Heading-field swap and spaced-date regressions each failed before their repairs.",
         "full_regression": "Prior exact head 173acc820cc5a94d04278775b9cebfa071555d9d: node test-all.mjs --quick, 11688 passed, 0 failed, 12 warnings. Final mapping/scope/alias repairs pass targeted tests and await exact-head CI.",
         "syntax": "npm run lint: 1035 .mjs files passed"
       },
@@ -90,7 +90,9 @@
           "conclusion": "action_required"
         }
       },
-      "blockers": [],
+      "blockers": [
+        "Final heading-field safety fix requires successful exact-head CI, merge, and merged-main verification"
+      ],
       "ci_at_prior_head": {
         "head": "173acc820cc5a94d04278775b9cebfa071555d9d",
         "Tests": {
@@ -101,13 +103,15 @@
         "Direction gate": "success",
         "Dependency Review": "success"
       },
-      "next_action": "Await fresh exact-head CI for final repairs; no owner action is currently required. Merge only after all required checks succeed, then verify exact merged-main CI.",
+      "next_action": "Verify PR #5 final exact-head CI, merge only on green required checks, and verify its exact merged-main Tests before C05 acceptance and C06.",
       "known_fixed_issues": [
         "Source traversal/symlink aliases could misclassify JDs as writing samples: canonical primary-source checks added",
         "Experience facts could be relabeled by presentation headings as certifications: typed source/heading scopes added",
         "Normal upstream CV imports separate approved employer/title/date entities: source-proven context joins preserve original ids",
         "macOS /var and /private/var aliases rejected legitimate absolute private-root inputs: canonical paths now allow aliases within the same root only",
-        "Windows provider-stub fixture passed a drive path as an ESM import specifier: uses pathToFileURL without changing assertions"
+        "Windows provider-stub fixture passed a drive path as an ESM import specifier: uses pathToFileURL without changing assertions",
+        "Combined approved heading parts could be reassigned to employer/role/date fields: typed reviewed positions now prevent swaps; ambiguous two-part headers do not authorize a role",
+        "A spaced en-dash date range could split a year into a location: date punctuation no longer splits heading metadata"
       ],
       "ci_at_intermediate_head": {
         "head": "18b81bf9662c04fd979b5afb25a01ff186ac2932",
@@ -115,12 +119,59 @@
           "run": 37857396952,
           "ubuntu-latest": "success: 11692 passed, 0 failed, 11 warnings",
           "macos-latest": "success: 11693 passed, 0 failed, 10 warnings",
-          "windows-latest": "superseded before conclusion after identifying the prior Windows fixture import defect"
+          "windows-latest": "failure: evidence-tailor provider-fixture subprocess import; repaired without changing assertions"
         },
         "No user data in PRs": "success",
         "Direction gate": "success",
         "Dependency Review": "success"
-      }
+      },
+      "final_head": "289699a0fefffe94069c63bf5668e337832ca135",
+      "final_tree": "640de45158c82d9b10271ab1447634c82a480998",
+      "pr_tests_run": 37858476200,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "merge_commit": "399e0ca17290420933eb5a6fa96ad4d865bcac1c",
+      "merged_main_tests_run": 37859614770,
+      "merged_main_tests_conclusion": "success",
+      "pr_jobs": {
+        "ubuntu-latest": {
+          "job": 113588271166,
+          "result": "11692 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113588271070,
+          "result": "11693 passed, 0 failed, 10 warnings"
+        },
+        "windows-latest": {
+          "job": 113588271228,
+          "result": "11690 passed, 0 failed, 11 warnings"
+        },
+        "cv-visual": {
+          "job": 113588271026,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113588270904,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 37858475976,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 37858476062,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 37858475962,
+          "conclusion": "success"
+        }
+      },
+      "followup_branch": "work/c05-heading-field-safety",
+      "followup_pr": 5,
+      "merged_main_tests_attempt": 1
     },
     "C06": {
       "status": "pending"
@@ -158,7 +209,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify all required checks at PR #4 current exact head, merge with expected_head_sha, and verify exact merged-main Tests before accepting C05. C06 remains pending until C05 acceptance.",
+  "next_action": "Verify PR #5 final exact-head CI, merge only on green required checks, and verify its exact merged-main Tests before C05 acceptance and C06.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -168,6 +219,11 @@
     {
       "issue": "Optional Discord gh-events-feed webhook",
       "run": 37853186954,
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Optional release-publisher credentials",
+      "run": 37859614742,
       "blocks_checkpoint": false
     }
   ]
