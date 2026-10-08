@@ -206,7 +206,7 @@ test('a failed save removes its temporary file and reports the original error', 
       '  return realRename(from, to);',
       '};',
       'syncBuiltinESMExports();',
-      `await import(${JSON.stringify(pathToFileURL(CLI).href)});`,
+      `const { runCli } = await import(${JSON.stringify(pathToFileURL(CLI).href)}); await runCli();`,
     ].join('\n'));
     const result = spawnSync(process.execPath, [launcher, 'import', 'cv.md', '--review'], {
       cwd: ROOT,
