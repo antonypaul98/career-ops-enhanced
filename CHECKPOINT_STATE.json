@@ -95,7 +95,7 @@
         "head": "173acc820cc5a94d04278775b9cebfa071555d9d",
         "Tests": {
           "run": 37856145859,
-          "conclusion": "not accepted: macOS evidence-tailor CLI test failed; root path alias canonicalization repaired with a regression test"
+          "conclusion": "not accepted: macOS CLI path aliases and Windows provider-fixture import failed; canonical private paths and file-URL fixture imports repaired"
         },
         "No user data in PRs": "success",
         "Direction gate": "success",
@@ -106,8 +106,21 @@
         "Source traversal/symlink aliases could misclassify JDs as writing samples: canonical primary-source checks added",
         "Experience facts could be relabeled by presentation headings as certifications: typed source/heading scopes added",
         "Normal upstream CV imports separate approved employer/title/date entities: source-proven context joins preserve original ids",
-        "macOS /var and /private/var aliases rejected legitimate absolute private-root inputs: canonical paths now allow aliases within the same root only"
-      ]
+        "macOS /var and /private/var aliases rejected legitimate absolute private-root inputs: canonical paths now allow aliases within the same root only",
+        "Windows provider-stub fixture passed a drive path as an ESM import specifier: uses pathToFileURL without changing assertions"
+      ],
+      "ci_at_intermediate_head": {
+        "head": "18b81bf9662c04fd979b5afb25a01ff186ac2932",
+        "Tests": {
+          "run": 37857396952,
+          "ubuntu-latest": "success: 11692 passed, 0 failed, 11 warnings",
+          "macos-latest": "success: 11693 passed, 0 failed, 10 warnings",
+          "windows-latest": "superseded before conclusion after identifying the prior Windows fixture import defect"
+        },
+        "No user data in PRs": "success",
+        "Direction gate": "success",
+        "Dependency Review": "success"
+      }
     },
     "C06": {
       "status": "pending"

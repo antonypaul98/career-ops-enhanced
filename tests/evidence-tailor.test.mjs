@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import * as yaml from 'js-yaml';
 import { loadResumeAuthority, privatePath, proposalAuthority, digest } from '../enhanced/resume-authority.mjs';
@@ -318,7 +318,7 @@ test('upstream OpenAI tailoring gates a provider proposal before rendering', () 
   f.proposal.payload.experience[0].bullets.push('Invented metrics: 500% growth');
   f.proposal.bindings['/experience/0/bullets/1'] = 'master_profile:etl';
   writeFileSync(stub, `import { writeFileSync } from 'node:fs';\nglobalThis.fetch = async (_url, options) => {\nwriteFileSync(${JSON.stringify(capture)}, options.body);\nreturn { ok: true, json: async () => ({ choices: [{ message: { content: ${JSON.stringify(JSON.stringify(f.proposal))} } }] }) };\n};\n`);
-  const ran = spawnSync(process.execPath, ['--import', stub, join(CODE_ROOT, 'openai-tailor.mjs'), '--persona', persona.id,
+  const ran = spawnSync(process.execPath, ['--import', pathToFileURL(stub).href, join(CODE_ROOT, 'openai-tailor.mjs'), '--persona', persona.id,
     '--jd', join(f.root, 'jds/job.md'), '--report', join(f.root, 'report.md'), '--url', 'http://localhost:1234/v1'],
   { cwd: CODE_ROOT, env: { ...process.env, CAREER_OPS_ROOT: f.root, OPENAI_API_KEY: '', NODE_OPTIONS: '' }, encoding: 'utf8', timeout: 15000 });
   assert.equal(ran.status, 0, ran.stderr);
