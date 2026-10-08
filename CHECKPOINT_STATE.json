@@ -55,11 +55,11 @@
       }
     },
     "C05": {
-      "status": "merged_awaiting_main_ci",
+      "status": "implemented_awaiting_heading_safety_ci",
       "branch": "work/c05-evidence-bound-tailoring",
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
-        "targeted_tests": "57 passed, 0 failed, 0 skipped; includes 27 evidence-tailor tests and profile/persona/Vault/fact-gate/gap regressions",
+        "targeted_tests": "58 passed, 0 failed, 0 skipped; includes 28 evidence-tailor tests, with source-field swap regression observed failing before the fix",
         "full_regression": "Prior exact head 173acc820cc5a94d04278775b9cebfa071555d9d: node test-all.mjs --quick, 11688 passed, 0 failed, 12 warnings. Final mapping/scope/alias repairs pass targeted tests and await exact-head CI.",
         "syntax": "npm run lint: 1035 .mjs files passed"
       },
@@ -90,7 +90,9 @@
           "conclusion": "action_required"
         }
       },
-      "blockers": [],
+      "blockers": [
+        "Final heading-field safety fix requires successful exact-head CI, merge, and merged-main verification"
+      ],
       "ci_at_prior_head": {
         "head": "173acc820cc5a94d04278775b9cebfa071555d9d",
         "Tests": {
@@ -101,13 +103,14 @@
         "Direction gate": "success",
         "Dependency Review": "success"
       },
-      "next_action": "Await exact merged-main Tests run 37859614770 at 399e0ca17290420933eb5a6fa96ad4d865bcac1c. Accept C05 only on success; then begin C06.",
+      "next_action": "Verify the C05 heading-field safety follow-up at its exact head, merge only on green checks, and verify its exact merged-main Tests. C06 remains pending until final C05 acceptance.",
       "known_fixed_issues": [
         "Source traversal/symlink aliases could misclassify JDs as writing samples: canonical primary-source checks added",
         "Experience facts could be relabeled by presentation headings as certifications: typed source/heading scopes added",
         "Normal upstream CV imports separate approved employer/title/date entities: source-proven context joins preserve original ids",
         "macOS /var and /private/var aliases rejected legitimate absolute private-root inputs: canonical paths now allow aliases within the same root only",
-        "Windows provider-stub fixture passed a drive path as an ESM import specifier: uses pathToFileURL without changing assertions"
+        "Windows provider-stub fixture passed a drive path as an ESM import specifier: uses pathToFileURL without changing assertions",
+        "Combined approved heading parts could be reassigned to employer/role/date fields: typed reviewed positions now prevent swaps; ambiguous two-part headers do not authorize a role"
       ],
       "ci_at_intermediate_head": {
         "head": "18b81bf9662c04fd979b5afb25a01ff186ac2932",
@@ -164,7 +167,8 @@
           "run": 37858475962,
           "conclusion": "success"
         }
-      }
+      },
+      "followup_branch": "work/c05-heading-field-safety"
     },
     "C06": {
       "status": "pending"
@@ -202,7 +206,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Await exact merged-main Tests run 37859614770 at 399e0ca17290420933eb5a6fa96ad4d865bcac1c. Accept C05 only on success; then begin C06.",
+  "next_action": "Verify the C05 heading-field safety follow-up at its exact head, merge only on green checks, and verify its exact merged-main Tests. C06 remains pending until final C05 acceptance.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",

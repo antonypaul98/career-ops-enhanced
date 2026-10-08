@@ -96,6 +96,23 @@ function bindCvExperienceMetadata(records, cvText) {
   }
 }
 
+function bindReviewedHeadingFields(records) {
+  for (const record of records.filter(item => item.heading && !item.field_values)) {
+    const parts = record.text.split(/\s+(?:[—–|]|--)\s+|\s+·\s+/);
+    const last = parts.at(-1);
+    const dated = [3, 4].includes(parts.length) && /\b(?:19|20)\d{2}\b/.test(last);
+    if (record.kind === 'experiences') {
+      // Two-part upstream employer headers mean company/location, not role.
+      // A combined company/role/date heading has explicit reviewed positions.
+      record.field_values = { company: parts[0], ...(dated ? { role: parts[1], dates: last, period: last } : {}),
+        ...(dated && parts.length === 4 ? { location: parts[2] } : {}) };
+    } else if (record.kind === 'projects') record.field_values = { name: parts[0] };
+    else if (record.kind === 'education') record.field_values = { title: parts[0],
+      ...(parts.length >= 2 && !/\b(?:19|20)\d{2}\b/.test(parts[1]) ? { org: parts[1] } : {}), ...(dated ? { year: last } : {}),
+      ...(dated && parts.length === 4 ? { location: parts[2] } : {}) };
+  }
+}
+
 export function loadResumeAuthority({ root, persona }) {
   if (!root) throw new Error('An explicit candidate data root is required');
   const profileText = readPrivate(root, 'data/career-profile.yml');
@@ -162,6 +179,7 @@ export function loadResumeAuthority({ root, persona }) {
   // intact in provenance; context_ref records the source-proven block relation.
   const cvText = readPrivate(root, 'cv.md', true);
   if (cvText) bindCvExperienceMetadata(records, cvText);
+  bindReviewedHeadingFields(records);
   for (const record of records) {
     if (record.parent_ref && !record.context_ref) record.context_ref = records.find(parent => parent.ref === record.parent_ref)?.context_ref;
   }

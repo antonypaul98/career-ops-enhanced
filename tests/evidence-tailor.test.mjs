@@ -79,6 +79,16 @@ test('unsupported employer/title removes the whole invented experience', () => w
   assert.ok(!Object.keys(result.bindings).some(path => path.startsWith('/experience/')));
 }));
 
+test('approved heading parts cannot be swapped between employer, role and dates', () => withFixture(f => {
+  for (const [field, value] of [['company', 'Analyst'], ['role', 'Synthetic Employer'], ['dates', 'Analyst']]) {
+    const proposal = structuredClone(f.proposal);
+    proposal.payload.experience[0][field] = value;
+    const result = tailorBoundResume({ proposal, authority: loadResumeAuthority({ root: f.root, persona }), jdText: JD });
+    assert.ok(result.excluded.some(item => item.path.endsWith('/' + field) && item.reason === 'unsupported-wording'));
+    assert.notEqual(result.payload.experience?.[0]?.[field], value);
+  }
+}));
+
 test('skill-only evidence cannot be promoted to experience, ownership or a summary claim', () => withFixture(f => {
   f.proposal.payload.experience[0].bullets.push('Apache Airflow');
   f.proposal.bindings['/experience/0/bullets/1'] = 'evidence_vault:airflow';
