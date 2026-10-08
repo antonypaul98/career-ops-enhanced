@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C04",
+  "current_checkpoint": "C05",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -21,11 +21,30 @@
       "merged_main_tests_run": 37381633159
     },
     "C04": {
-      "status": "in_progress",
-      "branch": "work/c04-multi-persona-resume"
+      "status": "merged_awaiting_main_validation",
+      "branch": "work/c04-multi-persona-resume",
+      "pr": 3,
+      "final_head": "b916a91abbd0de7061ac7f9e530cdbc914b8492e",
+      "merge_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
+      "pr_tests_run": 37838802520,
+      "merged_main_tests_run": 37853186830,
+      "main_attempt_1": "failure: Windows web unit suite; all other required jobs passed",
+      "main_attempt_2": "in_progress: retry only failed Windows job"
     },
     "C05": {
-      "status": "pending"
+      "status": "in_validation",
+      "branch": "work/c05-evidence-bound-tailoring",
+      "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
+      "local_validation": {
+        "targeted_tests": "35 passed, 0 failed, 0 skipped; evidence-tailor, persona-selector, career-profile",
+        "full_regression": "running: node test-all.mjs --quick",
+        "syntax": "running: npm run lint"
+      },
+      "scope": "Source-bound proposal gate, scoped private authority, upstream OpenAI/HTML/LaTeX integration, text adapter, deterministic exclusions and evidence gaps",
+      "limitations": [
+        "Uses approved wording only; semantic paraphrases require candidate approval as new evidence",
+        "Contradiction detection is conservative for explicit negations of recognized technologies; arbitrary semantic conflicts require review"
+      ]
     },
     "C06": {
       "status": "pending"
@@ -63,5 +82,17 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Implement C04 multi-persona selection over verified Master Career Profile and approved Evidence Vault facts; personas may select/reorder evidence but never manufacture claims."
+  "next_action": "Finish C04 exact merged-main validation; finish C05 full regression and exact PR-head CI, merge only after all required checks pass, verify exact merged-main CI. C06 remains pending.",
+  "non_product_issues": [
+    {
+      "issue": "Optional release-publisher credentials",
+      "run": 37853186974,
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Optional Discord gh-events-feed webhook",
+      "run": 37853186954,
+      "blocks_checkpoint": false
+    }
+  ]
 }

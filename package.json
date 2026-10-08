@@ -74,7 +74,8 @@
     "manifesto": "node manifesto.mjs",
     "career-evidence": "node enhanced/evidence-vault.mjs",
     "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs",
-    "jd:requirements": "node enhanced/jd-requirements.mjs"
+    "jd:requirements": "node enhanced/jd-requirements.mjs",
+    "cv:tailor-bound": "node enhanced/tailor-resume.mjs"
   },
   "keywords": [
     "ai",

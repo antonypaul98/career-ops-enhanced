@@ -53,6 +53,8 @@ Everything else is **out of scope for content generation**: auto-memory (see bel
 
 **Evidence-vault confirmation rule:** a JD mentioning a technology is never evidence that the candidate has used it. If a required technology is absent from `cv.md` but the user says they genuinely know or used it, record that statement in `data/career-evidence.yml` with `node enhanced/evidence-vault.mjs add ... --confirm`, then rerun the evidence-aware gap check. Never auto-confirm a JD keyword. A `skill_only` entry may appear in Skills/competencies but may not be turned into an experience bullet; a `contextual_claim` entry may be phrased only within the recorded context. Rejected or `needs_review` entries are unusable.
 
+**Enhanced C05 rendering boundary:** all new tailored CVs in this enhanced repository use `enhanced/tailor-resume.mjs` and its bound proposal contract before HTML/PDF, text, or LaTeX output. Every factual field binds to current authorized candidate evidence. Reviewed wording may be selected/reordered; rewrites need a new explicit approval. Read the workflow in `modes/pdf.md`, `modes/text.md`, or `modes/latex.md`. Existing `openai-tailor.mjs` now uses this gate automatically. Missing reviewed profile facts block candidate generation, not repository implementation/tests.
+
 **Authorship claims are non-negotiable.** Never claim the user authored a project, repo, library, tool, framework, or open-source artefact unless explicitly attributed to them in `cv.md` or `article-digest.md`. Tool-of-trade conflation (the user uses X → the user built X) is the most common fabrication pattern and is explicitly forbidden.
 
 ### Auto-memory scope (clarification, not exception)

@@ -1,5 +1,16 @@
 # Mode: pdf — ATS-Optimized PDF Generation
 
+## Enhanced evidence-bound tailoring (C05)
+
+In this repository, this boundary takes precedence over free-form rewriting steps below. First review facts with the existing `master-profile` mode and `career-profile.mjs import --review`. No unattended approval is permitted. New tailored CVs use reviewed `data/career-profile.yml` plus approved, scoped Evidence Vault records.
+
+Run `node enhanced/tailor-resume.mjs --persona ID --prepare` to obtain the allowed records. Build a proposal in the private data root (for example `output/proposal.json`) with `persona_id`, the existing HTML CV `payload`, and `bindings` mapping every factual JSON Pointer to its allowed record ref. Select/reorder approved wording; do not invent a title from the persona or job. Keep each experience bullet with its approved employer. `skill_only` permits Skills/competencies only; contextual claims retain their complete approved context. Paraphrases require a newly reviewed profile/Vault statement.
+
+Run `node enhanced/tailor-resume.mjs --persona ID --proposal output/proposal.json --jd jds/job.md --format FORMAT --output output/cv-stem`, where FORMAT is `html` for PDF, `text` for Markdown, or `latex` for the existing LaTeX builder. The HTML and LaTeX renderers are unchanged. PDF generation still runs its existing fact gate. The LaTeX adapter reports any sections its upstream template cannot render.
+
+Inspect the private `.evidence.json` audit, excluded fields, contradictory skills, and evidence gaps. Missing, stale, unreviewed, rejected, wrong-scope and unsupported evidence is excluded. Job-description keywords and inferred prerequisites never become candidate facts. Private input and output paths stay within one candidate data root. `openai-tailor.mjs --persona ID` now runs the same bound-proposal gate before rendering; it sends approved wording rather than Vault audit quotes or unrelated private config. No application is submitted by tailoring.
+
+
 Optional pass:
 - **`--hm-audit`:** `/career-ops pdf --hm-audit` adds the hiring-manager audit at Step 20 — an adversarial read of the tailored CV by a separate, research-grounded reviewer before it becomes a PDF (`modes/pdf/hm-audit.md`). Off by default: it costs a subagent dispatch plus web research. Turn it on per run with the flag, or for every run in your own `modes/_custom.md`.
 

@@ -12,6 +12,7 @@ import { createInterface } from 'readline';
 import * as yaml from 'js-yaml';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { withPipelineLock } from './pipeline-lock.mjs';
+import { isMainModule } from './lib/is-main-module.mjs';
 
 const root = getCareerOpsRoot();
 const profilePath = join(root, 'data', 'career-profile.yml');
@@ -147,7 +148,7 @@ function parseCv(text, source) {
   return result;
 }
 
-function validateProfile(profile) {
+export function validateProfile(profile) {
   const errors = [];
   if (!profile || typeof profile !== 'object' || profile.schema_version !== 1) errors.push('schema_version must be 1');
   if (!profile?.candidate || typeof profile.candidate !== 'object') errors.push('candidate must be a mapping');
@@ -340,13 +341,17 @@ function doValidate(args) {
   else process.stdout.write(`Valid Master Career Profile: ${file}\n`);
 }
 
-const [command, ...args] = process.argv.slice(2);
-try {
+export async function runCli(argv = process.argv.slice(2)) {
+ const [command, ...args] = argv;
+ try {
   if (!command || command === '--help' || command === '-h') process.stdout.write(HELP);
   else if (command === 'import') await doImport(args);
   else if (command === 'validate') doValidate(args);
   else throw new Error(`Unknown command: ${command}\n\n${HELP}`);
-} catch (error) {
+ } catch (error) {
   process.stderr.write(`${error.message}\n`);
   process.exitCode = 1;
+ }
 }
+
+if (isMainModule(import.meta.url)) await runCli();
