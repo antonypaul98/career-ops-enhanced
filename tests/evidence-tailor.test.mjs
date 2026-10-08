@@ -111,6 +111,14 @@ test('contradictory approved skills are withheld and reported for review', () =>
   assert.equal(result.gaps.find(gap => gap.requirement === 'Python').reason, 'contradictory-evidence');
 }));
 
+test('a new contradiction in current primary evidence withholds an older reviewed skill', () => withFixture(f => {
+  writeFileSync(join(f.root, 'cv.md'), f.lines.join('\n') + '\n- I have no Python experience.\n');
+  const result = build(f);
+  assert.deepEqual(result.contradictions, ['Python']);
+  assert.ok(!JSON.stringify(result.payload).includes('Python'));
+  assert.equal(result.snapshot.primary_sources_sha256['cv.md'], digest(readFileSync(join(f.root, 'cv.md'), 'utf8')));
+}));
+
 test('personas change selection order but never authorize a new claim or headline', () => withFixture(f => {
   const a = loadResumeAuthority({ root: f.root, persona });
   const b = loadResumeAuthority({ root: f.root, persona: { id: 'platform', title: 'Principal Engineer' } });

@@ -59,8 +59,8 @@
       "branch": "work/c05-evidence-bound-tailoring",
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
-        "targeted_tests": "52 passed, 0 failed, 0 skipped; includes 22 evidence-tailor tests plus profile/persona/Vault/fact-gate/gap regression",
-        "full_regression": "node test-all.mjs --quick: 11688 passed, 0 failed, 12 environment/upstream warnings",
+        "targeted_tests": "53 passed, 0 failed, 0 skipped; includes 23 evidence-tailor tests plus profile/persona/Vault/fact-gate/gap regression",
+        "full_regression": "C05 regression baseline: node test-all.mjs --quick, 11688 passed, 0 failed, 12 environment/upstream warnings. Final hardening also passed targeted tests; required exact-head CI is pending.",
         "syntax": "npm run lint: 1035 .mjs files passed"
       },
       "scope": "Source-bound proposal gate, scoped private authority, upstream OpenAI/HTML/LaTeX integration, text adapter, deterministic exclusions and evidence gaps",
@@ -90,9 +90,18 @@
           "conclusion": "action_required"
         }
       },
-      "blockers": [
-        "Initial PR-head workflows require GitHub Actions approval. Refresh live checks after the final branch synchronization before requesting owner help. C05 is not accepted and must not merge without successful exact-head checks."
-      ]
+      "blockers": [],
+      "ci_at_prior_head": {
+        "head": "f631ab087b667eb68fd55ee07317340d0a5673cd",
+        "Tests": {
+          "run": 37855808086,
+          "status": "in_progress"
+        },
+        "No user data in PRs": "success",
+        "Direction gate": "success",
+        "Dependency Review": "success"
+      },
+      "next_action": "Await required CI at PR #4 current exact head. Final authenticated branch synchronization cleared the initial Actions approval gate; no owner action is currently required."
     },
     "C06": {
       "status": "pending"
@@ -130,7 +139,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Refresh live PR #4 exact head and its required CI. If action_required remains, Antony must approve the pending GitHub Actions runs. After all required checks succeed, merge with an expected-head SHA and verify the exact merged-main Tests result before accepting C05. C06 remains pending until then.",
+  "next_action": "Verify all required checks at PR #4 current exact head, merge with expected_head_sha, and verify exact merged-main Tests before accepting C05. C06 remains pending until C05 acceptance.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",

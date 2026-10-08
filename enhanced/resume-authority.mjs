@@ -118,7 +118,16 @@ export function loadResumeAuthority({ root, persona }) {
     if (refs.has(record.ref)) throw new Error('Ambiguous authority reference: ' + record.ref);
     refs.add(record.ref);
   }
+  const primarySources = new Map();
+  for (const record of records) {
+    const source = record.binding.evidence?.source;
+    if (source && !primarySources.has(source)) primarySources.set(source, readPrivate(root, source));
+  }
   const polarity = skillPolarity(records.filter(r => r.kind !== 'identity').map(r => r.text).join('\n'));
+  // A later negative statement in a current primary source can contradict an
+  // older reviewed fact even if that negative statement has not been imported.
+  // Source text can withhold a claim; it can never add positive resume authority.
+  for (const text of primarySources.values()) for (const skill of skillPolarity(text).negative) polarity.negative.add(skill);
   const contradictions = [...polarity.negative].filter(skill => polarity.positive.has(skill)).sort();
   const safe = records.filter(record => {
     const mentions = extractSkillMentions(record.text).map(m => m.skill);
@@ -130,6 +139,7 @@ export function loadResumeAuthority({ root, persona }) {
   });
   return { schema_version: 1, persona: selected.persona, records: safe, excluded, contradictions,
     snapshot: { profile_sha256: digest(profileText), vault_sha256: digest(vaultText), config_sha256: digest(configText),
+      primary_sources_sha256: Object.fromEntries([...primarySources].map(([source, text]) => [source, digest(text)])),
       authority_sha256: digest(safe) } };
 }
 
