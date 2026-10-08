@@ -222,7 +222,9 @@ For every factual string in payload, put its approved record ref in bindings und
 its exact JSON Pointer, for example "/experience/0/bullets/0": "master_profile:fact-id".
 Use exact approved wording. Only a reviewed entity heading may be split at a spaced
 em dash, en dash, vertical bar, or middle dot into company/role/location/date fields.
-Every role bullet must remain with the record's parent_ref. skill_only records may
+Use record.field_values when provided for a particular metadata field. Separately
+reviewed employer/title/date records may join only through the same context_ref.
+Every role bullet must remain with its context_ref (or parent_ref when absent). skill_only records may
 appear ONLY in skills/competencies. Contextual records must retain their full saved
 context. Omit unsupported fields/entries, and never fill gaps with job keywords.
 Identity fields must bind to the corresponding config record; a persona title is

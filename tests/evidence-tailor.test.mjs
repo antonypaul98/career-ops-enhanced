@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -84,9 +84,13 @@ test('skill-only evidence cannot be promoted to experience, ownership or a summa
   f.proposal.bindings['/experience/0/bullets/1'] = 'evidence_vault:airflow';
   f.proposal.payload.summary = 'Authored Apache Airflow';
   f.proposal.bindings['/summary'] = 'evidence_vault:airflow';
+  f.proposal.payload.skills[0].category = 'Certifications';
+  f.proposal.payload.sections = { skills: 'Certifications' };
   const result = build(f);
   assert.equal(result.payload.summary, undefined);
   assert.equal(result.payload.experience[0].bullets.length, 1);
+  assert.equal(result.payload.skills[0].category, undefined);
+  assert.equal(result.payload.sections.skills, undefined);
   assert.ok(result.excluded.some(item => item.reason === 'evidence-scope-mismatch'));
 }));
 
@@ -162,6 +166,14 @@ test('contextual vault wording retains its context and cannot move into unrelate
   assert.equal(build(f).payload.summary, undefined);
 }));
 
+test('a contextual experience cannot be relabeled as a certification', () => withFixture(f => {
+  f.vault.entries[0] = { ...f.vault.entries[0], kind: 'experience', claim: 'Orchestrated Airflow workflows',
+    resume_scope: 'contextual_claim', context: 'Personal learning project' }; f.save();
+  f.proposal.payload.certifications = [{ title: 'Orchestrated Airflow workflows — Personal learning project' }];
+  f.proposal.bindings['/certifications/0/title'] = 'evidence_vault:airflow';
+  assert.deepEqual(build(f).payload.certifications, []);
+}));
+
 test('audit quotes and unused private config never enter model authority', () => withFixture(f => {
   const view = JSON.stringify(proposalAuthority(loadResumeAuthority({ root: f.root, persona })));
   assert.ok(!view.includes('123456')); assert.ok(!view.includes('never transmit')); assert.ok(!view.includes('Kubernetes'));
@@ -183,10 +195,27 @@ test('symlinked input/output ancestors cannot escape the private root', () => wi
   assert.throws(() => privatePath(f.root, 'escape/new/file.md'), /Symlink/);
 })));
 
+test('absolute paths through another spelling of the same private root stay authorized', () => withFixture(f => withFixture(other => {
+  const aliasRoot = join(other.root, 'candidate-alias');
+  symlinkSync(f.root, aliasRoot, 'junction');
+  assert.equal(privatePath(aliasRoot, join(f.root, 'cv.md')), realpathSync(join(f.root, 'cv.md')));
+  assert.equal(privatePath(f.root, join(aliasRoot, 'cv.md')), realpathSync(join(f.root, 'cv.md')));
+})));
+
 test('non-primary JD source anchors cannot masquerade as reviewed profile evidence', () => withFixture(f => {
   f.profile.skills[0] = { ...f.profile.skills[0], text: 'Kubernetes', evidence: { source: 'jds/job.md', line: 3, quote: '- Kubernetes' } };
   f.proposal.payload.skills[0].items[0] = 'Kubernetes'; f.save();
   assert.deepEqual(build(f).payload.skills[0].items, ['Apache Airflow']);
+}));
+
+test('writing-sample traversal and symlink aliases cannot promote a JD into candidate authority', () => withFixture(f => {
+  mkdirSync(join(f.root, 'writing-samples'));
+  symlinkSync(join(f.root, 'jds'), join(f.root, 'writing-samples/jd-alias'), 'junction');
+  for (const source of ['writing-samples/../jds/job.md', 'writing-samples/jd-alias/job.md']) {
+    f.profile.skills[0] = { ...f.profile.skills[0], text: 'Kubernetes', evidence: { source, line: 3, quote: '- Kubernetes' } };
+    f.proposal.payload.skills[0].items[0] = 'Kubernetes'; f.save();
+    assert.deepEqual(build(f).payload.skills[0].items, ['Apache Airflow']);
+  }
 }));
 
 test('unreviewed employment headings cannot authorize employer or role fields', () => withFixture(f => {
@@ -249,6 +278,38 @@ test('private CLI excludes unsupported claims and leaves source truth unchanged'
   const saved = JSON.parse(ran.stdout);
   assert.ok(!readFileSync(saved.artifact, 'utf8').includes('quantum'));
   assert.equal(readFileSync(join(f.root, 'data/career-profile.yml'), 'utf8'), before);
+}));
+
+test('normal upstream CV import preserves employer, reviewed title, dates and bullet context through tailoring', () => withFixture(f => {
+  rmSync(join(f.root, 'data/career-profile.yml'));
+  writeFileSync(join(f.root, 'cv.md'), '# Synthetic Candidate\n\n## Experience\n### Normal Employer -- Remote\n\n**Data Engineer**\n2022-2024\n\n- Built Python pipelines.\n\n## Skills\n- Python\n');
+  const imported = spawnSync(process.execPath, [join(CODE_ROOT, 'career-profile.mjs'), 'import', 'cv.md', '--review'],
+    { cwd: CODE_ROOT, env: { ...process.env, CAREER_OPS_ROOT: f.root }, input: 'y\n'.repeat(12), encoding: 'utf8', timeout: 10000 });
+  assert.equal(imported.status, 0, imported.stderr);
+  const authority = loadResumeAuthority({ root: f.root, persona });
+  const employer = authority.records.find(record => record.field_values?.company === 'Normal Employer');
+  const role = authority.records.find(record => record.field_values?.role === 'Data Engineer');
+  const dates = authority.records.find(record => record.field_values?.dates === '2022-2024');
+  const bullet = authority.records.find(record => record.text === 'Built Python pipelines.');
+  assert.ok(employer && role && dates && bullet, JSON.stringify(proposalAuthority(authority)));
+  const proposal = { persona_id: persona.id, payload: { experience: [{ company: 'Normal Employer', role: 'Data Engineer',
+    dates: '2022-2024', location: 'Remote', bullets: ['Built Python pipelines.'] }] }, bindings: {
+      '/experience/0/company': employer.ref, '/experience/0/role': role.ref, '/experience/0/dates': dates.ref,
+      '/experience/0/location': employer.ref, '/experience/0/bullets/0': bullet.ref,
+    } };
+  const result = tailorBoundResume({ proposal, authority, jdText: JD });
+  assert.deepEqual(result.payload.experience, proposal.payload.experience);
+  assert.equal(result.bindings['/experience/0/role'].evidence.quote, '**Data Engineer**');
+  assert.equal(result.bindings['/experience/0/bullets/0'].context_ref, employer.ref);
+  assert.equal(result.bindings['/experience/0/bullets/0'].parent_ref, dates.ref);
+  const rendered = renderBoundResume({ root: f.root, result, output: 'output/normal-format' });
+  assert.match(readFileSync(rendered.artifact, 'utf8'), /Normal Employer/);
+  const reviewed = yaml.load(readFileSync(join(f.root, 'data/career-profile.yml'), 'utf8'));
+  reviewed.experiences.find(entry => entry.id === role.binding.id).review_status = 'needs_review';
+  writeFileSync(join(f.root, 'data/career-profile.yml'), yaml.dump(reviewed));
+  proposal.payload.experience[0].role = 'Remote';
+  proposal.bindings['/experience/0/role'] = employer.ref;
+  assert.deepEqual(tailorBoundResume({ proposal, authority: loadResumeAuthority({ root: f.root, persona }), jdText: JD }).payload.experience, []);
 }));
 
 test('upstream OpenAI tailoring gates a provider proposal before rendering', () => withFixture(f => {

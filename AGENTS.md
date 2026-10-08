@@ -392,7 +392,7 @@ A single-string `modes_dir` (today's default, ~90% of users) behaves exactly as 
 | Wants to debrief after a real interview and close gaps | `interview/debrief` |
 | Wants to check if a company is safe to join (red-flag analysis) | `interview-redflag` |
 | Wants to generate CV/PDF | `pdf` |
-| Wants to build, import, review, or validate a Master Career Profile | `master-profile` — source-backed CV import with explicit approval; profile selection and PDF integration are not yet implemented |
+| Wants to build, import, review, or validate a Master Career Profile | `master-profile` — source-backed CV import with explicit approval; approved facts feed persona selection and evidence-bound tailoring |
 | Wants to check if a generated CV is ATS-friendly (parseability score + issues) | `ats` |
 | Wants a hiring-manager's read on a tailored CV before sending | `pdf --hm-audit` — opt-in pass (`modes/pdf/hm-audit.md`), off by default: researches the likely reviewer, dispatches a separate agent role-playing them, and returns a bullet-by-bullet keep/cut/rewrite verdict |
 | Wants the LaTeX/Overleaf CV path | `latex` |

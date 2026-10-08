@@ -6,35 +6,46 @@ import { digest, normalize } from './resume-authority.mjs';
 
 const PRESENTATION = { '/lang': /^(?:en|[a-z]{2,3}(?:-[A-Za-z]{2,4})?)$/, '/page_format': /^(?:letter|a4)$/,
   '/candidate/photo_style': /^(?:rounded|circle|square)$/ };
-const CATEGORY = new Set(['skills', 'languages', 'tools', 'frameworks', 'technologies', 'competencies', 'core competencies', 'certifications']);
-const SECTION_TITLES = new Set(['Professional Summary', 'Summary', 'Core Competencies', 'Work Experience', 'Experience',
-  'Professional Experience', 'Projects', 'Education', 'Certifications', 'Awards & Honors', 'Interests', 'Skills']);
+const CATEGORY = new Set(['skills', 'languages', 'tools', 'frameworks', 'technologies', 'competencies', 'core competencies']);
+const SECTION_TITLES = { summary: ['Professional Summary', 'Summary'], competencies: ['Core Competencies'],
+  experience: ['Work Experience', 'Experience', 'Professional Experience'], projects: ['Projects'], education: ['Education'],
+  certifications: ['Certifications'], awards: ['Awards & Honors'], interests: ['Interests'], skills: ['Skills'] };
 const refOf = binding => typeof binding === 'string' ? binding : binding?.ref;
 
 function allowed(record, path) {
   if (record.kind === 'identity') return path === `/candidate/${record.field.replaceAll('.', '/')}`;
   const section = path.split('/')[1];
-  if (record.scope === 'skill_only') return section === 'skills' || section === 'competencies';
+  if (record.scope === 'skill_only') return /^\/skills\/\d+\/items(?:\/\d+)?$|^\/competencies\/\d+$/.test(path);
   if (record.heading) return ['experience', 'projects', 'education'].includes(section)
     && { experiences: 'experience', projects: 'projects', education: 'education' }[record.kind] === section
     && !/\/(?:bullets|description|coursework)(?:\/|$)/.test(path);
-  if (record.scope === 'contextual_claim') return ['summary', 'certifications', 'awards'].includes(section)
-    || (['experience', 'projects', 'education'].includes(section) && !!record.parent_ref
-      && /\/(?:bullets|description|context)(?:\/|$)/.test(path));
-  if (section === 'skills' || section === 'competencies') return record.kind === 'skills';
+  if (record.scope === 'contextual_claim') {
+    if (section === 'summary') return true;
+    const naturalSection = { experience: 'experience', project: 'projects', education: 'education', certification: 'certifications' }[record.kind];
+    if (section !== naturalSection) return false;
+    if (section === 'certifications') return /\/title$/.test(path);
+    return !!record.parent_ref && /\/(?:bullets|description|context)(?:\/|$)/.test(path);
+  }
+  if (section === 'skills' || section === 'competencies') return record.kind === 'skills'
+    && /^\/skills\/\d+\/items(?:\/\d+)?$|^\/competencies\/\d+$/.test(path);
   if (section === 'summary') return record.kind === 'summary';
   if (section === 'experience') return record.kind === 'experiences' && /\/bullets\/\d+$/.test(path);
   if (section === 'projects') return record.kind === 'projects' && /\/(?:bullets\/\d+|description|tech)$/.test(path);
   if (section === 'education') return record.kind === 'education' && /\/description$/.test(path);
+  if (section === 'certifications') return record.kind === 'certifications' && /\/title$/.test(path);
   return section === record.kind;
 }
 
 function supportedValue(record, value, path) {
+  const field = path.split('/').at(-1);
+  if (record.field_values && !/\/(?:bullets|description|coursework)(?:\/|$)/.test(path)) {
+    return normalize(record.field_values[field]) === normalize(value) && record.field_values[field] !== undefined;
+  }
   if (normalize(record.text) === normalize(value)) return true;
   // Only a reviewed entity heading can be split into fields. Career assertions
   // are otherwise verbatim: paraphrases need a newly approved profile/vault fact.
   if (!record.heading || !/\/(?:company|role|location|dates|period|name|title|org|year)$/.test(path)) return false;
-  return record.text.split(/\s+[—–|]\s+|\s+·\s+/).some(part => normalize(part) === normalize(value));
+  return record.text.split(/\s+(?:[—–|]|--)\s+|\s+·\s+/).some(part => normalize(part) === normalize(value));
 }
 
 export function tailorBoundResume({ proposal, authority, jdText = '' }) {
@@ -76,14 +87,15 @@ export function tailorBoundResume({ proposal, authority, jdText = '' }) {
     if (value === '' || value == null) return undefined;
     if (typeof value !== 'string') return omit(oldPath, 'non-text-claim');
     if (PRESENTATION[oldPath]?.test(value)) return value;
-    if (/^\/sections\/[a-z]+$/.test(oldPath) && SECTION_TITLES.has(value)) return value;
+    if (/^\/sections\/[a-z]+$/.test(oldPath) && SECTION_TITLES[oldPath.split('/')[2]]?.includes(value)) return value;
     if (/^\/skills\/\d+\/category$/.test(oldPath) && CATEGORY.has(normalize(value).toLowerCase())) return value;
     const record = records.get(refOf(proposal.bindings?.[oldPath]));
     if (!record) return omit(oldPath, 'missing-or-unauthorized-evidence');
     if (!allowed(record, oldPath)) return omit(oldPath, 'evidence-scope-mismatch');
     if (!supportedValue(record, value, oldPath)) return omit(oldPath, 'unsupported-wording');
     bindings[newPath] = { ref: record.ref, ...structuredClone(record.binding),
-      text_sha256: digest(value), ...(record.parent_ref ? { parent_ref: record.parent_ref } : {}) };
+      text_sha256: digest(value), ...(record.parent_ref ? { parent_ref: record.parent_ref } : {}),
+      ...(record.context_ref ? { context_ref: record.context_ref } : {}) };
     return value;
   };
   const input = {};
@@ -100,8 +112,8 @@ export function tailorBoundResume({ proposal, authority, jdText = '' }) {
     for (let i = 0; i < (payload[section] ?? []).length; i++) {
       const prefix = `/${section}/${i}/`;
       const entryBindings = Object.entries(bindings).filter(([path]) => path.startsWith(prefix));
-      const headingRefs = new Set(entryBindings.filter(([, b]) => records.get(b.ref)?.heading).map(([, b]) => b.ref));
-      const parents = new Set(entryBindings.map(([, b]) => b.parent_ref).filter(Boolean));
+      const headingRefs = new Set(entryBindings.filter(([, b]) => records.get(b.ref)?.heading).map(([, b]) => b.context_ref || b.ref));
+      const parents = new Set(entryBindings.filter(([, b]) => !records.get(b.ref)?.heading).map(([, b]) => b.context_ref || b.parent_ref).filter(Boolean));
       if (headingRefs.size > 1 || parents.size > 1 || [...parents].some(ref => !headingRefs.has(ref))) {
         excluded.push({ path: `/${section}/${i}`, reason: 'experience-context-mismatch' });
       } else {

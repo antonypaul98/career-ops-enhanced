@@ -7,6 +7,7 @@ import { validateProfile } from '../career-profile.mjs';
 import { emptyEvidenceVault, validateEvidenceVault } from './evidence-vault.mjs';
 import { selectPersona } from './persona-selector.mjs';
 import { extractSkillMentions } from '../skill-extract.mjs';
+import { parseCvExperience } from '../cv-title-check.mjs';
 
 export const digest = value => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
 export const normalize = value => String(value ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ');
@@ -15,18 +16,22 @@ const PRIMARY = /^(?:cv\.md|article-digest\.md|config\/profile\.yml|modes\/_prof
 
 export function privatePath(root, path) {
   const base = realpathSync(root);
-  const target = resolve(base, path);
-  const inside = value => {
-    const rel = relative(base, value);
+  const lexicalBase = resolve(root);
+  const target = resolve(lexicalBase, path);
+  const inside = (value, boundary = base) => {
+    const rel = relative(boundary, value);
     return rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
   };
-  if (!inside(target)) throw new Error('Path must stay inside the candidate data root');
   // Check every existing ancestor as well as the file; this fences symlinked
   // source directories and not-yet-created output paths equally.
   let ancestor = target;
   while (!existsSync(ancestor)) ancestor = resolve(ancestor, '..');
-  if (!inside(realpathSync(ancestor))) throw new Error('Symlink escapes the candidate data root');
-  return target;
+  const canonical = resolve(realpathSync(ancestor), relative(ancestor, target));
+  if (!inside(canonical)) throw new Error(inside(target, lexicalBase)
+    ? 'Symlink escapes the candidate data root' : 'Path must stay inside the candidate data root');
+  // macOS spells the same temp directory as /var and /private/var. Existing
+  // aliases are authorized only when their physical target stays in this root.
+  return canonical;
 }
 
 function readPrivate(root, path, optional = false) {
@@ -38,7 +43,10 @@ function readPrivate(root, path, optional = false) {
 function anchored(root, evidence) {
   const source = evidence?.source?.replaceAll('\\', '/');
   if (!source || !PRIMARY.test(source) || !Number.isInteger(evidence.line) || evidence.line < 1) return false;
+  if (source.split('/').some(part => !part || part === '.' || part === '..')) return false;
   try {
+    const canonical = relative(realpathSync(root), realpathSync(privatePath(root, source))).split(sep).join('/');
+    if (!PRIMARY.test(canonical)) return false;
     const line = readPrivate(root, source).replace(/\r\n?/g, '\n').split('\n')[evidence.line - 1];
     return typeof line === 'string' && normalize(line) === normalize(evidence.quote);
   } catch { return false; }
@@ -56,6 +64,37 @@ export function skillPolarity(text) {
 }
 
 const CONTACT_FIELDS = ['name', 'title', 'phone', 'email', 'location', 'linkedin', 'github', 'portfolio'];
+
+function bindCvExperienceMetadata(records, cvText) {
+  const lines = cvText.replace(/\r\n?/g, '\n').split('\n');
+  const parsed = parseCvExperience(cvText);
+  const plain = value => normalize(value).replace(/^[-*+]\s+/, '').replace(/\*\*/g, '').replace(/:\s*$/, '').trim();
+  for (const heading of records.filter(record => record.heading && record.kind === 'experiences'
+    && record.binding.evidence.source === 'cv.md' && /^###\s+/.test(record.binding.evidence.quote))) {
+    const start = heading.binding.evidence.line - 1;
+    let end = start + 1;
+    while (end < lines.length && !/^#{1,3}\s+/.test(lines[end].trim())) end++;
+    const within = records.filter(record => record.kind === 'experiences' && record.binding.evidence?.source === 'cv.md'
+      && record.binding.evidence.line > start && record.binding.evidence.line <= end);
+    const company = heading.text.split(/\s+[-–—]{1,2}\s+/)[0];
+    const blockLines = lines.slice(start, end).map(plain);
+    const matches = parsed.filter(entry => normalize(entry.company) === normalize(company)
+      && blockLines.includes(plain(entry.title)) && blockLines.includes(plain(entry.dates)));
+    if (matches.length !== 1) continue;
+    const entry = matches[0];
+    const role = within.find(record => plain(record.text) === plain(entry.title)
+      && plain(record.binding.evidence.quote) === plain(entry.title));
+    const dates = within.find(record => plain(record.text) === plain(entry.dates)
+      && plain(record.binding.evidence.quote) === plain(entry.dates));
+    const parts = heading.text.split(/\s+[-–—]{1,2}\s+/);
+    heading.field_values = { company: parts[0], ...(parts[1] ? { location: parts.slice(1).join(' — ') } : {}) };
+    for (const record of within) record.context_ref = heading.ref;
+    // Identifying the source block restricts header fields even when a title
+    // remains unreviewed; a location cannot then masquerade as a job title.
+    if (role) role.field_values = { role: entry.title };
+    if (dates) dates.field_values = { dates: entry.dates, period: entry.dates };
+  }
+}
 
 export function loadResumeAuthority({ root, persona }) {
   if (!root) throw new Error('An explicit candidate data root is required');
@@ -118,6 +157,14 @@ export function loadResumeAuthority({ root, persona }) {
     if (refs.has(record.ref)) throw new Error('Ambiguous authority reference: ' + record.ref);
     refs.add(record.ref);
   }
+  // Reuse upstream's canonical CV title/date parser to join separately reviewed
+  // metadata in a conventional CV block. Original profile ids/parent ids remain
+  // intact in provenance; context_ref records the source-proven block relation.
+  const cvText = readPrivate(root, 'cv.md', true);
+  if (cvText) bindCvExperienceMetadata(records, cvText);
+  for (const record of records) {
+    if (record.parent_ref && !record.context_ref) record.context_ref = records.find(parent => parent.ref === record.parent_ref)?.context_ref;
+  }
   const primarySources = new Map();
   for (const record of records) {
     const source = record.binding.evidence?.source;
@@ -145,7 +192,8 @@ export function loadResumeAuthority({ root, persona }) {
 
 export function proposalAuthority(authority) {
   // Model context excludes audit quotes, source paths, and unused config fields.
-  return { persona_id: authority.persona.id, records: authority.records.map(({ ref, text, kind, heading, scope, parent_ref, field }) =>
+  return { persona_id: authority.persona.id, records: authority.records.map(({ ref, text, kind, heading, scope, parent_ref, context_ref, field_values, field }) =>
     ({ ref, text, kind, ...(heading ? { heading } : {}), ...(scope ? { scope } : {}),
-      ...(parent_ref ? { parent_ref } : {}), ...(field ? { field } : {}) })) };
+      ...(parent_ref ? { parent_ref } : {}), ...(context_ref ? { context_ref } : {}),
+      ...(field_values ? { field_values } : {}), ...(field ? { field } : {}) })) };
 }
