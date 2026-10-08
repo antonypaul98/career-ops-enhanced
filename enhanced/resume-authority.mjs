@@ -98,9 +98,12 @@ function bindCvExperienceMetadata(records, cvText) {
 
 function bindReviewedHeadingFields(records) {
   for (const record of records.filter(item => item.heading && !item.field_values)) {
-    const parts = record.text.split(/\s+(?:[—–|]|--)\s+|\s+·\s+/);
+    // En dashes belong to date ranges; splitting those would make a year
+    // masquerade as a location. Unknown heading formats stay conservative.
+    const parts = record.text.split(/\s+(?:[—|]|--)\s+|\s+·\s+/);
     const last = parts.at(-1);
-    const dated = [3, 4].includes(parts.length) && /\b(?:19|20)\d{2}\b/.test(last);
+    const dated = [3, 4].includes(parts.length) && /\b(?:19|20)\d{2}\b/.test(last)
+      && parts.slice(1, -1).every(part => !/\b(?:19|20)\d{2}\b/.test(part));
     if (record.kind === 'experiences') {
       // Two-part upstream employer headers mean company/location, not role.
       // A combined company/role/date heading has explicit reviewed positions.
