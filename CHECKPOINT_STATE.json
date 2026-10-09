@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C06",
+  "current_checkpoint": "C07",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -60,7 +60,7 @@
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
         "targeted_tests": "59 passed, 0 failed, 0 skipped; includes 29 evidence-tailor tests. Heading-field swap and spaced-date regressions each failed before their repairs.",
-        "full_regression": "Prior exact head 173acc820cc5a94d04278775b9cebfa071555d9d: node test-all.mjs --quick, 11688 passed, 0 failed, 12 warnings. Final mapping/scope/alias repairs pass targeted tests and await exact-head CI.",
+        "full_regression": "Prior exact head 173acc820cc5a94d04278775b9cebfa071555d9d: node test-all.mjs --quick, 11688 passed, 0 failed, 12 warnings. Final mapping/scope/alias repairs pass targeted tests and were validated by successful final exact-head and merged-main CI.",
         "syntax": "npm run lint: 1035 .mjs files passed"
       },
       "scope": "Source-bound proposals; reviewed CV title/date mapping through upstream parser with original provenance; scoped private authority; canonical root aliases with cross-root isolation; upstream OpenAI/HTML/LaTeX plus text output; exclusions and evidence gaps",
@@ -200,34 +200,119 @@
       }
     },
     "C06": {
-      "status": "implemented_awaiting_ci",
+      "status": "accepted",
       "branch": "work/c06-independent-verification",
       "base_commit": "d06682bb1899b6897a7ef09b6b1ab2d30310812a",
       "scope": "Independent per-field source, scope, provenance, persona, context and fresh-snapshot inspection; separate advisory relevance; deterministic artifact comparison; upstream fact/ATS/title/payload diagnostics; both tailoring CLIs require factual pass",
       "local_validation": {
         "targeted_tests": "78 passed, 0 failed, 0 skipped; includes 19 independent-verifier tests, 59 C05/profile/persona/Vault/fact/gap tests, and OpenAI-to-standalone replay validation",
-        "syntax": "npm run lint: 1037 .mjs files passed",
-        "full_regression": "Prior identical implementation tree d18d36577077e9cbf7ee6f2fff051816593baf94: 11691 passed, 0 failed, 12 environment/upstream warnings. Final JD-byte replay fix passes 77 targeted tests and awaits exact-head CI."
+        "syntax": "npm run lint: 1037 .mjs files passed on the prior local implementation; final exact-head and merged-main CI lint passed on all three platforms (1037 files in merged-main Ubuntu log).",
+        "full_regression": "node test-all.mjs --quick on prior head 9d32e277065b455da2f4a3d7b0c8448d6cc56d21 (tree d18d36577077e9cbf7ee6f2fff051816593baf94): 11691 passed, 0 failed, 12 environment/upstream warnings. Final JD-byte replay and factual/relevance separation fixes pass 78 targeted tests; final exact-head CI is recorded separately."
       },
       "limitations": [
         "Approved wording only; arbitrary semantic contradictions and new paraphrases require candidate review",
         "Relevance is technical keyword coverage with qualification uncertainty, not eligibility or inferred expertise",
         "HTML/text/LaTeX source artifacts use standard system templates; custom templates and compiled PDFs require separate final-artifact review"
       ],
-      "blockers": [
-        "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
-      ],
-      "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+      "blockers": [],
+      "next_action": "Implement C07 eligibility from private runtime inputs with explicit unknown/needs-review outcomes, reusing profile config and location filters while preserving C05/C06 evidence boundaries.",
       "pr": 6,
       "prior_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
       "prior_tests_run": 37864263435,
       "known_fixed_issues": [
         "OpenAI tailoring trimmed the JD before hashing, causing standalone verification of the unchanged file to fail: original JD bytes and source-span offsets are now preserved; replay regression failed before the fix.",
         "Factual verdict incorrectly required technical claim text, marking approved employment metadata as review-only: career facts are now evaluated independently from relevance keywords; regression failed before the fix."
-      ]
+      ],
+      "final_head": "0eca310f28cf58100535c41b36c6747ef906e36a",
+      "final_tree": "4e3d62b120d612163c046b40721b4fa2715d255d",
+      "pr_tests_run": 37865850360,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "ubuntu-latest": {
+          "job": 113612512737,
+          "result": "11695 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113612512693,
+          "result": "11696 passed, 0 failed, 10 warnings"
+        },
+        "windows-latest": {
+          "job": 113612512846,
+          "result": "11693 passed, 0 failed, 11 warnings"
+        },
+        "cv-visual": {
+          "job": 113612512609,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113612512425,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 37865850141,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 37865850058,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 37865850386,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+      "merged_main_tree": "4e3d62b120d612163c046b40721b4fa2715d255d",
+      "merged_main_tests_run": 37866928038,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "ubuntu-latest": {
+          "job": 113615752795,
+          "result": "11695 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113615752704,
+          "result": "11696 passed, 0 failed, 10 warnings"
+        },
+        "windows-latest": {
+          "job": 113615752701,
+          "result": "11693 passed, 0 failed, 11 warnings"
+        },
+        "cv-visual": {
+          "job": 113615752515,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113615752786,
+          "conclusion": "success"
+        }
+      },
+      "accepted_at": "2026-10-09T01:05:51.024Z"
     },
     "C07": {
-      "status": "pending"
+      "status": "foundation_implemented_awaiting_ci",
+      "branch": "work/c07-eligibility-foundation",
+      "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+      "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
+      "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+      "local_validation": {
+        "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
+        "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
+        "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
+        "whitespace": "git diff --check passed"
+      },
+      "limitations": [
+        "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
+        "No private input/review adapter or eligibility extraction from JD source records yet",
+        "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
+        "Exact-head CI, merge and merged-main CI are required before acceptance; C07 remains incomplete"
+      ],
+      "blockers": [],
+      "next_action": "Verify the foundation PR exact-head CI, then merge and verify exact merged-main CI if green; continue one private source-bound C03/profile input-review adapter slice without inferred authorization."
     },
     "C08": {
       "status": "pending"
@@ -255,11 +340,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 4,
+    "accepted": 5,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+  "next_action": "Verify the foundation PR exact-head CI, then merge and verify exact merged-main CI if green; continue one private source-bound C03/profile input-review adapter slice without inferred authorization.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -275,6 +360,14 @@
       "issue": "Optional release-publisher credentials",
       "run": 37859614742,
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Optional release-publisher workflow; separate from product CI",
+      "run": 37866928034,
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
-  ]
+  ],
+  "verified_at": "2026-10-09T04:10:31.225458+00:00",
+  "last_verified_main": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b"
 }
