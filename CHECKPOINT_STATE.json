@@ -270,7 +270,29 @@
       "merged_main_tree": "4e3d62b120d612163c046b40721b4fa2715d255d",
       "merged_main_tests_run": 37866928038,
       "merged_main_tests_attempt": 1,
-      "merged_main_tests_conclusion": "in_progress"
+      "merged_main_tests_conclusion": "in_progress",
+      "merged_main_jobs": {
+        "ubuntu-latest": {
+          "job": 113615752795,
+          "result": "11695 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113615752704,
+          "result": "11696 passed, 0 failed, 10 warnings"
+        },
+        "windows-latest": {
+          "job": 113615752701,
+          "conclusion": "in_progress"
+        },
+        "cv-visual": {
+          "job": 113615752515,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113615752786,
+          "conclusion": "success"
+        }
+      }
     },
     "C07": {
       "status": "pending"
@@ -329,5 +351,5 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-09T00:52:38.932Z"
+  "verified_at": "2026-10-09T00:59:02.751Z"
 }
