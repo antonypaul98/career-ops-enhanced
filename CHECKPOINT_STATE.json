@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C05",
+  "current_checkpoint": "C06",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -55,7 +55,7 @@
       }
     },
     "C05": {
-      "status": "merged_awaiting_main_ci",
+      "status": "accepted",
       "branch": "work/c05-heading-field-safety",
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
@@ -90,9 +90,7 @@
           "conclusion": "action_required"
         }
       },
-      "blockers": [
-        "Exact merged-main Tests run 37862350661 must succeed before C05 acceptance"
-      ],
+      "blockers": [],
       "ci_at_prior_head": {
         "head": "173acc820cc5a94d04278775b9cebfa071555d9d",
         "Tests": {
@@ -103,7 +101,7 @@
         "Direction gate": "success",
         "Dependency Review": "success"
       },
-      "next_action": "Verify Tests run 37862350661 at exact merged-main commit d06682bb1899b6897a7ef09b6b1ab2d30310812a. If successful, accept C05, preserve acceptance evidence, and begin C06.",
+      "next_action": "C05 accepted. Begin C06 independent relevance and factual-faithfulness verification.",
       "known_fixed_issues": [
         "Source traversal/symlink aliases could misclassify JDs as writing samples: canonical primary-source checks added",
         "Experience facts could be relabeled by presentation headings as certifications: typed source/heading scopes added",
@@ -132,7 +130,7 @@
       "pr_tests_conclusion": "success",
       "merge_commit": "d06682bb1899b6897a7ef09b6b1ab2d30310812a",
       "merged_main_tests_run": 37862350661,
-      "merged_main_tests_conclusion": "in_progress",
+      "merged_main_tests_conclusion": "success",
       "pr_jobs": {
         "ubuntu-latest": {
           "job": 113597635057,
@@ -177,7 +175,29 @@
       "implementation_pr_tests_run": 37858476200,
       "baseline_merge_commit": "399e0ca17290420933eb5a6fa96ad4d865bcac1c",
       "baseline_main_tests_run": 37859614770,
-      "baseline_main_tests_conclusion": "success"
+      "baseline_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "ubuntu-latest": {
+          "job": 113600812915,
+          "result": "11692 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113600812909,
+          "result": "11693 passed, 0 failed, 10 warnings"
+        },
+        "windows-latest": {
+          "job": 113600813005,
+          "result": "11690 passed, 0 failed, 11 warnings"
+        },
+        "cv-visual": {
+          "job": 113600812985,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113600812796,
+          "conclusion": "success"
+        }
+      }
     },
     "C06": {
       "status": "pending"
@@ -211,11 +231,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 3,
+    "accepted": 4,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify Tests run 37862350661 at exact merged-main commit d06682bb1899b6897a7ef09b6b1ab2d30310812a. If successful, accept C05, preserve acceptance evidence, and begin C06.",
+  "next_action": "C05 accepted. Begin C06 independent relevance and factual-faithfulness verification.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
