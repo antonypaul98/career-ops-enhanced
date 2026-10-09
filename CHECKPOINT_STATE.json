@@ -200,7 +200,24 @@
       }
     },
     "C06": {
-      "status": "pending"
+      "status": "implemented_awaiting_ci",
+      "branch": "work/c06-independent-verification",
+      "base_commit": "d06682bb1899b6897a7ef09b6b1ab2d30310812a",
+      "scope": "Independent per-field source, scope, provenance, persona, context and fresh-snapshot inspection; separate advisory relevance; deterministic artifact comparison; upstream fact/ATS/title/payload diagnostics; both tailoring CLIs require factual pass",
+      "local_validation": {
+        "targeted_tests": "77 passed, 0 failed, 0 skipped; includes 18 independent verification tests and 59 C05/profile/persona/Vault/fact/gap tests",
+        "syntax": "npm run lint: 1037 .mjs files passed",
+        "full_regression": "running; no result asserted"
+      },
+      "limitations": [
+        "Approved wording only; arbitrary semantic contradictions and new paraphrases require candidate review",
+        "Relevance is technical keyword coverage with qualification uncertainty, not eligibility or inferred expertise",
+        "HTML/text/LaTeX source artifacts use standard system templates; custom templates and compiled PDFs require separate final-artifact review"
+      ],
+      "blockers": [
+        "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
+      ],
+      "next_action": "Finish local full regression, verify all required current-head checks, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance."
     },
     "C07": {
       "status": "pending"
@@ -235,7 +252,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "C05 accepted. Begin C06 independent relevance and factual-faithfulness verification.",
+  "next_action": "Finish local full regression, verify all required current-head checks, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",

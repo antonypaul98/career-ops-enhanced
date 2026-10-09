@@ -10,6 +10,10 @@ Run `node enhanced/tailor-resume.mjs --persona ID --proposal output/proposal.jso
 
 Inspect the private `.evidence.json` audit, excluded fields, contradictory skills, and evidence gaps. Missing, stale, unreviewed, rejected, wrong-scope and unsupported evidence is excluded. Job-description keywords and inferred prerequisites never become candidate facts. Private input and output paths stay within one candidate data root. `openai-tailor.mjs --persona ID` now runs the same bound-proposal gate before rendering; it sends approved wording rather than Vault audit quotes or unrelated private config. No application is submitted by tailoring.
 
+C06 runs an independent second pass automatically in the bound-tailoring CLI and `openai-tailor.mjs`. Read the private `.verification.json`: factual faithfulness must pass; relevance is a separate advisory technology-coverage verdict with unresolved qualifications shown for review. High keyword coverage never excuses a failed factual check. The verifier reloads current authority, checks source fields, scopes, provenance, persona and employer context, and regenerates HTML/text/LaTeX source artifacts to detect added or modified content even with recomputed hashes. It never calls the tailoring gate to obtain its verdict.
+
+To rerun: `node enhanced/verify-resume.mjs --persona ID --evidence output/cv-stem.evidence.json --artifact output/cv-stem.EXT --jd jds/job.md --output output/cv-stem.verification.json`. All paths remain in the private candidate root. Standard system templates are verified; custom templates and compiled PDFs require separate final-artifact review and cannot inherit a source-artifact pass. LaTeX omissions are reported and excluded from relevance coverage. Failed or inconclusive faithfulness blocks completion; review evidence gaps before using a truthful low-relevance result.
+
 
 Export a tailored, ATS-optimized CV as a `.tex` file and compile it to PDF via `tectonic` or `pdflatex`.
 

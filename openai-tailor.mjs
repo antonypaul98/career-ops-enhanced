@@ -23,6 +23,7 @@ import { getCareerOpsRoot } from './path-resolver.mjs';
 import { loadResumeAuthority, privatePath, proposalAuthority } from './enhanced/resume-authority.mjs';
 import { tailorBoundResume } from './enhanced/evidence-tailor.mjs';
 import { renderBoundResume } from './enhanced/tailor-resume.mjs';
+import { verifyResumeArtifact, saveVerification } from './enhanced/verify-resume.mjs';
 
 
 try {
@@ -310,7 +311,11 @@ try {
   if (!Object.keys(result.bindings).length) throw new Error('No authorized candidate facts survived tailoring');
   const output = `output/cv-${companySlug}-${authority.persona.id}`;
   const saved = renderBoundResume({ root: DATA_ROOT, result, output });
+  const verificationReport = verifyResumeArtifact({ root: DATA_ROOT, evidence: saved.evidence, artifact: saved.artifact, jdText, persona: authority.persona.id });
+  const verification = saveVerification({ root: DATA_ROOT, report: verificationReport, output: output + '.verification.json' });
+  if (verificationReport.faithfulness.verdict !== 'pass') throw new Error('Independent verification requires review: ' + verification);
   console.log(`\n✅ Evidence-bound HTML saved: ${saved.artifact}`);
+  console.log(`Independent verification: ${verification}; relevance: ${verificationReport.relevance.verdict}`);
   console.log(`Evidence audit: ${saved.evidence}`);
   console.log(`Excluded claims: ${result.excluded.length}; evidence gaps: ${result.gaps.map(gap => gap.requirement).join(', ') || '(none)'}`);
   console.log(`Next: node generate-pdf.mjs ${JSON.stringify(saved.artifact)} ${JSON.stringify(saved.artifact.replace(/\.html$/, '.pdf'))}`);
