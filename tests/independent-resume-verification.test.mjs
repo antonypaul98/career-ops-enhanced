@@ -65,6 +65,13 @@ test('faithful low-relevance content stays factually valid', () => withFixture(f
   const report = check(f, audit, jd); assert.equal(report.faithfulness.verdict, 'pass'); assert.equal(report.relevance.verdict, 'low');
 }));
 
+test('reviewed work-history metadata is factual even without technical claim text', () => withFixture(f => {
+  f.proposal.payload = { candidate: f.proposal.payload.candidate, experience: [{ company: 'Verified Employer', role: 'Engineer', dates: '2021–2024' }] };
+  f.proposal.bindings = Object.fromEntries(Object.entries(f.proposal.bindings).filter(([p]) => p.startsWith('/candidate/') || /^\/experience\/0\/(?:company|role|dates)$/.test(p)));
+  const report = check(f);
+  assert.equal(report.faithfulness.verdict, 'pass'); assert.equal(report.relevance.coveragePct, 0);
+}));
+
 test('negation, qualification details and missing extraction produce review, not a fit pass', () => withFixture(f => {
   for (const jd of ['## Requirements\n- No Kubernetes experience required\n', '## Requirements\n- Five years of Python experience\n', 'A role with no requirement section']) {
     const audit = f.audit(); audit.snapshot.jd_sha256 = digest(jd);

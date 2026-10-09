@@ -127,7 +127,9 @@ export function verifyBoundPayload({ audit, authority, jdText = '', format = 'ht
       if (entities.size !== 1 || parents.size > 1 || [...parents].some(ref => !entities.has(ref))) fail(`/${section}/${index}`, 'wrong-experience-context');
     });
   }
-  const substantive = facts.filter(f => CLAIM_TEXT.test(f.path)).length;
+  // Employment/education metadata and credentials are career facts too.
+  // Technical-keyword eligibility belongs only to the relevance evaluator.
+  const substantive = facts.filter(f => records.get(audit.bindings?.[f.path]?.ref)?.kind !== 'identity').length;
   return { schema_version: 1, scope: 'payload', persona_id: authority.persona.id,
     faithfulness: { verdict: findings.length ? 'fail' : substantive ? 'pass' : 'needs_review', checked_claims: facts.length,
       findings, ...(substantive ? {} : { reason: 'no-substantive-candidate-claims' }) },

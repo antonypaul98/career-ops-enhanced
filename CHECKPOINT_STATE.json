@@ -205,7 +205,7 @@
       "base_commit": "d06682bb1899b6897a7ef09b6b1ab2d30310812a",
       "scope": "Independent per-field source, scope, provenance, persona, context and fresh-snapshot inspection; separate advisory relevance; deterministic artifact comparison; upstream fact/ATS/title/payload diagnostics; both tailoring CLIs require factual pass",
       "local_validation": {
-        "targeted_tests": "77 passed, 0 failed, 0 skipped; includes 18 independent verification tests and 59 C05/profile/persona/Vault/fact/gap tests",
+        "targeted_tests": "78 passed, 0 failed, 0 skipped; includes 19 independent-verifier tests, 59 C05/profile/persona/Vault/fact/gap tests, and OpenAI-to-standalone replay validation",
         "syntax": "npm run lint: 1037 .mjs files passed",
         "full_regression": "Prior identical implementation tree d18d36577077e9cbf7ee6f2fff051816593baf94: 11691 passed, 0 failed, 12 environment/upstream warnings. Final JD-byte replay fix passes 77 targeted tests and awaits exact-head CI."
       },
@@ -217,12 +217,13 @@
       "blockers": [
         "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
       ],
-      "next_action": "Await exact-head CI on PR #6 final JD-byte replay fix, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+      "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
       "pr": 6,
       "prior_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
       "prior_tests_run": 37864263435,
       "known_fixed_issues": [
-        "OpenAI tailoring trimmed the JD before hashing, causing standalone verification of the unchanged file to fail: original JD bytes and source-span offsets are now preserved; replay regression failed before the fix."
+        "OpenAI tailoring trimmed the JD before hashing, causing standalone verification of the unchanged file to fail: original JD bytes and source-span offsets are now preserved; replay regression failed before the fix.",
+        "Factual verdict incorrectly required technical claim text, marking approved employment metadata as review-only: career facts are now evaluated independently from relevance keywords; regression failed before the fix."
       ]
     },
     "C07": {
@@ -258,7 +259,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Await exact-head CI on PR #6 final JD-byte replay fix, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+  "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
