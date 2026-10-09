@@ -200,7 +200,7 @@
       }
     },
     "C06": {
-      "status": "implemented_awaiting_ci",
+      "status": "merged_awaiting_main_ci",
       "branch": "work/c06-independent-verification",
       "base_commit": "d06682bb1899b6897a7ef09b6b1ab2d30310812a",
       "scope": "Independent per-field source, scope, provenance, persona, context and fresh-snapshot inspection; separate advisory relevance; deterministic artifact comparison; upstream fact/ATS/title/payload diagnostics; both tailoring CLIs require factual pass",
@@ -215,9 +215,9 @@
         "HTML/text/LaTeX source artifacts use standard system templates; custom templates and compiled PDFs require separate final-artifact review"
       ],
       "blockers": [
-        "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
+        "Successful exact merged-main Tests required before C06 acceptance"
       ],
-      "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+      "next_action": "Verify Tests run 37866928038 on merged-main commit 54908ab6f290ae29ae7ed8d483d65fd3fff4b46b before marking C06 accepted.",
       "pr": 6,
       "prior_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
       "prior_tests_run": 37864263435,
@@ -229,7 +229,7 @@
       "final_tree": "4e3d62b120d612163c046b40721b4fa2715d255d",
       "pr_tests_run": 37865850360,
       "pr_tests_attempt": 1,
-      "pr_tests_conclusion": "in_progress",
+      "pr_tests_conclusion": "success",
       "pr_jobs": {
         "ubuntu-latest": {
           "job": 113612512737,
@@ -241,7 +241,7 @@
         },
         "windows-latest": {
           "job": 113612512846,
-          "conclusion": "in_progress"
+          "result": "11693 passed, 0 failed, 11 warnings"
         },
         "cv-visual": {
           "job": 113612512609,
@@ -265,7 +265,12 @@
           "run": 37865850386,
           "conclusion": "success"
         }
-      }
+      },
+      "merge_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+      "merged_main_tree": "4e3d62b120d612163c046b40721b4fa2715d255d",
+      "merged_main_tests_run": 37866928038,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "in_progress"
     },
     "C07": {
       "status": "pending"
@@ -300,7 +305,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+  "next_action": "Verify Tests run 37866928038 on merged-main commit 54908ab6f290ae29ae7ed8d483d65fd3fff4b46b before marking C06 accepted.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -316,7 +321,13 @@
       "issue": "Optional release-publisher credentials",
       "run": 37859614742,
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Optional release-publisher workflow; separate from product CI",
+      "run": 37866928034,
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-09T00:51:27.080Z"
+  "verified_at": "2026-10-09T00:52:38.932Z"
 }
