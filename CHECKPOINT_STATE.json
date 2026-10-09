@@ -207,7 +207,7 @@
       "local_validation": {
         "targeted_tests": "77 passed, 0 failed, 0 skipped; includes 18 independent verification tests and 59 C05/profile/persona/Vault/fact/gap tests",
         "syntax": "npm run lint: 1037 .mjs files passed",
-        "full_regression": "running; no result asserted"
+        "full_regression": "node test-all.mjs --quick: 11691 passed, 0 failed, 12 environment/upstream warnings, on the identical committed tree d18d36577077e9cbf7ee6f2fff051816593baf94"
       },
       "limitations": [
         "Approved wording only; arbitrary semantic contradictions and new paraphrases require candidate review",
@@ -215,9 +215,29 @@
         "HTML/text/LaTeX source artifacts use standard system templates; custom templates and compiled PDFs require separate final-artifact review"
       ],
       "blockers": [
-        "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
+        "Exact-head Tests run 37864263435 is still running; merge and exact merged-main CI follow only on success"
       ],
-      "next_action": "Finish local full regression, verify all required current-head checks, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance."
+      "next_action": "Verify all required checks on PR #6 head 9d32e277065b455da2f4a3d7b0c8448d6cc56d21, merge with expected_head_sha, and verify exact merged-main Tests before accepting C06.",
+      "pr": 6,
+      "final_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
+      "final_tree": "d18d36577077e9cbf7ee6f2fff051816593baf94",
+      "preserved_local_commit": "a99da392a0951f01a876f70752f139e66d5efa96",
+      "pr_tests_run": 37864263435,
+      "pr_tests_conclusion": "in_progress",
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 37864263509,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 37864263445,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 37864263454,
+          "conclusion": "success"
+        }
+      }
     },
     "C07": {
       "status": "pending"
@@ -252,7 +272,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Finish local full regression, verify all required current-head checks, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+  "next_action": "Verify all required checks on PR #6 head 9d32e277065b455da2f4a3d7b0c8448d6cc56d21, merge with expected_head_sha, and verify exact merged-main Tests before accepting C06.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
