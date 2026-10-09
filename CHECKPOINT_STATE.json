@@ -60,7 +60,7 @@
       "base_commit": "14fd62e4d179753af79483cd22c9b00ae811e26e",
       "local_validation": {
         "targeted_tests": "59 passed, 0 failed, 0 skipped; includes 29 evidence-tailor tests. Heading-field swap and spaced-date regressions each failed before their repairs.",
-        "full_regression": "Prior exact head 173acc820cc5a94d04278775b9cebfa071555d9d: node test-all.mjs --quick, 11688 passed, 0 failed, 12 warnings. Final mapping/scope/alias repairs pass targeted tests and await exact-head CI.",
+        "full_regression": "Prior exact head 173acc820cc5a94d04278775b9cebfa071555d9d: node test-all.mjs --quick, 11688 passed, 0 failed, 12 warnings. Final mapping/scope/alias repairs pass targeted tests and were validated by successful final exact-head and merged-main CI.",
         "syntax": "npm run lint: 1035 .mjs files passed"
       },
       "scope": "Source-bound proposals; reviewed CV title/date mapping through upstream parser with original provenance; scoped private authority; canonical root aliases with cross-root isolation; upstream OpenAI/HTML/LaTeX plus text output; exclusions and evidence gaps",
@@ -205,9 +205,9 @@
       "base_commit": "d06682bb1899b6897a7ef09b6b1ab2d30310812a",
       "scope": "Independent per-field source, scope, provenance, persona, context and fresh-snapshot inspection; separate advisory relevance; deterministic artifact comparison; upstream fact/ATS/title/payload diagnostics; both tailoring CLIs require factual pass",
       "local_validation": {
-        "targeted_tests": "77 passed, 0 failed, 0 skipped; includes 18 independent verification tests and 59 C05/profile/persona/Vault/fact/gap tests",
+        "targeted_tests": "78 passed, 0 failed, 0 skipped; includes 19 independent-verifier tests, 59 C05/profile/persona/Vault/fact/gap tests, and OpenAI-to-standalone replay validation",
         "syntax": "npm run lint: 1037 .mjs files passed",
-        "full_regression": "node test-all.mjs --quick: 11691 passed, 0 failed, 12 environment/upstream warnings, on the identical committed tree d18d36577077e9cbf7ee6f2fff051816593baf94"
+        "full_regression": "node test-all.mjs --quick on prior head 9d32e277065b455da2f4a3d7b0c8448d6cc56d21 (tree d18d36577077e9cbf7ee6f2fff051816593baf94): 11691 passed, 0 failed, 12 environment/upstream warnings. Final JD-byte replay and factual/relevance separation fixes pass 78 targeted tests; final exact-head CI is recorded separately."
       },
       "limitations": [
         "Approved wording only; arbitrary semantic contradictions and new paraphrases require candidate review",
@@ -215,26 +215,54 @@
         "HTML/text/LaTeX source artifacts use standard system templates; custom templates and compiled PDFs require separate final-artifact review"
       ],
       "blockers": [
-        "Exact-head Tests run 37864263435 is still running; merge and exact merged-main CI follow only on success"
+        "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
       ],
-      "next_action": "Verify all required checks on PR #6 head 9d32e277065b455da2f4a3d7b0c8448d6cc56d21, merge with expected_head_sha, and verify exact merged-main Tests before accepting C06.",
+      "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
       "pr": 6,
-      "final_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
-      "final_tree": "d18d36577077e9cbf7ee6f2fff051816593baf94",
-      "preserved_local_commit": "a99da392a0951f01a876f70752f139e66d5efa96",
-      "pr_tests_run": 37864263435,
+      "prior_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
+      "prior_tests_run": 37864263435,
+      "known_fixed_issues": [
+        "OpenAI tailoring trimmed the JD before hashing, causing standalone verification of the unchanged file to fail: original JD bytes and source-span offsets are now preserved; replay regression failed before the fix.",
+        "Factual verdict incorrectly required technical claim text, marking approved employment metadata as review-only: career facts are now evaluated independently from relevance keywords; regression failed before the fix."
+      ],
+      "final_head": "0eca310f28cf58100535c41b36c6747ef906e36a",
+      "final_tree": "4e3d62b120d612163c046b40721b4fa2715d255d",
+      "pr_tests_run": 37865850360,
+      "pr_tests_attempt": 1,
       "pr_tests_conclusion": "in_progress",
+      "pr_jobs": {
+        "ubuntu-latest": {
+          "job": 113612512737,
+          "result": "11695 passed, 0 failed, 11 warnings"
+        },
+        "macos-latest": {
+          "job": 113612512693,
+          "result": "11696 passed, 0 failed, 10 warnings"
+        },
+        "windows-latest": {
+          "job": 113612512846,
+          "conclusion": "in_progress"
+        },
+        "cv-visual": {
+          "job": 113612512609,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113612512425,
+          "conclusion": "success"
+        }
+      },
       "pr_other_checks": {
         "No user data in PRs": {
-          "run": 37864263509,
+          "run": 37865850141,
           "conclusion": "success"
         },
         "Dependency Review": {
-          "run": 37864263445,
+          "run": 37865850058,
           "conclusion": "success"
         },
         "Direction gate": {
-          "run": 37864263454,
+          "run": 37865850386,
           "conclusion": "success"
         }
       }
@@ -272,7 +300,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify all required checks on PR #6 head 9d32e277065b455da2f4a3d7b0c8448d6cc56d21, merge with expected_head_sha, and verify exact merged-main Tests before accepting C06.",
+  "next_action": "Verify PR #6 final exact-head CI after JD-byte replay and factual/relevance separation repairs, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -289,5 +317,6 @@
       "run": 37859614742,
       "blocks_checkpoint": false
     }
-  ]
+  ],
+  "verified_at": "2026-10-09T00:51:27.080Z"
 }

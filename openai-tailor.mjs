@@ -121,7 +121,7 @@ if (!existsSync(reportPath)) {
   process.exit(1);
 }
 
-const jdText = readFileSync(privatePath(DATA_ROOT, jdPath), 'utf-8').trim();
+const jdText = readFileSync(privatePath(DATA_ROOT, jdPath), 'utf-8');
 const reportText = readFileSync(privatePath(DATA_ROOT, reportPath), 'utf-8').trim();
 
 // Attempt to parse company slug and candidate name
