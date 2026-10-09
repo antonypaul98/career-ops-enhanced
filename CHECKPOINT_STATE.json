@@ -294,8 +294,25 @@
       "accepted_at": "2026-10-09T01:05:51.024Z"
     },
     "C07": {
-      "status": "pending",
-      "next_action": "Implement C07 eligibility from private runtime inputs with explicit unknown/needs-review outcomes, reusing profile config and location filters while preserving C05/C06 evidence boundaries."
+      "status": "foundation_implemented_awaiting_ci",
+      "branch": "work/c07-eligibility-foundation",
+      "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+      "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
+      "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+      "local_validation": {
+        "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
+        "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
+        "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
+        "whitespace": "git diff --check passed"
+      },
+      "limitations": [
+        "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
+        "No private input/review adapter or eligibility extraction from JD source records yet",
+        "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
+        "Exact-head CI, merge and merged-main CI are required before acceptance; C07 remains incomplete"
+      ],
+      "blockers": [],
+      "next_action": "Verify the foundation PR exact-head CI, then merge and verify exact merged-main CI if green; continue one private source-bound C03/profile input-review adapter slice without inferred authorization."
     },
     "C08": {
       "status": "pending"
@@ -327,7 +344,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Implement C07 eligibility from private runtime inputs with explicit unknown/needs-review outcomes, reusing profile config and location filters while preserving C05/C06 evidence boundaries.",
+  "next_action": "Verify the foundation PR exact-head CI, then merge and verify exact merged-main CI if green; continue one private source-bound C03/profile input-review adapter slice without inferred authorization.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -351,6 +368,6 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-09T01:05:51.024Z",
+  "verified_at": "2026-10-09T04:10:31.225458+00:00",
   "last_verified_main": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b"
 }
