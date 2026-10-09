@@ -317,6 +317,7 @@ const SYSTEM_PATHS = [
   'enhanced/resume-authority.mjs',
   'enhanced/evidence-tailor.mjs',
   'enhanced/tailor-resume.mjs',
+  'enhanced/verify-resume.mjs',
   'verify-cv-structure.mjs',
   'verify-ats.mjs',
   'ats-payload.mjs',

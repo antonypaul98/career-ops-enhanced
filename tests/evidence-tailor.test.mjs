@@ -348,4 +348,8 @@ test('upstream OpenAI tailoring gates a provider proposal before rendering', () 
   assert.ok(!readFileSync(htmlPath, 'utf8').includes('500%'));
   assert.ok(!readFileSync(capture, 'utf8').includes('123456'));
   assert.ok(!readFileSync(capture, 'utf8').includes('never transmit'));
+  const replay = spawnSync(process.execPath, [join(CODE_ROOT, 'enhanced/verify-resume.mjs'), '--persona', persona.id,
+    '--evidence', htmlPath.replace(/\.html$/, '.evidence.json'), '--artifact', htmlPath, '--jd', join(f.root, 'jds/job.md')],
+  { cwd: CODE_ROOT, env: { ...process.env, CAREER_OPS_ROOT: f.root }, encoding: 'utf8', timeout: 15000 });
+  assert.equal(replay.status, 0, replay.stderr + replay.stdout);
 }));

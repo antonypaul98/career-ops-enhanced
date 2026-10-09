@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** C05 private output adapter. Reuses upstream HTML/LaTeX renderers. */
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -84,11 +84,12 @@ export function renderBoundResume({ root, result, format = 'html', output = `out
     else {
       const builder = join(CODE_ROOT, format === 'html' ? 'build-cv-html.mjs' : 'build-cv-latex.mjs');
       const rendered = spawnSync(process.execPath, [builder, input, artifact], {
-        cwd: CODE_ROOT, env: { ...process.env, CAREER_OPS_ROOT: root }, encoding: 'utf8', timeout: 30000,
+        cwd: CODE_ROOT, env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_PROFILE: privatePath(root, 'config/profile.yml') }, encoding: 'utf8', timeout: 30000,
       });
       if (rendered.status !== 0) throw new Error('Upstream CV renderer failed: ' + (rendered.stderr || rendered.error?.message || rendered.stdout));
     }
     const artifactText = readFileSync(artifact, 'utf8');
+    chmodSync(artifact, 0o600);
     const audit = { ...result, render: { format, payload_sha256: digest(renderPayload), artifact_sha256: digest(artifactText),
       omitted_entries: format === 'latex' ? (result.payload.education ?? []).flatMap((entry, index) =>
         entry.org ? [] : [{ path: `/education/${index}`, reason: 'latex-requires-bound-institution' }]) : [],
@@ -123,7 +124,12 @@ async function main() {
   const jdText = readFileSync(privatePath(root, values.jd), 'utf8');
   const result = tailorBoundResume({ proposal, authority, jdText });
   if (!Object.keys(result.bindings).length) throw new Error('No authorized candidate facts survived tailoring');
-  console.log(JSON.stringify(renderBoundResume({ root, result, format: values.format, output: values.output }), null, 2));
+  const saved = renderBoundResume({ root, result, format: values.format, output: values.output });
+  const { verifyResumeArtifact, saveVerification } = await import('./verify-resume.mjs');
+  const report = verifyResumeArtifact({ root, evidence: saved.evidence, artifact: saved.artifact, jdText, persona: values.persona });
+  const verification = saveVerification({ root, report, output: saved.evidence.replace(/\.evidence\.json$/, '.verification.json') });
+  if (report.faithfulness.verdict !== 'pass') throw new Error('Independent verification requires review: ' + verification);
+  console.log(JSON.stringify({ ...saved, verification, faithfulness: report.faithfulness.verdict, relevance: report.relevance.verdict }, null, 2));
 }
 
 if (isMainModule(import.meta.url)) main().catch(error => { console.error('tailor-resume: ' + error.message); process.exitCode = 1; });
