@@ -207,7 +207,7 @@
       "local_validation": {
         "targeted_tests": "77 passed, 0 failed, 0 skipped; includes 18 independent verification tests and 59 C05/profile/persona/Vault/fact/gap tests",
         "syntax": "npm run lint: 1037 .mjs files passed",
-        "full_regression": "running; no result asserted"
+        "full_regression": "Prior identical implementation tree d18d36577077e9cbf7ee6f2fff051816593baf94: 11691 passed, 0 failed, 12 environment/upstream warnings. Final JD-byte replay fix passes 77 targeted tests and awaits exact-head CI."
       },
       "limitations": [
         "Approved wording only; arbitrary semantic contradictions and new paraphrases require candidate review",
@@ -217,7 +217,13 @@
       "blockers": [
         "Successful exact-head CI, merge and exact merged-main CI required before acceptance"
       ],
-      "next_action": "Finish local full regression, verify all required current-head checks, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance."
+      "next_action": "Await exact-head CI on PR #6 final JD-byte replay fix, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+      "pr": 6,
+      "prior_head": "9d32e277065b455da2f4a3d7b0c8448d6cc56d21",
+      "prior_tests_run": 37864263435,
+      "known_fixed_issues": [
+        "OpenAI tailoring trimmed the JD before hashing, causing standalone verification of the unchanged file to fail: original JD bytes and source-span offsets are now preserved; replay regression failed before the fix."
+      ]
     },
     "C07": {
       "status": "pending"
@@ -252,7 +258,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Finish local full regression, verify all required current-head checks, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
+  "next_action": "Await exact-head CI on PR #6 final JD-byte replay fix, merge with expected_head_sha, and verify exact merged-main Tests before C06 acceptance.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
