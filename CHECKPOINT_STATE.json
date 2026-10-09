@@ -294,8 +294,108 @@
       "accepted_at": "2026-10-09T01:05:51.024Z"
     },
     "C07": {
-      "status": "pending",
-      "next_action": "Implement C07 eligibility from private runtime inputs with explicit unknown/needs-review outcomes, reusing profile config and location filters while preserving C05/C06 evidence boundaries."
+      "status": "foundation_ci_verified_awaiting_merge",
+      "branch": "work/c07-eligibility-foundation",
+      "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+      "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
+      "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+      "local_validation": {
+        "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
+        "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
+        "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
+        "whitespace": "git diff --check passed"
+      },
+      "limitations": [
+        "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
+        "No private input/review adapter or eligibility extraction from JD source records yet",
+        "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
+        "Foundation exact-head CI is green; merge and exact merged-main CI remain required. C07 remains incomplete pending private input/review integration."
+      ],
+      "blockers": [],
+      "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
+      "final_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+      "final_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
+      "preserved_local_commit": "94278176ac19816ea85eef9cba6dc1b601874423",
+      "pr": 7,
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/7",
+      "pr_tests_run": 37882794880,
+      "pr_tests_conclusion": "success",
+      "pr_other_checks": {
+        "Tests": {
+          "run": 37882794880,
+          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794880"
+        },
+        "No user data in PRs": {
+          "run": 37882794843,
+          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794843"
+        },
+        "Dependency Review": {
+          "run": 37882794796,
+          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794796"
+        },
+        "Direction gate": {
+          "run": 37882794807,
+          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794807"
+        }
+      },
+      "pr_jobs": {
+        "ubuntu-latest": {
+          "job": 113666046374,
+          "passed": 11698,
+          "failed": 0,
+          "warnings": 11,
+          "new_eligibility_tests": 13,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 113666046381,
+          "passed": 11699,
+          "failed": 0,
+          "warnings": 10,
+          "new_eligibility_tests": 13,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 113666046418,
+          "passed": 11696,
+          "failed": 0,
+          "warnings": 11,
+          "new_eligibility_tests": 13,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 113666046422,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 113666046286,
+          "conclusion": "success"
+        }
+      },
+      "merged": false,
+      "merged_main_verification": "pending",
+      "completed_full_checkpoint": false,
+      "files_changed": [
+        "enhanced/eligibility.mjs",
+        "tests/eligibility.test.mjs",
+        "update-system.mjs",
+        "docs/C07_ELIGIBILITY.md",
+        "CHECKPOINT_STATE.json",
+        "PROJECT_STATE.md",
+        "docs/ENHANCED_ROADMAP.md"
+      ]
     },
     "C08": {
       "status": "pending"
@@ -327,7 +427,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Implement C07 eligibility from private runtime inputs with explicit unknown/needs-review outcomes, reusing profile config and location filters while preserving C05/C06 evidence boundaries.",
+  "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -351,6 +451,25 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-09T01:05:51.024Z",
-  "last_verified_main": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b"
+  "verified_at": "2026-10-09T04:27:36.633Z",
+  "last_verified_main": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+  "writer_handoff": {
+    "owner": "Astra/Work C07 small-checkpoint mission",
+    "status": "released",
+    "next_owner": "Career Ops Hourly Build / Astra Handoff",
+    "release_reason": "Bounded foundation implemented, committed, preserved remotely and exact-head CI verified. Source writing has stopped; this ledger update is the final repository write of the mission.",
+    "source_branch": "work/c07-eligibility-foundation",
+    "source_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+    "source_worktree": "/workspace/scratch/14ae1d9b8b11/career-ops-c07",
+    "source_worktree_clean": true,
+    "source_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
+    "pr": 7,
+    "no_applications_submitted": true,
+    "no_private_candidate_data_committed": true,
+    "existing_work_preserved": "Historical branches and dirty worktrees were left intact; implementation uses an isolated worktree and new C07 branch.",
+    "usage_allowance": "Actual remaining Astra/Work allowance unavailable through exposed tools; one bounded capability completed.",
+    "user_intervention_required": false,
+    "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
+    "recorded_at": "2026-10-09T04:27:36.633Z"
+  }
 }
