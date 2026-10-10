@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C10",
+  "current_checkpoint": "C11",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -807,7 +807,110 @@
       "accepted_at": "2026-10-10T19:42:54.498Z"
     },
     "C10": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c10-company-intelligence",
+      "pr": 12,
+      "base_commit": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+      "scope": "Pure bounded company-intelligence brief over five company-side deep-research axes with per-claim attribution, freshness, conflicts, explicit gaps and existing company-funded evidence reuse",
+      "boundaries": [
+        "External company pages, media, filings, job postings, reviews and funding feeds remain untrusted data, never instructions",
+        "Company claims never become candidate facts; candidate angle requires separate authorized evidence",
+        "Incomplete attribution is excluded visibly; conflicting claims remain disputed rather than silently resolved",
+        "No network or filesystem side effects in the builder; no application action or auto-submission behavior",
+        "Synthetic fixtures only; no private candidate data"
+      ],
+      "local_validation": {
+        "new_tests": "10 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "related_regression": "29 Node tests passed across C08-C10, funding, liveness and discovery boundaries",
+        "full_node_suite": "node --test tests/*.test.mjs: 1533 passed, 0 failed, 4 skipped because local Chromium/pdftotext were unavailable",
+        "syntax": "npm run lint: 1049 .mjs files passed",
+        "updater_coverage": "1847 tracked files covered by SYSTEM_PATHS or USER_PATHS",
+        "whitespace": "git diff --check passed"
+      },
+      "final_head": "3b96f1fc06c94d6f1f4314467d08a0b20aac6639",
+      "final_tree": "a6b5419eaed895fbbf52fab14123e4b4feac489a",
+      "pr_tests_run": 38083459719,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "upgrade-regression": {
+          "job": 114305011851,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114305011629,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114305011732,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114305011887,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114305011754,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38083459721,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38083459712,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38083459709,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+      "merged_main_tree": "a6b5419eaed895fbbf52fab14123e4b4feac489a",
+      "merged_main_tests_run": 38094656233,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114337976667,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114337976758,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114337976800,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114337976818,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114337976822,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "The builder consumes caller-supplied public observations; it does not fetch or independently verify sources",
+        "Freshness is deterministic relative to caller-supplied as_of and does not establish truth by itself",
+        "Candidate-specific interview angle remains outside C10 until separately bound to authorized candidate evidence",
+        "Real user Mac acceptance remains separate from successful macOS CI"
+      ],
+      "next_action": "Begin C11 private reusable versus application-specific factual answer memory using the user data root and application artifacts; preserve source/provenance scopes and keep private data out of the public repository.",
+      "accepted_at": "2026-10-10T23:28:34.675Z"
     },
     "C11": {
       "status": "pending"
@@ -826,11 +929,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 8,
+    "accepted": 9,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Begin C10 source-attributed company intelligence by reusing company-funded and deep mode. Refresh live state and ownership before writing.",
+  "next_action": "Begin C11 private reusable versus application-specific factual answer memory using the user data root and application artifacts. Refresh live state and ownership before writing.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -875,10 +978,17 @@
       "head": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C10 merged-main product CI",
+      "run": 38094656214,
+      "head": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-10T19:42:54.498Z",
-  "last_verified_main": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+  "verified_at": "2026-10-10T23:28:34.675Z",
+  "last_verified_main": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
   "writer_handoff": {
     "owner": "Interactive C07 completion task",
     "ownership_id": "C07-PR9-20261010",
