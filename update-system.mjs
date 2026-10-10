@@ -319,6 +319,7 @@ const SYSTEM_PATHS = [
   'enhanced/tailor-resume.mjs',
   'enhanced/verify-resume.mjs',
   'enhanced/eligibility.mjs',
+  'enhanced/eligibility-input.mjs',
   'verify-cv-structure.mjs',
   'verify-ats.mjs',
   'ats-payload.mjs',

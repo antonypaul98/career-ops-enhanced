@@ -1,4 +1,4 @@
-# C07 eligibility foundation
+# C07 reviewed eligibility
 
 `evaluateEligibility` in `enhanced/eligibility.mjs` compares explicit reviewed
 authorization and sponsorship declarations. It is a pure advisory function:
@@ -55,8 +55,57 @@ separate known conflict, while individual diagnostics retain that conflict.
 Empty inputs cannot pass. `eligible` covers only the supplied supported
 requirements, and never constitutes application approval or a legal judgment.
 
-Remaining C07 work: a private, source-bound input/review adapter that can map
-explicit profile declarations and C03 JD source records without promoting
-location-filter or visa-keyword results to candidate facts. Broader eligibility
-conditions and integration require separately scoped tests and CI. This
-foundation does not complete those tasks or authorize C08.
+## Reviewed runtime input adapter
+
+`prepareReviewedEligibilityInput` in `enhanced/eligibility-input.mjs` is the
+source-bound entry point for this evaluator. The caller supplies the original
+JD bytes, the C03 extraction, a complete explicit review, and separately
+approved private candidate declarations. It performs no filesystem or network
+access and does not read permissive profile or location-filter defaults.
+
+The review binds to both `extraction.source_sha256` and
+`fingerprintRequirements(extraction.requirements)`. Every C03 requirement must
+have exactly one decision, including an explicit `relevant: false` decision for
+unrelated requirements. A relevant decision supplies `field`, `required_value`,
+`mandatory`, `jurisdiction` and `period`, with `review_status: 'explicit'`.
+The caller collects those decisions from source review; keywords cannot create
+them. Changed JD bytes, records, spans or strength invalidate the prior review.
+
+```js
+import { prepareReviewedEligibilityInput } from '../enhanced/eligibility-input.mjs';
+import { evaluateEligibility } from '../enhanced/eligibility.mjs';
+
+// All four values are private runtime inputs collected and reviewed by the caller.
+const prepared = prepareReviewedEligibilityInput({ jdText, extraction, review, candidate });
+const assessment = prepared.status === 'ready'
+  ? evaluateEligibility(prepared.input)
+  : prepared; // needs_review; input is null, with a machine-readable reason
+```
+
+`ready` means the input contract is satisfied; the evaluator still determines
+`eligible`, `ineligible` or `needs_review`. Missing candidate facts stay unknown.
+Candidate ids, review statuses, source types, Boolean values, jurisdiction and
+period must be explicit. Duplicate fact ids, conflicting employer requirements,
+incomplete reviews, negated/unspecified employer meaning and forged source
+spans fail closed. Preferred conditions cannot become mandatory exclusions.
+Malformed or cyclic input returns a generic diagnostic without echoing source
+text or candidate information.
+
+The adapter validates source token and full-line occurrence spans, including
+recognized inline C03 headings, CRLF and UTF-16 offsets. It removes arbitrary
+extra fact fields, while retaining private source references for the evaluator
+to hash. Both the prepared input and the resulting assessment must remain
+private runtime data, never public repository content.
+
+The C07 contract intentionally covers only explicit authorization and
+sponsorship declarations. It does not certify legal eligibility, interpret
+immigration rules, infer facts from location or nationality, or approve an
+application. Other conditions require a separately reviewed extension.
+
+Regression coverage lives in `tests/eligibility.test.mjs`,
+`tests/eligibility-input.test.mjs`, `tests/eligibility-input-focused.test.mjs`
+and `tests/eligibility-input-regression.test.mjs`: 56 synthetic tests cover
+source/review binding, evaluator integration, conflicts, scope, uncertainty,
+privacy, determinism and absence of I/O. The updater registers both modules.
+C07 acceptance still requires successful exact-head and merged-main CI;
+`CHECKPOINT_STATE.json` records that evidence before C08 begins.

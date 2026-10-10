@@ -294,25 +294,56 @@
       "accepted_at": "2026-10-09T01:05:51.024Z"
     },
     "C07": {
-      "status": "foundation_implemented_awaiting_ci",
-      "branch": "work/c07-eligibility-foundation",
-      "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
-      "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
-      "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+      "status": "implemented_awaiting_exact_head_ci",
+      "branch": "work/c07-reviewed-input-adapter",
+      "pr": 9,
+      "base_commit": "4b898ce2263c6da20239cefe459fc695eea7145e",
+      "adopted_head": "87bbf918934b40d38a87c9baa660561a621eedfd",
+      "foundation": {
+        "status": "merged_ci_verified",
+        "branch": "work/c07-eligibility-foundation",
+        "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+        "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
+        "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+        "local_validation": {
+          "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
+          "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
+          "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
+          "whitespace": "git diff --check passed"
+        },
+        "limitations": [
+          "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
+          "No private input/review adapter or eligibility extraction from JD source records yet",
+          "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
+          "Foundational component only; full C07 acceptance is tracked in the outer checkpoint."
+        ],
+        "blockers": [],
+        "next_action": "Foundation merged and CI verified; full C07 acceptance remains gated on the reviewed input adapter in PR #9.",
+        "final_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+        "pr": 7,
+        "pr_tests_run": 37882794880,
+        "pr_tests_conclusion": "success",
+        "merge_commit": "4b898ce2263c6da20239cefe459fc695eea7145e",
+        "merged_main_tests_run": 37922616185,
+        "merged_main_tests_conclusion": "success"
+      },
+      "scope": "Source-bound reviewed C03 input adapter and advisory authorization/sponsorship evaluation from separate approved private candidate declarations; exact snapshot/span/candidate/jurisdiction/period checks; no inference or application actions",
       "local_validation": {
-        "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
-        "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
-        "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
-        "whitespace": "git diff --check passed"
+        "c07_regression": "56 passed, 0 failed, 0 skipped; 37 added integration/adversarial tests and all 19 existing tests preserved",
+        "updater_registration": "validate-system-paths-coverage.mjs failed on enhanced/eligibility-input.mjs before repair and passes after its SYSTEM_PATHS registration",
+        "full_regression": "node test-all.mjs: 11701 passed, 0 failed, 13 warnings; all 37 added and 19 preserved C07 tests execute through the repository runner",
+        "syntax": "1043 .mjs modules pass syntax checks",
+        "repository_conventions": "65 targeted tests passed, 0 failed, 0 skipped: 56 C07 tests plus 9 entrypoint convention tests",
+        "environment_limits": "Local Go compiler and Playwright browser are absent; GitHub required Go, visual and upgrade jobs must pass before acceptance. Other warnings are inherited environment/upstream diagnostics, not waived CI gates.",
+        "whitespace": "git diff --cached --check passed"
       },
       "limitations": [
-        "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
-        "No private input/review adapter or eligibility extraction from JD source records yet",
-        "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
-        "Exact-head CI, merge and merged-main CI are required before acceptance; C07 remains incomplete"
+        "Explicit work_authorized/needs_sponsorship Boolean conditions only; exact jurisdiction and current/future period matching",
+        "Caller review labels are not independent legal/source certification; unsupported meaning and missing declarations remain review work",
+        "Private caller inputs and resulting assessments must not be published; no applications are rejected or submitted"
       ],
       "blockers": [],
-      "next_action": "Verify the foundation PR exact-head CI, then merge and verify exact merged-main CI if green; continue one private source-bound C03/profile input-review adapter slice without inferred authorization."
+      "next_action": "Verify the final PR #9 exact-head required checks, merge with the expected head SHA only if successful, verify exact merged-main CI, then record C07 acceptance and release ownership for C08."
     },
     "C08": {
       "status": "pending"
@@ -344,7 +375,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify the foundation PR exact-head CI, then merge and verify exact merged-main CI if green; continue one private source-bound C03/profile input-review adapter slice without inferred authorization.",
+  "next_action": "Verify the final PR #9 exact-head required checks, merge with the expected head SHA only if successful, verify exact merged-main CI, then record C07 acceptance and release ownership for C08.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -368,6 +399,20 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-09T04:10:31.225458+00:00",
-  "last_verified_main": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b"
+  "verified_at": "2026-10-10T13:49:29.373947+00:00",
+  "last_verified_main": "4b898ce2263c6da20239cefe459fc695eea7145e",
+  "writer_handoff": {
+    "owner": "Interactive C07 completion task",
+    "ownership_id": "C07-PR9-20261010",
+    "status": "active",
+    "source_branch": "work/c07-reviewed-input-adapter",
+    "adopted_head": "87bbf918934b40d38a87c9baa660561a621eedfd",
+    "pr": 9,
+    "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+    "hourly_mode": "read_only",
+    "next_owner": "Career Ops Hourly Build / Astra Handoff",
+    "release_requirement": "Explicit release from this owner after C07 acceptance records or a precise blocked handoff; never infer release from silence or elapsed time",
+    "no_private_candidate_data_committed": true,
+    "no_applications_submitted": true
+  }
 }
