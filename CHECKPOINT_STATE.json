@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C09",
+  "current_checkpoint": "C10",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -697,7 +697,114 @@
       "accepted_at": "2026-10-10T16:28:55.792Z"
     },
     "C09": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c09-discovery-dedup-foundation",
+      "pr": 11,
+      "base_commit": "2b9e0da0874c9b4f94e2f160722c789552b569ae",
+      "scope": "Pure no-write discovery review over existing liveness and scanner identity primitives; explicit new, duplicate, stale, needs_review and invalid outcomes with inspectable canonical URL, company-role, location and requisition identities",
+      "boundaries": [
+        "Only explicitly active postings can become new or duplicate; missing, blocked or transient liveness remains needs_review",
+        "Only authoritative expiry evidence becomes stale",
+        "Distinct requisitions remain distinct and location-aware identity is opt-in",
+        "No pipeline, tracker, scan-history or application writes; application_action is always none",
+        "Synthetic fixtures only; no private candidate data"
+      ],
+      "local_validation": {
+        "new_tests": "10 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "related_regression": "14 Node suites passed across discovery review, liveness, canonical URL, company-role/requisition and location-aware dedup",
+        "full_node_suite": "node --test tests/*.test.mjs: 1523 passed, 0 failed, 4 skipped because local Chromium/pdftotext were unavailable",
+        "syntax": "npm run lint: 1047 .mjs files passed",
+        "updater_coverage": "1845 tracked files covered by SYSTEM_PATHS or USER_PATHS",
+        "whitespace": "git diff --check passed"
+      },
+      "final_head": "9a5c74f3cdf489e642829fc90790b1567e2f83bb",
+      "pr_tests_run": 38075554382,
+      "pr_tests_attempt": 2,
+      "pr_tests_conclusion": "success",
+      "pr_attempt_1_issue": {
+        "job": 114281713993,
+        "platform": "windows-latest",
+        "result": "inherited temporary-directory teardown race: ENOTEMPTY in web/tests/lib/scheduled-jobs-runner.test.mjs; C09 tests had passed",
+        "resolution": "reran only the failed Windows job; attempt 2 succeeded without source changes"
+      },
+      "pr_jobs": {
+        "upgrade-regression": {
+          "job": 114292651095,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114292651372,
+          "conclusion": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114292651767,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114292683876,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114292650264,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38075554377,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38075554364,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38075554378,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+      "merged_main_tree": "aee438b8a016c3f0da458d4bb37b5e4ae984ce1a",
+      "merged_main_tests_run": 38080027059,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114294864897,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114294865046,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114294865084,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114294865118,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114294865179,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "The review consumes caller-supplied current liveness evidence; it does not fetch postings itself",
+        "Company aliases and optional location policy remain explicit configuration rather than inferred identity",
+        "Real user Mac acceptance remains separate from successful macOS CI"
+      ],
+      "next_action": "Begin C10 source-attributed company intelligence by reusing company-funded and deep mode while preserving source provenance, uncertainty, privacy and no-auto-submit boundaries.",
+      "accepted_at": "2026-10-10T19:42:54.498Z"
     },
     "C10": {
       "status": "pending"
@@ -719,11 +826,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 7,
+    "accepted": 8,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Begin C09 discovery and duplicate/stale posting handling by reusing scan/providers, canonical URL keys, liveness and dedup-tracker. Refresh live state and ownership before writing.",
+  "next_action": "Begin C10 source-attributed company intelligence by reusing company-funded and deep mode. Refresh live state and ownership before writing.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -761,10 +868,17 @@
       "conclusion": "failure",
       "blocks_checkpoint": false,
       "event": "pull_request_target closed; post-merge notification, not a required product gate"
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C09 merged-main product CI",
+      "run": 38080027028,
+      "head": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-10T16:28:55.792Z",
-  "last_verified_main": "2b9e0da0874c9b4f94e2f160722c789552b569ae",
+  "verified_at": "2026-10-10T19:42:54.498Z",
+  "last_verified_main": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
   "writer_handoff": {
     "owner": "Interactive C07 completion task",
     "ownership_id": "C07-PR9-20261010",
