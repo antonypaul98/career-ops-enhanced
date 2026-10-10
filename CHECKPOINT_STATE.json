@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C07",
+  "current_checkpoint": "C08",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -294,108 +294,332 @@
       "accepted_at": "2026-10-09T01:05:51.024Z"
     },
     "C07": {
-      "status": "foundation_ci_verified_awaiting_merge",
-      "branch": "work/c07-eligibility-foundation",
-      "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
-      "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
-      "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+      "status": "accepted",
+      "branch": "work/c07-reviewed-input-adapter",
+      "pr": 9,
+      "base_commit": "4b898ce2263c6da20239cefe459fc695eea7145e",
+      "adopted_head": "87bbf918934b40d38a87c9baa660561a621eedfd",
+      "foundation": {
+        "status": "merged_ci_verified",
+        "branch": "work/c07-eligibility-foundation",
+        "base_commit": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+        "acceptance_ledger_parent": "3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5",
+        "scope": "Pure advisory comparison of explicit reviewed authorization/sponsorship declarations, exact candidate/jurisdiction/period scopes, conservative review outcomes and hashed provenance; no profile loading or application actions",
+        "local_validation": {
+          "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
+          "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
+          "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
+          "whitespace": "git diff --check passed"
+        },
+        "limitations": [
+          "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
+          "No private input/review adapter or eligibility extraction from JD source records yet",
+          "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
+          "Foundational component only; full C07 acceptance is tracked in the outer checkpoint."
+        ],
+        "blockers": [],
+        "next_action": "Foundation merged and CI verified; full C07 acceptance remains gated on the reviewed input adapter in PR #9.",
+        "final_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+        "final_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
+        "preserved_local_commit": "94278176ac19816ea85eef9cba6dc1b601874423",
+        "pr": 7,
+        "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/7",
+        "pr_tests_run": 37882794880,
+        "pr_tests_conclusion": "success",
+        "pr_other_checks": {
+          "Tests": {
+            "run": 37882794880,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794880"
+          },
+          "No user data in PRs": {
+            "run": 37882794843,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794843"
+          },
+          "Dependency Review": {
+            "run": 37882794796,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794796"
+          },
+          "Direction gate": {
+            "run": 37882794807,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794807"
+          }
+        },
+        "pr_jobs": {
+          "ubuntu-latest": {
+            "job": 113666046374,
+            "passed": 11698,
+            "failed": 0,
+            "warnings": 11,
+            "new_eligibility_tests": 13,
+            "conclusion": "success"
+          },
+          "macos-latest": {
+            "job": 113666046381,
+            "passed": 11699,
+            "failed": 0,
+            "warnings": 10,
+            "new_eligibility_tests": 13,
+            "conclusion": "success"
+          },
+          "windows-latest": {
+            "job": 113666046418,
+            "passed": 11696,
+            "failed": 0,
+            "warnings": 11,
+            "new_eligibility_tests": 13,
+            "conclusion": "success"
+          },
+          "cv-visual": {
+            "job": 113666046422,
+            "conclusion": "success"
+          },
+          "upgrade-regression": {
+            "job": 113666046286,
+            "conclusion": "success"
+          }
+        },
+        "merged": true,
+        "merged_main_verification": "success",
+        "completed_full_checkpoint": false,
+        "files_changed": [
+          "enhanced/eligibility.mjs",
+          "tests/eligibility.test.mjs",
+          "update-system.mjs",
+          "docs/C07_ELIGIBILITY.md",
+          "CHECKPOINT_STATE.json",
+          "PROJECT_STATE.md",
+          "docs/ENHANCED_ROADMAP.md"
+        ],
+        "merge_commit": "4b898ce2263c6da20239cefe459fc695eea7145e",
+        "merged_main_tests_run": 37922616185,
+        "merged_main_tests_conclusion": "success"
+      },
+      "scope": "Source-bound reviewed C03 input adapter and advisory authorization/sponsorship evaluation from separate approved private candidate declarations; exact snapshot/span/candidate/jurisdiction/period checks; no inference or application actions",
       "local_validation": {
-        "new_tests": "13 passed, 0 failed, 0 skipped (tests/eligibility.test.mjs)",
-        "related_regression": "105 Node test results passed, 0 failed, 0 skipped across eligibility, JD, Vault, tailoring, verifier, personas, profile, location and updater path tests; includes two upstream assertion-script wrappers",
-        "syntax": "npm run lint: 1039 .mjs files passed; final eligibility and test files also pass node --check",
-        "whitespace": "git diff --check passed"
+        "c07_regression": "56 passed, 0 failed, 0 skipped; 37 added integration/adversarial tests and all 19 existing tests preserved",
+        "updater_registration": "validate-system-paths-coverage.mjs failed on enhanced/eligibility-input.mjs before repair and passes after its SYSTEM_PATHS registration",
+        "full_regression": "node test-all.mjs: 11701 passed, 0 failed, 13 warnings; all 37 added and 19 preserved C07 tests execute through the repository runner",
+        "syntax": "1043 .mjs modules pass syntax checks",
+        "repository_conventions": "65 targeted tests passed, 0 failed, 0 skipped: 56 C07 tests plus 9 entrypoint convention tests",
+        "environment_limits": "Local Go compiler and Playwright browser are absent; GitHub required Go, visual and upgrade jobs must pass before acceptance. Other warnings are inherited environment/upstream diagnostics, not waived CI gates.",
+        "whitespace": "git diff --cached --check passed"
       },
       "limitations": [
-        "Foundation only; explicit declarations are caller-reviewed inputs, not independently verified legal facts",
-        "No private input/review adapter or eligibility extraction from JD source records yet",
-        "Only work_authorized and needs_sponsorship Boolean conditions; exact jurisdiction and current/future period matching",
-        "Foundation exact-head CI is green; merge and exact merged-main CI remain required. C07 remains incomplete pending private input/review integration."
+        "Explicit work_authorized/needs_sponsorship Boolean conditions only; exact jurisdiction and current/future period matching",
+        "Caller review labels are not independent legal/source certification; unsupported meaning and missing declarations remain review work",
+        "Private caller inputs and resulting assessments must not be published; no applications are rejected or submitted"
       ],
       "blockers": [],
-      "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
-      "final_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
-      "final_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
-      "preserved_local_commit": "94278176ac19816ea85eef9cba6dc1b601874423",
-      "pr": 7,
-      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/7",
-      "pr_tests_run": 37882794880,
+      "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
+      "final_head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+      "final_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+      "preserved_local_commit": "6688a63bdc86011708febccc4027a8ede09a6628",
+      "preserved_local_integration_commit": "3dfcb880143b1c44e9088c51aa7ffcd4d6397fd2",
+      "publication": "Authorized GitHub Git objects API; identical locally validated tree; fast-forward expected-head update preserving adopted adapter and verified main parents",
+      "acceptance_ledger_parent": "5965c8f84967d9a3d110b30f73c864ef6c5a943b",
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/9",
+      "pr_tests_run": 38057469130,
+      "pr_tests_attempt": 1,
       "pr_tests_conclusion": "success",
-      "pr_other_checks": {
-        "Tests": {
-          "run": 37882794880,
-          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
-          "attempt": 1,
-          "conclusion": "success",
-          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794880"
-        },
-        "No user data in PRs": {
-          "run": 37882794843,
-          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
-          "attempt": 1,
-          "conclusion": "success",
-          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794843"
-        },
-        "Dependency Review": {
-          "run": 37882794796,
-          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
-          "attempt": 1,
-          "conclusion": "success",
-          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794796"
-        },
-        "Direction gate": {
-          "run": 37882794807,
-          "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
-          "attempt": 1,
-          "conclusion": "success",
-          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794807"
-        }
-      },
+      "pr_tests_event": "pull_request",
       "pr_jobs": {
-        "ubuntu-latest": {
-          "job": 113666046374,
-          "passed": 11698,
-          "failed": 0,
-          "warnings": 11,
-          "new_eligibility_tests": 13,
+        "upgrade-regression": {
+          "job": 114228778405,
           "conclusion": "success"
         },
+        "ubuntu-latest": {
+          "job": 114228778456,
+          "conclusion": "success",
+          "passed": 11705,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11705 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
         "macos-latest": {
-          "job": 113666046381,
-          "passed": 11699,
+          "job": 114228778463,
+          "conclusion": "success",
+          "passed": 11706,
           "failed": 0,
           "warnings": 10,
-          "new_eligibility_tests": 13,
+          "c07_tests": 56,
+          "result": "11706 passed, 0 failed, 10 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114228778492,
+          "conclusion": "success",
+          "passed": 11703,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11703 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114228778545,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38057469136,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469136"
+        },
+        "Direction gate": {
+          "run": 38057469150,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469150"
+        },
+        "Dependency Review": {
+          "run": 38057469138,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469138"
+        }
+      },
+      "pr_exact_head_checks": [
+        {
+          "name": "cv-visual",
+          "job": 114228778545,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (windows-latest)",
+          "job": 114228778492,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (macos-latest)",
+          "job": 114228778463,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (ubuntu-latest)",
+          "job": 114228778456,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "direction-gate",
+          "job": 114228778433,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "Upgrade regression gate",
+          "job": 114228778405,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "dependency-review",
+          "job": 114228778341,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "guard",
+          "job": 114228778250,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "label",
+          "job": 114228775624,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "open-pr",
+          "job": 114228770190,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        }
+      ],
+      "pr_required_checks_verified_before_merge_at": "2026-10-10T14:05:20.629Z",
+      "merged": true,
+      "merge_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "merged_main_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+      "merged_main_tests_run": 38058235055,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_tests_event": "push",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114230981122,
           "conclusion": "success"
         },
         "windows-latest": {
-          "job": 113666046418,
-          "passed": 11696,
+          "job": 114230981215,
+          "conclusion": "success",
+          "passed": 11703,
           "failed": 0,
           "warnings": 11,
-          "new_eligibility_tests": 13,
-          "conclusion": "success"
+          "c07_tests": 56,
+          "result": "11703 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114230981245,
+          "conclusion": "success",
+          "passed": 11705,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11705 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114230981255,
+          "conclusion": "success",
+          "passed": 11706,
+          "failed": 0,
+          "warnings": 10,
+          "c07_tests": 56,
+          "result": "11706 passed, 0 failed, 10 warnings",
+          "go_dashboard_tests": "success"
         },
         "cv-visual": {
-          "job": 113666046422,
-          "conclusion": "success"
-        },
-        "upgrade-regression": {
-          "job": 113666046286,
+          "job": 114230981319,
           "conclusion": "success"
         }
       },
-      "merged": false,
-      "merged_main_verification": "pending",
-      "completed_full_checkpoint": false,
+      "merged_main_verification": "Successful exact merge-commit Tests; merge retains the exact final PR tree",
+      "completed_full_checkpoint": true,
+      "c07_tests": 56,
+      "added_regression_tests": 37,
       "files_changed": [
-        "enhanced/eligibility.mjs",
-        "tests/eligibility.test.mjs",
         "update-system.mjs",
+        "tests/eligibility-input-regression.test.mjs",
         "docs/C07_ELIGIBILITY.md",
+        "docs/ENHANCED_ROADMAP.md",
         "CHECKPOINT_STATE.json",
-        "PROJECT_STATE.md",
-        "docs/ENHANCED_ROADMAP.md"
-      ]
+        "PROJECT_STATE.md"
+      ],
+      "accepted_at": "2026-10-10T14:17:06.563Z"
     },
     "C08": {
       "status": "pending"
@@ -423,11 +647,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 5,
+    "accepted": 6,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
+  "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -449,27 +673,87 @@
       "run": 37866928034,
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; GitHub App client-id/app-id input is empty",
+      "run": 38058235065,
+      "head": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "conclusion": "failure",
+      "blocks_checkpoint": false,
+      "required_action_if_release_publication_is_requested": "Configure the release-publisher GitHub App identity and credentials; no product CI gate was waived"
+    },
+    {
+      "issue": "Inherited optional post-merge Discord gh-events-feed webhook is not configured",
+      "run": 38058234976,
+      "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+      "conclusion": "failure",
+      "blocks_checkpoint": false,
+      "event": "pull_request_target closed; post-merge notification, not a required product gate"
     }
   ],
-  "verified_at": "2026-10-09T04:27:36.633Z",
-  "last_verified_main": "54908ab6f290ae29ae7ed8d483d65fd3fff4b46b",
+  "verified_at": "2026-10-10T14:17:06.563Z",
+  "last_verified_main": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
   "writer_handoff": {
-    "owner": "Astra/Work C07 small-checkpoint mission",
+    "owner": "Interactive C07 completion task",
+    "ownership_id": "C07-PR9-20261010",
     "status": "released",
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
-    "release_reason": "Bounded foundation implemented, committed, preserved remotely and exact-head CI verified. Source writing has stopped; this ledger update is the final repository write of the mission.",
-    "source_branch": "work/c07-eligibility-foundation",
-    "source_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
-    "source_worktree": "/workspace/scratch/14ae1d9b8b11/career-ops-c07",
+    "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+    "release_reason": "Complete C07 accepted after exact-head CI, guarded merge and exact merged-main CI. Source writing has stopped; this acceptance/release record is the final repository write of the task.",
+    "source_branch": "work/c07-reviewed-input-adapter",
+    "source_head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+    "source_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+    "source_worktree": "/workspace/scratch/a3e5976ae513/career-ops-c07-finish",
     "source_worktree_clean": true,
-    "source_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
-    "pr": 7,
+    "pr": 9,
+    "merge_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+    "pr_tests_run": 38057469130,
+    "merged_main_tests_run": 38058235055,
+    "merged_main_tests_conclusion": "success",
+    "next_checkpoint": "C08",
+    "resume": "Automatically on the next scheduled run after refreshing state and checking for conflicting ownership",
+    "acceptance_authority": "records/live-checkpoints; this verified acceptance/release supersedes historical pending/active fields in the tested main source snapshot",
+    "existing_work_preserved": "Existing implementation, all 19 prior C07 tests, older branches/worktrees and all C02-C06 acceptance records preserved; 37 synthetic regressions added",
     "no_applications_submitted": true,
     "no_private_candidate_data_committed": true,
-    "existing_work_preserved": "Historical branches and dirty worktrees were left intact; implementation uses an isolated worktree and new C07 branch.",
-    "usage_allowance": "Actual remaining Astra/Work allowance unavailable through exposed tools; one bounded capability completed.",
     "user_intervention_required": false,
-    "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
-    "recorded_at": "2026-10-09T04:27:36.633Z"
-  }
+    "blockers": [],
+    "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
+    "recorded_at": "2026-10-10T14:17:06.563Z"
+  },
+  "writer_handoff_history": [
+    {
+      "owner": "Astra/Work C07 small-checkpoint mission",
+      "status": "released",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "release_reason": "Bounded foundation implemented, committed, preserved remotely and exact-head CI verified. Source writing has stopped; this ledger update is the final repository write of the mission.",
+      "source_branch": "work/c07-eligibility-foundation",
+      "source_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+      "source_worktree": "/workspace/scratch/14ae1d9b8b11/career-ops-c07",
+      "source_worktree_clean": true,
+      "source_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
+      "pr": 7,
+      "no_applications_submitted": true,
+      "no_private_candidate_data_committed": true,
+      "existing_work_preserved": "Historical branches and dirty worktrees were left intact; implementation uses an isolated worktree and new C07 branch.",
+      "usage_allowance": "Actual remaining Astra/Work allowance unavailable through exposed tools; one bounded capability completed.",
+      "user_intervention_required": false,
+      "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
+      "recorded_at": "2026-10-09T04:27:36.633Z"
+    },
+    {
+      "owner": "Interactive C07 completion task",
+      "ownership_id": "C07-PR9-20261010",
+      "status": "active",
+      "source_branch": "work/c07-reviewed-input-adapter",
+      "adopted_head": "87bbf918934b40d38a87c9baa660561a621eedfd",
+      "pr": 9,
+      "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+      "hourly_mode": "read_only",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "release_requirement": "Explicit release from this owner after C07 acceptance records or a precise blocked handoff; never infer release from silence or elapsed time",
+      "no_private_candidate_data_committed": true,
+      "no_applications_submitted": true
+    }
+  ]
 }
