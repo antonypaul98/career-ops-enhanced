@@ -2,35 +2,41 @@
 
 Public repository: `antonypaul98/career-ops-enhanced`.
 
-C02–C06 are accepted (5 of 14 enhanced checkpoints). The full acceptance history
-is in `CHECKPOINT_STATE.json`; live GitHub evidence takes precedence over older
-records. C06 PR #6 final head is
-`0eca310f28cf58100535c41b36c6747ef906e36a`, with successful exact-head Tests
-run `37865850360`. Its merge/current-main commit is
-`54908ab6f290ae29ae7ed8d483d65fd3fff4b46b`, with successful exact merged-main
-Tests run `37866928038` across all three platforms, visual and upgrade jobs.
+C02–C06 are accepted (5 of 14 enhanced checkpoints). Their evidence remains in
+`CHECKPOINT_STATE.json`. Live GitHub evidence takes precedence over old records.
 
-## C07 small foundation — awaiting CI
+## C07 reviewed input adapter — awaiting final CI
 
-Canonical branch: `work/c07-eligibility-foundation`, based on merged C06 and
-acceptance ledger `3f4711cd81fde87cd6b7bf2fb2ec911bcce7b1d5`.
-The deterministic pure evaluator compares explicit reviewed authorization and
-sponsorship declarations, with separate employer/candidate provenance and
-conservative review outcomes. It never loads private files, infers authorization
-from nationality/location/education/keywords, rejects applications or submits.
-The caller must validate and review declarations before constructing inputs;
-this function does not independently certify evidence or interpret law.
+PR #7 merged the advisory foundation at
+`4b898ce2263c6da20239cefe459fc695eea7145e`. Its exact merged-main Tests run
+`37922616185` succeeded. The existing PR #9 and branch
+`work/c07-reviewed-input-adapter` were adopted at
+`87bbf918934b40d38a87c9baa660561a621eedfd`, retaining all newer adapter fixes
+and tests. The missing `enhanced/eligibility-input.mjs` updater registration is
+repaired; the coverage guard failed before the repair and passes afterwards.
 
-Local validation: 13 new synthetic tests pass; 105 related Node test results
-pass with zero failures or skips (including upstream location/updater assertion
-script wrappers). Syntax: 1,039 modules pass, plus final evaluator/test syntax.
-Acceptance is not claimed: exact-head CI, merge and merged-main verification
-are still required for the foundation, and broader C07 integration is absent.
+The adapter binds complete explicit review decisions to exact original JD bytes
+and C03 extraction records/spans, and keeps separately reviewed candidate facts
+scoped to candidate, jurisdiction and period. Missing, ambiguous, contradictory,
+unsupported and malformed information remains `needs_review`. The assessment
+is advisory; profile/location defaults never imply authorization or approval.
+See `docs/C07_ELIGIBILITY.md` for the contract and private runtime boundary.
 
-Next hourly action: adopt this branch/PR, verify its exact-head required CI,
-merge only if green, and verify the exact merged main. Then implement one
-private source-bound C03/profile input-review adapter slice; do not start C08.
+Local C07 regression: 56 passed, 0 failed, 0 skipped, including 37 new integration
+and adversarial tests plus all 19 preserved tests. Full repository validation:
+11,701 passed, 0 failed, 13 environment/upstream warnings; syntax checks pass for
+1,043 modules. Local Go/browser capabilities are absent and their required CI
+jobs remain mandatory. Acceptance requires final exact-head CI, merge and exact
+merged-main CI.
+C08 has not started.
 
-Only synthetic fixtures are committed. Optional release-publisher credentials
-and Discord configuration are separate issues. Real user Mac acceptance remains
-separate from macOS CI. No applications or private candidate publication occurred.
+## Writer ownership
+
+Owner: interactive C07 completion task, token `C07-PR9-20261010`.
+The hourly Career Ops automation stays enabled and strictly read-only until this
+owner publishes an explicit release. After verified C07 acceptance and release,
+the hourly task resumes C08 automatically on its next run after a live-state check.
+
+All tests use synthetic data. Candidate declarations and assessments remain
+private runtime inputs. Optional release-publisher credentials are separate from
+product CI; macOS CI does not claim real user Mac acceptance.
