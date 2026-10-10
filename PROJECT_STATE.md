@@ -37,11 +37,26 @@ on its next run after refreshing GitHub, repository instructions, this ledger an
 This explicit verified release supersedes the historical active/pending C07 fields in the tested main snapshot.
 There are no C07 blockers and no required user intervention.
 
-## Next: C08
+## C08 accepted — explainable multi-signal opportunity scoring
 
-Implement bounded explainable multi-signal opportunity scoring using existing evaluation blocks,
-`keyword-match` and profile archetypes. Do not redo accepted checkpoints, infer sensitive eligibility,
-or manufacture candidate evidence. Preserve C05/C06/C07 evidence and uncertainty boundaries.
+PR #10 final head `dfe589a80e21f1956b8a5daba4133a6f446db05f` passed exact-head Tests run
+`38064070985`, plus privacy, dependency and direction gates. It merged with an expected-head
+guard at main commit `2b9e0da0874c9b4f94e2f160722c789552b569ae`.
+
+Exact merged-main Tests run `38067072433` succeeded on Ubuntu, macOS and Windows, including
+Go dashboard tests, CV visual tests and upgrade regression. Eight new synthetic regressions and
+29 related local tests passed. The scoring contract exposes fixed weights, dimension contributions,
+evidence confidence and confidence gaps. JD keywords never become candidate facts; eligibility,
+requirement importance, posting legitimacy and historical outcomes remain outside the numeric score.
+No application action or auto-submission behavior was added.
+
+C02 through C08 are accepted: 7/14 checkpoints (50.0%).
+
+## Next: C09
+
+Implement bounded discovery and duplicate/stale posting handling by reusing upstream scan/providers,
+canonical URL keys, liveness and dedup-tracker. Preserve the evidence, privacy and no-auto-submit
+boundaries from C02-C08. Refresh live ownership and repository state before writing.
 
 ## Boundaries and separate issues
 
