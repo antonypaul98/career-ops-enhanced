@@ -1,7 +1,7 @@
 # Enhanced Career Ops — verified state
 
 Public repository: `antonypaul98/career-ops-enhanced`.
-Verified at: `2026-10-10T19:43:14.833Z`.
+Verified at: `2026-10-10T23:28:34.675Z`.
 Authoritative acceptance ledger: `CHECKPOINT_STATE.json` on `records/live-checkpoints`.
 
 ## C02 through C07 accepted
@@ -50,7 +50,7 @@ evidence confidence and confidence gaps. JD keywords never become candidate fact
 requirement importance, posting legitimacy and historical outcomes remain outside the numeric score.
 No application action or auto-submission behavior was added.
 
-C02 through C09 are accepted: 8/14 checkpoints (57.1%).
+C02 through C10 are accepted: 9/14 checkpoints (64.3%).
 
 ## C09 accepted — discovery and duplicate/stale posting review
 
@@ -74,10 +74,32 @@ Distinct requisitions stay distinct, location-aware identity remains opt-in, and
 pipeline, scan-history or application action is written. Ten synthetic C09 regressions and the
 repository-wide local Node suite passed.
 
-## Next: C10
+## C10 accepted — source-attributed company intelligence
 
-Begin bounded source-attributed company intelligence by reusing `company-funded.mjs` and deep mode.
-Preserve source provenance, uncertainty, privacy and no-auto-submit boundaries from C02-C09.
+[PR #12](https://github.com/antonypaul98/career-ops-enhanced/pull/12) final head
+`3b96f1fc06c94d6f1f4314467d08a0b20aac6639` passed exact-head Tests run
+[38083459719](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38083459719),
+attempt 1, plus privacy, dependency and direction gates. The expected-head guarded merge produced
+main `bc8e423e71b6e9a9dd6cdb1375290d374d7cee93`, tree
+`a6b5419eaed895fbbf52fab14123e4b4feac489a`.
+
+Exact merged-main Tests run
+[38094656233](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38094656233),
+attempt 1, passed Ubuntu, macOS, Windows, Go dashboard, CV visual and upgrade regression jobs.
+Ten synthetic C10 regressions passed; the full local Node suite passed 1,533 tests with zero failures
+and four environment-dependent visual skips.
+
+C10 adds a pure bounded research brief across AI strategy, recent moves, engineering culture,
+likely challenges and competitors. Every accepted claim retains a source URL, title, publisher,
+source type and retrieval date; conflicts remain disputed and missing axes remain explicit gaps.
+It reuses `company-funded.mjs` for funding evidence. External content remains untrusted data,
+company claims cannot become candidate facts, and no file write or application action is possible.
+
+## Next: C11
+
+Begin private reusable versus application-specific factual answer memory using the user data root and
+application artifacts. Preserve source/provenance scopes, separate reusable facts from one-application
+answers, keep private data outside the public repository, and retain explicit approval/no-auto-submit boundaries.
 Refresh live ownership and repository state before writing.
 
 ## Boundaries and separate issues
