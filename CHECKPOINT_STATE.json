@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C08",
+  "current_checkpoint": "C09",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -622,7 +622,79 @@
       "accepted_at": "2026-10-10T14:17:06.563Z"
     },
     "C08": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c08-explainable-score-foundation",
+      "pr": 10,
+      "base_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "scope": "Deterministic explainable 1-5 opportunity scoring over five existing evaluation dimensions, verified candidate keyword coverage and reviewed profile archetypes; score contributions and confidence gaps remain inspectable",
+      "boundaries": [
+        "JD keywords are never candidate evidence; keyword scoring requires verified candidate text and source",
+        "Eligibility, requirement importance, posting legitimacy and historical outcomes are excluded from the numeric score",
+        "Missing or unreviewed signals remain explicit confidence gaps rather than inferred facts",
+        "No application action or auto-submission behavior"
+      ],
+      "local_validation": {
+        "new_tests": "8 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "related_regression": "29 passed, 0 failed across opportunity score, persona selection, keyword matching, score confidence and eligibility boundaries",
+        "syntax": "npm run lint: 1045 .mjs files passed",
+        "updater_coverage": "1843 tracked files covered",
+        "whitespace": "git diff --check passed",
+        "full_local_suite": "Broad quick suite ran extensively without an observed failure but was stopped before completion; exact-head and merged-main CI completed the required full validation"
+      },
+      "final_head": "dfe589a80e21f1956b8a5daba4133a6f446db05f",
+      "pr_tests_run": 38064070985,
+      "pr_tests_conclusion": "success",
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38064070911,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38064070955,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38064070928,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "2b9e0da0874c9b4f94e2f160722c789552b569ae",
+      "merged_main_tests_run": 38067072433,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114256776445,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114256776506,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114256776527,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114256776554,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114256776601,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "Confidence is evidence completeness, not a probability that the candidate will be hired",
+        "Archetype influence requires an explicitly reviewed detected archetype",
+        "Real private candidate inputs and assessments remain outside the public repository"
+      ],
+      "next_action": "Begin C09 discovery and duplicate/stale posting handling by reusing scan/providers, canonical URL keys, liveness and dedup-tracker.",
+      "accepted_at": "2026-10-10T16:28:55.792Z"
     },
     "C09": {
       "status": "pending"
@@ -647,11 +719,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 6,
+    "accepted": 7,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
+  "next_action": "Begin C09 discovery and duplicate/stale posting handling by reusing scan/providers, canonical URL keys, liveness and dedup-tracker. Refresh live state and ownership before writing.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -691,8 +763,8 @@
       "event": "pull_request_target closed; post-merge notification, not a required product gate"
     }
   ],
-  "verified_at": "2026-10-10T14:17:06.563Z",
-  "last_verified_main": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+  "verified_at": "2026-10-10T16:28:55.792Z",
+  "last_verified_main": "2b9e0da0874c9b4f94e2f160722c789552b569ae",
   "writer_handoff": {
     "owner": "Interactive C07 completion task",
     "ownership_id": "C07-PR9-20261010",
