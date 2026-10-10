@@ -315,6 +315,7 @@ const SYSTEM_PATHS = [
   'enhanced/jd-requirements.mjs',
   'enhanced/persona-selector.mjs',
   'enhanced/opportunity-score.mjs',
+  'enhanced/discovery-review.mjs',
   'enhanced/resume-authority.mjs',
   'enhanced/evidence-tailor.mjs',
   'enhanced/tailor-resume.mjs',
