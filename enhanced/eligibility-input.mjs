@@ -49,11 +49,16 @@ function validOccurrences(jdText, item) {
     // but it must not omit substantive leading text (especially a negation).
     const lineStart = jdText.lastIndexOf('\n', (full?.offset_start ?? 0) - 1) + 1;
     const leading = jdText.slice(lineStart, full?.offset_start ?? 0);
-    if (!/^[ \t]*(?:(?:[-*+•>]|[0-9]+[.)])[ \t]+)?[ \t]*$/u.test(leading)) return false;
+    const ordinaryPrefix = /^[ \t]*(?:(?:[-*+•>]|[0-9]+[.)])[ \t]+)?[ \t]*$/u.test(leading);
+    // C03 also extracts inline requirement headings after their colon. The
+    // prefix must be an exact recognized heading, never free-form prose:
+    // dropping words such as "Not" must remain a hard rejection.
+    const inlineHeading = /^[ \t]*(?:#{1,6}[ \t]*)?(?:required|requirements|qualifications|must[- ]have|preferred|nice[- ]to[- ]have)[ \t]*:[ \t]*$/iu.test(leading);
+    if (!ordinaryPrefix && !inlineHeading) return false;
     const lineEnd = jdText.indexOf('\n', full?.offset_end ?? 0);
     const rawEnd = lineEnd < 0 ? jdText.length : lineEnd;
     const expectedEnd = rawEnd - (jdText.slice(full?.offset_end ?? rawEnd, rawEnd).match(/[\s]*$/u)?.[0].length ?? 0);
-    return validSpan(jdText, source) && validSpan(jdText, full)
+    return source?.text === item.requirement && validSpan(jdText, source) && validSpan(jdText, full)
       && full.offset_end === expectedEnd
       && source.offset_start >= full.offset_start && source.offset_end <= full.offset_end;
   });
