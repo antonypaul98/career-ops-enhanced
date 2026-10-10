@@ -43,3 +43,20 @@ test('different source tokens in later occurrence fail closed', () => {
   assert.deepEqual(result.reason_codes, ['jd_record_unverified']);
   assert.equal(result.application_action, 'none');
 });
+
+
+test('negated prefix cannot be omitted from reviewed eligibility source', () => {
+  const text = 'Requirements: Not authorization for SYNTHETIC_REGION.\n';
+  const result = checked(text, [['authorization', 'authorization for SYNTHETIC_REGION.']]);
+  assert.equal(result.status, 'needs_review');
+  assert.deepEqual(result.reason_codes, ['jd_record_unverified']);
+  assert.equal(result.application_action, 'none');
+});
+
+test('truncated requirement span cannot conceal trailing employer conditions', () => {
+  const text = 'Requirements: authorization for SYNTHETIC_REGION, subject to later review.\n';
+  const result = checked(text, [['authorization', 'authorization for SYNTHETIC_REGION']]);
+  assert.equal(result.status, 'needs_review');
+  assert.deepEqual(result.reason_codes, ['jd_record_unverified']);
+  assert.equal(result.application_action, 'none');
+});
