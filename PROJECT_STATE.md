@@ -1,7 +1,7 @@
 # Enhanced Career Ops — verified state
 
 Public repository: `antonypaul98/career-ops-enhanced`.
-Verified at: `2026-10-10T14:17:06.563Z`.
+Verified at: `2026-10-10T19:43:14.833Z`.
 Authoritative acceptance ledger: `CHECKPOINT_STATE.json` on `records/live-checkpoints`.
 
 ## C02 through C07 accepted
@@ -50,13 +50,35 @@ evidence confidence and confidence gaps. JD keywords never become candidate fact
 requirement importance, posting legitimacy and historical outcomes remain outside the numeric score.
 No application action or auto-submission behavior was added.
 
-C02 through C08 are accepted: 7/14 checkpoints (50.0%).
+C02 through C09 are accepted: 8/14 checkpoints (57.1%).
 
-## Next: C09
+## C09 accepted — discovery and duplicate/stale posting review
 
-Implement bounded discovery and duplicate/stale posting handling by reusing upstream scan/providers,
-canonical URL keys, liveness and dedup-tracker. Preserve the evidence, privacy and no-auto-submit
-boundaries from C02-C08. Refresh live ownership and repository state before writing.
+[PR #11](https://github.com/antonypaul98/career-ops-enhanced/pull/11) final head
+`9a5c74f3cdf489e642829fc90790b1567e2f83bb` passed privacy, dependency, direction, visual,
+upgrade, Ubuntu and macOS checks on the first attempt. The initial Windows job hit an inherited
+temporary-directory teardown race (`ENOTEMPTY` in scheduled-jobs-runner) after all C09 tests passed;
+the isolated Windows retry succeeded without a source change. Exact-head Tests run
+[38075554382](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38075554382),
+attempt 2, is successful.
+
+The expected-head guarded merge produced main `b0248ebc25b8e1c9c74a23f2f88b80324600e7e2`,
+tree `aee438b8a016c3f0da458d4bb37b5e4ae984ce1a`. Exact merged-main Tests run
+[38080027059](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38080027059),
+attempt 1, passed Ubuntu, macOS, Windows, Go dashboard, CV visual and upgrade regression jobs.
+
+C09 adds a pure no-write review API over existing canonical URL, company/role, requisition,
+location and liveness primitives. Only explicitly active postings can become new or duplicate;
+authoritative expiry becomes stale; uncertain or missing observations remain needs-review.
+Distinct requisitions stay distinct, location-aware identity remains opt-in, and no tracker,
+pipeline, scan-history or application action is written. Ten synthetic C09 regressions and the
+repository-wide local Node suite passed.
+
+## Next: C10
+
+Begin bounded source-attributed company intelligence by reusing `company-funded.mjs` and deep mode.
+Preserve source provenance, uncertainty, privacy and no-auto-submit boundaries from C02-C09.
+Refresh live ownership and repository state before writing.
 
 ## Boundaries and separate issues
 
