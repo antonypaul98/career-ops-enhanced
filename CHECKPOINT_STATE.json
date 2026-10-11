@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C11",
+  "current_checkpoint": "C12",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -913,7 +913,109 @@
       "accepted_at": "2026-10-10T23:28:34.675Z"
     },
     "C11": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c11-private-answer-memory",
+      "base_commit": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+      "scope": "Private factual-answer memory under the user data root with explicit reusable versus application-specific scopes, source-bound provenance, exact artifact binding for application answers, conservative conflict/review handling, and draft-only/no-submit behavior",
+      "local_validation": {
+        "new_tests": "9 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "full_regression": "node test-all.mjs --quick: 11713 passed, 0 failed, 13 environment/upstream warnings before the cross-platform mode-assertion repair; final exact-head and merged-main CI passed after the test-only Windows portability fix",
+        "syntax": "npm run lint: 1051 .mjs files passed",
+        "updater_registration": "enhanced/answer-memory.mjs and docs/C11_ANSWER_MEMORY.md registered in SYSTEM_PATHS"
+      },
+      "privacy_boundaries": [
+        "Store is confined to the private user data root at data/application-answer-memory.json; no real candidate data committed",
+        "Reusable and application-specific facts are separated; sensitive answers require exact application scope and candidate confirmation",
+        "Only user-confirmed or source-verified candidate evidence is usable; employer/JD requirements never become candidate facts",
+        "Application-specific records are bound to exact application key and artifact SHA-256; mismatches, conflicts and pending review fail closed",
+        "Draft-only memory retrieval cannot fill or submit an application"
+      ],
+      "known_fixed_issues": [
+        "Remote update-system.mjs publication was truncated by connector output wrapping; detected in PR diff and repaired before exact-head CI, then all remote blobs were verified byte-for-byte",
+        "The initial Windows exact-head run failed only because the synthetic test asserted POSIX mode 0600 on Windows; the assertion is now POSIX-only while private-root and ignore checks remain cross-platform"
+      ],
+      "pr": 13,
+      "final_head": "016e462838761c69a904a1db853b60b42c336281",
+      "pr_tests_run": 38099307700,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "ubuntu-latest": {
+          "job": 114351733330,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114351733504,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114351733440,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114351733397,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114351733451,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38099307701,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38099307690,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38099307722,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+      "merged_main_tests_run": 38099988490,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "ubuntu-latest": {
+          "job": 114353753904,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114353753986,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114353753999,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114353753835,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114353754034,
+          "conclusion": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "Stored answers remain candidate-controlled evidence, not independent legal verification",
+        "Sensitive declarations always require candidate confirmation for the exact application",
+        "Real user Mac acceptance remains separate from successful macOS CI"
+      ],
+      "next_action": "Begin C12 application-specific reasoning and offer comparison per the roadmap after refreshing live state and ownership.",
+      "accepted_at": "2026-10-11T01:05:14.366Z"
     },
     "C12": {
       "status": "pending"
@@ -929,11 +1031,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 9,
+    "accepted": 10,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Begin C11 private reusable versus application-specific factual answer memory using the user data root and application artifacts. Refresh live state and ownership before writing.",
+  "next_action": "Begin C12 application-specific reasoning and offer comparison per the roadmap. Refresh live state and ownership before writing.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -985,10 +1087,17 @@
       "head": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C11 merged-main product CI",
+      "run": 38099988520,
+      "head": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-10T23:28:34.675Z",
-  "last_verified_main": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+  "verified_at": "2026-10-11T01:05:14.366Z",
+  "last_verified_main": "7fdfb26451db64409c6beaa6277f895b48e5df14",
   "writer_handoff": {
     "owner": "Interactive C07 completion task",
     "ownership_id": "C07-PR9-20261010",
