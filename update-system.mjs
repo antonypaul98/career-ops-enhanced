@@ -348,6 +348,7 @@ const SYSTEM_PATHS = [
   'cv-title-check.mjs',
   'prepare-application.mjs',
   'enhanced/application-approval.mjs',
+  'enhanced/application-lifecycle.mjs',
   'application-artifacts.mjs',
   'batch-evaluate-gemini.mjs',
   'providers/',

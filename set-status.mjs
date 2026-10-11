@@ -137,6 +137,8 @@ const USAGE = `Usage: node set-status.mjs <report#|company> <state> [--note "...
                      pass it when the transition happened earlier than it's recorded)
   --source NAME      Attribution for the transition ledger: set-status (default)
                      or web (a caller delegating to this script)
+  --lifecycle-event FILE  Private C13 evidence event; verify exact content, candidate
+                         review and lifecycle order before recording an observation
   --force            Allow a numeric selector despite a report-link mismatch, or despite a
                      report-less row whose number another row claims as its report link
   --dry-run          Resolve and validate, but write nothing
@@ -189,8 +191,8 @@ function renderStatesSection() {
 
 const rawArgs = process.argv.slice(2);
 const positional = [];
-const flags = { note: null, replaceNote: null, role: null, on: null, row: null, report: null, source: null, force: false, dryRun: false, json: false };
-const VALUE_FLAGS = { '--note': 'note', '--replace-note': 'replaceNote', '--role': 'role', '--on': 'on', '--row': 'row', '--report': 'report', '--source': 'source' };
+const flags = { note: null, replaceNote: null, role: null, on: null, row: null, report: null, source: null, lifecycleEvent: null, force: false, dryRun: false, json: false };
+const VALUE_FLAGS = { '--note': 'note', '--replace-note': 'replaceNote', '--role': 'role', '--on': 'on', '--row': 'row', '--report': 'report', '--source': 'source', '--lifecycle-event': 'lifecycleEvent' };
 
 /**
  * Is the caller asking for help, rather than passing "--help" as a VALUE?
@@ -574,7 +576,21 @@ if (flags.role && !flags.force && !roleMatchesTarget) {
   );
 }
 const oldStatus = target.status;
-const note = flags.note != null ? cell(flags.note) : null;
+let note = flags.note != null ? cell(flags.note) : null;
+let lifecycle = null;
+let lifecycleModule = null;
+if (flags.lifecycleEvent !== null) {
+  try {
+    if (flags.replaceNote !== null || flags.note !== null) throw new Error('Lifecycle evidence owns its immutable note; use a separate ordinary note command');
+    lifecycleModule = await import('./enhanced/application-lifecycle.mjs');
+    lifecycle = lifecycleModule.prepareLifecycleTransition({ root: DATA_ROOT,
+      eventPath: flags.lifecycleEvent, trackerPath: APPS_FILE, target, newStatus, on: flags.on });
+    note = lifecycle.note;
+    flags.on = lifecycle.date;
+  } catch (err) {
+    failWith(EXIT_USAGE, 'lifecycle-evidence-invalid', err.message);
+  }
+}
 
 // ── advisory session-activity claim (#4532) ──────────────────────
 //
@@ -673,6 +689,12 @@ try {
   }
 
   if ((statusChanged || noteChanged) && !flags.dryRun) {
+    // The observation must be durably archived before any state can claim it.
+    // A preserved receipt alone never claims the following tracker write succeeded.
+    if (lifecycle) {
+      try { lifecycleModule.persistLifecycleEvidence(DATA_ROOT, lifecycle); }
+      catch (err) { failWith(EXIT_USAGE, 'lifecycle-evidence-write-failure', err.message); }
+    }
     lines[target.lineIdx] = rebuildRow(parts);
     try {
       writeFileAtomic(APPS_FILE, lines.join('\n'));
@@ -811,6 +833,10 @@ const result = {
   ...(followupSeeded ? { followupSeeded } : {}),
   ...(statusChanged && !flags.dryRun ? { statusLogged } : {}),
   tracker: APPS_FILE,
+  ...(lifecycle ? { lifecycleEvidence: { event_digest: lifecycle.event.event_digest,
+    application_key: lifecycle.event.bundle.application.key, content_digest: lifecycle.event.bundle.content_digest,
+    evidence_kind: lifecycle.event.evidence.kind, recorded: !flags.dryRun,
+    observation_only: true, submission_executed: false } } : {}),
 };
 
 if (flags.json) {

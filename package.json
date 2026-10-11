@@ -75,6 +75,7 @@
     "career-evidence": "node enhanced/evidence-vault.mjs",
     "answer-memory:test": "node --test tests/answer-memory.test.mjs",
     "application-approval:test": "node --test tests/application-approval.test.mjs",
+    "application-lifecycle:test": "node --test tests/application-lifecycle.test.mjs",
     "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs",
     "jd:requirements": "node enhanced/jd-requirements.mjs",
     "cv:tailor-bound": "node enhanced/tailor-resume.mjs",

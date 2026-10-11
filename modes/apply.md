@@ -398,8 +398,9 @@ node application-answers.mjs --report reports/NNN-company-role-date.md --input a
 
 ## Step 9 — Post-apply (optional)
 
-If the candidate confirms that they submitted the application:
-1. Update status to Applied via the canonical CLI: `node set-status.mjs <report#> Applied` (never hand-edit the table). If the candidate submitted on a different day than today, add `--on YYYY-MM-DD` with the actual submission date — the status-log ledger should record when it happened, not when it was typed in.
+After the candidate reviews reliable evidence of actual submission:
+1. Bind the original C12 exact-content bundle to an actual submission receipt or employer acknowledgment, its exact private source bytes, receipt/message reference, quote and observation date. Show the event and digest to the candidate and obtain explicit confirmation using `docs/C13_APPLICATION_LIFECYCLE.md`. Update the matched row through `node set-status.mjs --row N Applied --lifecycle-event data/events/application-N.json --json` (never hand-edit the table). The event supplies the actual submission date. A mock approval, upload, button click or unverified verbal assumption cannot establish submission; retain `Evaluated` and `filled` until reliable evidence is reviewed.
+   For a backdated submission, `--on YYYY-MM-DD` can be supplied and must match the reviewed evidence date. Ordinary manual backfills also retain this flag so the status log records the actual event day.
 2. Seed the follow-up schedule: run `node followup-seed.mjs {num} --json` (where `{num}` is the tracker row number). If the candidate applied on a different day than today, pass `--date YYYY-MM-DD` with the actual submission date. It's idempotent, so re-running is safe. (`--on` and `--date` are the same concept — the real submission date — each under its own script's flag name; pass the same value to both.)
 3. Refresh the report's `## Application Answers` section with the final field values and `**State:** submitted`
 4. Suggest next step: run the `contacto` mode (`/career-ops contacto` where available) for LinkedIn outreach
