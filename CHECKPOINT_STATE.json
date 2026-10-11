@@ -1134,8 +1134,22 @@
       "accepted_at": "2026-10-11T15:02:53.315Z"
     },
     "C13": {
-      "status": "pending",
-      "next_action": "Implement and test accurate canonical lifecycle with private content-bound submission evidence; mock approvals never imply Applied."
+      "status": "in_progress",
+      "next_action": "Verify required exact-head PR CI; merge with expected-head guard, verify exact merged-main CI and record acceptance.",
+      "branch": "work/c13-evidenced-lifecycle",
+      "base_commit": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+      "scope": "Reviewed content-bound observations through the existing canonical tracker writer; private immutable receipt snapshots; lifecycle order, replay protection and interruption recovery.",
+      "pr": 15,
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/15",
+      "adopted_head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+      "final_tree": "dd850f412d5d04f155797b5c5a3bcdcdebaaf7f4",
+      "preserved_local_commit": "01c444ba4a102304903048e5a150ce6007c6daa1",
+      "local_validation": {
+        "focused": "23 passed, 0 failed, 0 skipped",
+        "related": "52 passed, 0 failed, 0 skipped",
+        "syntax": "1,055 modules passed",
+        "full_regression": "Final local run pending; first run exposed one removed --on documentation hint, restored without altering the regression."
+      }
     },
     "C14": {
       "status": "pending"
@@ -1223,7 +1237,7 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-11T15:02:53.316Z",
+  "verified_at": "2026-10-11T15:24:50.698Z",
   "last_verified_main": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
   "writer_handoff": {
     "owner": "Interactive Astra Career Ops usable-release mission",
@@ -1231,9 +1245,9 @@
     "status": "active",
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "hourly_mode": "read_only",
-    "source_branch": null,
-    "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
-    "pr": null,
+    "source_branch": "work/c13-evidenced-lifecycle",
+    "adopted_head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+    "pr": 15,
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
     "release_requirement": "Explicit owner release after fully verified checkpoint acceptance or a precise preserved blocked handoff, plus restoration of the existing hourly prompt; never infer release from inactivity",
     "ownership_receipt": "https://github.com/antonypaul98/career-ops-enhanced/pull/14#issuecomment-6105511358",
