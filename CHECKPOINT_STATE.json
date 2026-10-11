@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C12",
+  "current_checkpoint": "C12 exact application approval and mock execution",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -1018,7 +1018,12 @@
       "accepted_at": "2026-10-11T01:05:14.366Z"
     },
     "C12": {
-      "status": "pending"
+      "status": "in_progress",
+      "branch": "work/c12-exact-approval",
+      "pr": 14,
+      "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
+      "base_commit": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+      "next_action": "Interactive owner: preserve/adopt existing PR #14, finish C12 requirements, run required exact-head CI, guarded merge, exact merged-main CI and acceptance; advance C13-C15 only after acceptance and while retaining validation/handoff capacity."
     },
     "C13": {
       "status": "pending"
@@ -1035,7 +1040,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Begin C12 application-specific reasoning and offer comparison per the roadmap. Refresh live state and ownership before writing.",
+  "next_action": "Interactive owner: preserve/adopt existing PR #14, finish C12 requirements, run required exact-head CI, guarded merge, exact merged-main CI and acceptance; advance C13-C15 only after acceptance and while retaining validation/handoff capacity.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1099,32 +1104,21 @@
   "verified_at": "2026-10-11T01:05:14.366Z",
   "last_verified_main": "7fdfb26451db64409c6beaa6277f895b48e5df14",
   "writer_handoff": {
-    "owner": "Interactive C07 completion task",
-    "ownership_id": "C07-PR9-20261010",
-    "status": "released",
-    "next_owner": "Career Ops Hourly Build / Astra Handoff",
+    "owner": "Interactive Astra Career Ops usable-release mission",
+    "ownership_id": "CO-RELEASE-20261011",
+    "status": "active",
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
-    "release_reason": "Complete C07 accepted after exact-head CI, guarded merge and exact merged-main CI. Source writing has stopped; this acceptance/release record is the final repository write of the task.",
-    "source_branch": "work/c07-reviewed-input-adapter",
-    "source_head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
-    "source_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
-    "source_worktree": "/workspace/scratch/a3e5976ae513/career-ops-c07-finish",
-    "source_worktree_clean": true,
-    "pr": 9,
-    "merge_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
-    "pr_tests_run": 38057469130,
-    "merged_main_tests_run": 38058235055,
-    "merged_main_tests_conclusion": "success",
-    "next_checkpoint": "C08",
-    "resume": "Automatically on the next scheduled run after refreshing state and checking for conflicting ownership",
-    "acceptance_authority": "records/live-checkpoints; this verified acceptance/release supersedes historical pending/active fields in the tested main source snapshot",
-    "existing_work_preserved": "Existing implementation, all 19 prior C07 tests, older branches/worktrees and all C02-C06 acceptance records preserved; 37 synthetic regressions added",
-    "no_applications_submitted": true,
+    "hourly_mode": "read_only",
+    "source_branch": "work/c12-exact-approval",
+    "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
+    "pr": 14,
+    "next_owner": "Career Ops Hourly Build / Astra Handoff",
+    "release_requirement": "Explicit owner release after fully verified checkpoint acceptance or a precise preserved blocked handoff, plus restoration of the existing hourly prompt; never infer release from inactivity",
+    "ownership_receipt": "https://github.com/antonypaul98/career-ops-enhanced/pull/14#issuecomment-6105511358",
+    "budget": "BUDGET UNKNOWN",
     "no_private_candidate_data_committed": true,
-    "user_intervention_required": false,
-    "blockers": [],
-    "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
-    "recorded_at": "2026-10-10T14:17:06.563Z"
+    "no_applications_submitted": true,
+    "recorded_at": "2026-10-11T04:42:12.083Z"
   },
   "writer_handoff_history": [
     {
@@ -1159,6 +1153,34 @@
       "release_requirement": "Explicit release from this owner after C07 acceptance records or a precise blocked handoff; never infer release from silence or elapsed time",
       "no_private_candidate_data_committed": true,
       "no_applications_submitted": true
+    },
+    {
+      "owner": "Interactive C07 completion task",
+      "ownership_id": "C07-PR9-20261010",
+      "status": "released",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+      "release_reason": "Complete C07 accepted after exact-head CI, guarded merge and exact merged-main CI. Source writing has stopped; this acceptance/release record is the final repository write of the task.",
+      "source_branch": "work/c07-reviewed-input-adapter",
+      "source_head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+      "source_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+      "source_worktree": "/workspace/scratch/a3e5976ae513/career-ops-c07-finish",
+      "source_worktree_clean": true,
+      "pr": 9,
+      "merge_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "pr_tests_run": 38057469130,
+      "merged_main_tests_run": 38058235055,
+      "merged_main_tests_conclusion": "success",
+      "next_checkpoint": "C08",
+      "resume": "Automatically on the next scheduled run after refreshing state and checking for conflicting ownership",
+      "acceptance_authority": "records/live-checkpoints; this verified acceptance/release supersedes historical pending/active fields in the tested main source snapshot",
+      "existing_work_preserved": "Existing implementation, all 19 prior C07 tests, older branches/worktrees and all C02-C06 acceptance records preserved; 37 synthetic regressions added",
+      "no_applications_submitted": true,
+      "no_private_candidate_data_committed": true,
+      "user_intervention_required": false,
+      "blockers": [],
+      "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
+      "recorded_at": "2026-10-10T14:17:06.563Z"
     }
   ]
 }
