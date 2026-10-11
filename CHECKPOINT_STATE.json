@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C12 exact application approval and mock execution",
+  "current_checkpoint": "C13 evidenced application lifecycle",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -1018,15 +1018,124 @@
       "accepted_at": "2026-10-11T01:05:14.366Z"
     },
     "C12": {
-      "status": "in_progress",
+      "status": "accepted",
       "branch": "work/c12-exact-approval",
       "pr": 14,
       "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
       "base_commit": "7fdfb26451db64409c6beaa6277f895b48e5df14",
-      "next_action": "Interactive owner: preserve/adopt existing PR #14, finish C12 requirements, run required exact-head CI, guarded merge, exact merged-main CI and acceptance; advance C13-C15 only after acceptance and while retaining validation/handoff capacity."
+      "next_action": "C12 accepted; continue C13 evidenced lifecycle using the canonical tracker and existing set-status writer.",
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/14",
+      "final_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
+      "final_tree": "1b4bdd7c076f27635031c8bbc08bb204e6bb3e25",
+      "pr_tests_run": 38111619670,
+      "pr_tests_event": "pull_request",
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "cv-visual": {
+          "job": 114388239891,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114388239926,
+          "conclusion": "success",
+          "passed": 11721,
+          "failed": 0,
+          "warnings": 10,
+          "c12_tests": 11
+        },
+        "ubuntu-latest": {
+          "job": 114388239964,
+          "conclusion": "success",
+          "passed": 11720,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        },
+        "windows-latest": {
+          "job": 114388239984,
+          "conclusion": "success",
+          "passed": 11718,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        },
+        "upgrade-regression": {
+          "job": 114388240029,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": [
+        {
+          "name": "Dependency Review",
+          "run": 38111619755,
+          "conclusion": "success",
+          "head": "3ab9e607e36757ccd3e1354920dac1411b057f7b"
+        },
+        {
+          "name": "No user data in PRs",
+          "run": 38111619680,
+          "conclusion": "success",
+          "head": "3ab9e607e36757ccd3e1354920dac1411b057f7b"
+        },
+        {
+          "name": "Direction gate",
+          "run": 38111619686,
+          "conclusion": "success",
+          "head": "3ab9e607e36757ccd3e1354920dac1411b057f7b"
+        }
+      ],
+      "merged": true,
+      "merge_commit": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+      "merged_main_tree": "1b4bdd7c076f27635031c8bbc08bb204e6bb3e25",
+      "merged_main_tests_run": 38112276453,
+      "merged_main_tests_event": "push",
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "cv-visual": {
+          "job": 114390137601,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114390137738,
+          "conclusion": "success",
+          "passed": 11721,
+          "failed": 0,
+          "warnings": 10,
+          "c12_tests": 11
+        },
+        "ubuntu-latest": {
+          "job": 114390137771,
+          "conclusion": "success",
+          "passed": 11720,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        },
+        "upgrade-regression": {
+          "job": 114390137772,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114390137828,
+          "conclusion": "success",
+          "passed": 11718,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        }
+      },
+      "scope": "Exact normalized application content and attachment digests; explicit candidate approval bound to one application and digest; pure mock execution with zero network, browser, file or submission actions.",
+      "limitations": [
+        "Candidate source/review labels are inputs, not independent certification of candidate facts.",
+        "Mock-only approval never authorizes real submission.",
+        "Actual user Mac acceptance remains separate from automated macOS CI."
+      ],
+      "blockers": [],
+      "accepted_at": "2026-10-11T15:02:53.315Z"
     },
     "C13": {
-      "status": "pending"
+      "status": "pending",
+      "next_action": "Implement and test accurate canonical lifecycle with private content-bound submission evidence; mock approvals never imply Applied."
     },
     "C14": {
       "status": "pending"
@@ -1036,11 +1145,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 10,
+    "accepted": 11,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Interactive owner: preserve/adopt existing PR #14, finish C12 requirements, run required exact-head CI, guarded merge, exact merged-main CI and acceptance; advance C13-C15 only after acceptance and while retaining validation/handoff capacity.",
+  "next_action": "Interactive owner CO-RELEASE-20261011 continues C13, then C14 and C15. Hourly stays read-only until explicit release.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1099,26 +1208,40 @@
       "head": "7fdfb26451db64409c6beaa6277f895b48e5df14",
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C12 merged-main product CI",
+      "run": 38112275911,
+      "head": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional post-merge Discord gh-events-feed notification; separate from required C12 product checks",
+      "run": 38112276003,
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-11T01:05:14.366Z",
-  "last_verified_main": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+  "verified_at": "2026-10-11T15:02:53.316Z",
+  "last_verified_main": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
   "writer_handoff": {
     "owner": "Interactive Astra Career Ops usable-release mission",
     "ownership_id": "CO-RELEASE-20261011",
     "status": "active",
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "hourly_mode": "read_only",
-    "source_branch": "work/c12-exact-approval",
+    "source_branch": null,
     "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
-    "pr": 14,
+    "pr": null,
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
     "release_requirement": "Explicit owner release after fully verified checkpoint acceptance or a precise preserved blocked handoff, plus restoration of the existing hourly prompt; never infer release from inactivity",
     "ownership_receipt": "https://github.com/antonypaul98/career-ops-enhanced/pull/14#issuecomment-6105511358",
-    "budget": "BUDGET UNKNOWN",
+    "budget": "Actual five-hour/weekly allowance inaccessible (BUDGET UNKNOWN); user reports 71% five-hour remaining; reserve 20–25% for verification and handoff.",
     "no_private_candidate_data_committed": true,
     "no_applications_submitted": true,
-    "recorded_at": "2026-10-11T04:42:12.083Z"
+    "recorded_at": "2026-10-11T04:42:12.083Z",
+    "next_checkpoint": "C13"
   },
   "writer_handoff_history": [
     {
