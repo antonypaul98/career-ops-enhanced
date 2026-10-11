@@ -89,7 +89,10 @@ test('persists only under the supplied private data root with restrictive mode',
     });
     const path = getAnswerMemoryPath(root);
     assert.equal(path, join(root, 'data', 'application-answer-memory.json'));
-    assert.equal(statSync(path).mode & 0o777, 0o600);
+    // Windows does not implement POSIX mode bits: Node reports 0666 even when
+    // open(2) receives 0600. The private data-root/ignore boundary is portable;
+    // assert the additional permission hardening only where the OS supports it.
+    if (process.platform !== 'win32') assert.equal(statSync(path).mode & 0o777, 0o600);
     assert.match(readFileSync(path, 'utf8'), /synthetic CV fixture/);
     assert.equal(loadAnswerMemory({ root, required: true }).records.length, 1);
   } finally { rmSync(root, { recursive: true, force: true }); }
