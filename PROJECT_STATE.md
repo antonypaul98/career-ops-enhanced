@@ -1,12 +1,12 @@
 # Enhanced Career Ops — verified state
 
 Public repository: `antonypaul98/career-ops-enhanced`.
-Verified at: `2026-10-10T23:28:34.675Z`.
+Verified at: `2026-10-11T01:05:28.366Z`.
 Authoritative acceptance ledger: `CHECKPOINT_STATE.json` on `records/live-checkpoints`.
 
-## C02 through C07 accepted
+## Acceptance history — C02 through C07
 
-Six of the 14 roadmap checkpoints are accepted. Exact earlier acceptance evidence remains in the ledger.
+C02 through C07 were the first six accepted roadmap checkpoints. Exact earlier acceptance evidence remains in the ledger.
 C07 [PR #9](https://github.com/antonypaul98/career-ops-enhanced/pull/9) final head `0abf1c2ccac8b58d8573b90ee8327be484967f58` passed all required exact-head checks before merge,
 including [Tests run 38057469130](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469130), attempt 1.
 It merged at `015ee9e07e83fa2c12f7d19f40679b263ffff037`, retaining tree `d0058d4dbdc5ac3ffc35e6be19bf018d544b3170`.
@@ -50,7 +50,7 @@ evidence confidence and confidence gaps. JD keywords never become candidate fact
 requirement importance, posting legitimacy and historical outcomes remain outside the numeric score.
 No application action or auto-submission behavior was added.
 
-C02 through C10 are accepted: 9/14 checkpoints (64.3%).
+C02 through C11 are accepted: 10/14 checkpoints (71.4%).
 
 ## C09 accepted — discovery and duplicate/stale posting review
 
@@ -95,12 +95,32 @@ source type and retrieval date; conflicts remain disputed and missing axes remai
 It reuses `company-funded.mjs` for funding evidence. External content remains untrusted data,
 company claims cannot become candidate facts, and no file write or application action is possible.
 
-## Next: C11
+## C11 accepted — private factual answer memory
 
-Begin private reusable versus application-specific factual answer memory using the user data root and
-application artifacts. Preserve source/provenance scopes, separate reusable facts from one-application
-answers, keep private data outside the public repository, and retain explicit approval/no-auto-submit boundaries.
-Refresh live ownership and repository state before writing.
+[PR #13](https://github.com/antonypaul98/career-ops-enhanced/pull/13) final head
+`016e462838761c69a904a1db853b60b42c336281` passed exact-head Tests run
+[38099307700](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38099307700),
+attempt 1, plus privacy, dependency and direction gates. The expected-head guarded merge produced
+main `7fdfb26451db64409c6beaa6277f895b48e5df14`.
+
+Exact merged-main Tests run
+[38099988490](https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38099988490),
+attempt 1, passed Ubuntu, macOS, Windows, Go dashboard, CV visual and upgrade regression jobs.
+Nine new synthetic C11 tests passed. The repository-wide local quick suite passed 11,713 tests with
+zero failures before a test-only Windows portability repair; final exact-head and merged-main CI
+passed on all required platforms after that repair.
+
+C11 stores candidate-controlled factual answer memory only under the private user data root and
+separates reusable facts from exact-application answers. Usable records require user confirmation or
+source-verified candidate evidence. Sensitive answers require exact application scope and candidate
+confirmation; application-specific records are bound to an application key and artifact SHA-256.
+Conflicts, pending review and artifact mismatches fail closed. Employer or JD requirements cannot
+become candidate facts, and retrieval is draft-only with no form-fill or submission action.
+
+## Next: C12
+
+Begin application-specific reasoning and offer comparison according to the roadmap. Preserve C05–C11
+provenance, privacy, review and uncertainty boundaries; refresh live ownership and repository state before writing.
 
 ## Boundaries and separate issues
 
@@ -110,3 +130,5 @@ Optional release-publisher run `38058235065` failed because its GitHub App clien
 this inherited publisher issue is separate from required product CI. No product gate was weakened or waived.
 Optional post-merge Discord notification run `38058234976` also failed because its webhook is unconfigured;
 this did not run until after the required exact-head checks passed and PR #9 merged.
+Optional release-publisher run `38099988520` failed for the same inherited empty GitHub App identity;
+it is separate from successful required C11 merged-main product CI.
