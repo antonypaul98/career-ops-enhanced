@@ -4,6 +4,14 @@
 
 Record the outcome of an application conversationally, archive per-application artifacts (submitted CV, cover letter, job posting snapshot or explicit stub file, and outcome log), and synchronize status in `data/applications.md` idempotently.
 
+For the enhanced workflow, first record the reviewed actual lifecycle event with
+`set-status.mjs --lifecycle-event` as described in
+`docs/C13_APPLICATION_LIFECYCLE.md`. Preserve the original submission bundle and
+private source evidence. Use this existing outcome helper afterwards for artifact
+archiving and verbatim feedback. A journal, mock approval or absence of a reply
+does not prove submission or an employer rejection. Silence remains an unknown
+outcome unless the candidate explicitly decides to stop pursuing the application.
+
 **Phase 1 MVP Scope:**
 - Records outcomes conversationally
 - Archives artifacts in `data/outcomes/{num}_{company_slug}_{role_slug}/`

@@ -1,42 +1,37 @@
 # Enhanced Career Ops — verified state
 
-Public repository: `antonypaul98/career-ops-enhanced`.
+Repository: `antonypaul98/career-ops-enhanced`.
 
-C02–C06 are accepted (5 of 14 enhanced checkpoints). Their evidence remains in
-`CHECKPOINT_STATE.json`. Live GitHub evidence takes precedence over old records.
+The authoritative acceptance ledger is `CHECKPOINT_STATE.json` on
+`records/live-checkpoints`. Main's copy is a dated snapshot; live GitHub and the
+authoritative branch override it. All original acceptance history is preserved.
 
-## C07 reviewed input adapter — awaiting final CI
+C02–C12 are accepted: **11 of 14** equally weighted enhanced checkpoints.
+C12 PR #14 exact head `3ab9e607e36757ccd3e1354920dac1411b057f7b` passed
+Tests run `38111619670` plus privacy, dependency and direction gates. Its merge
+`56e114fa73fa72b9d14746a956c2435d3197f1c0` passed exact-main Tests run
+`38112276453`: Linux, macOS, Windows, CV visual and upgrade jobs all succeeded.
+Formal C12 acceptance was recorded at ledger commit
+`9e8581cc559988160933d9a084d7189d7362e1f5`.
 
-PR #7 merged the advisory foundation at
-`4b898ce2263c6da20239cefe459fc695eea7145e`. Its exact merged-main Tests run
-`37922616185` succeeded. The existing PR #9 and branch
-`work/c07-reviewed-input-adapter` were adopted at
-`87bbf918934b40d38a87c9baa660561a621eedfd`, retaining all newer adapter fixes
-and tests. The missing `enhanced/eligibility-input.mjs` updater registration is
-repaired; the coverage guard failed before the repair and passes afterwards.
+C13 adds reviewed, content-bound lifecycle observations to the existing locked
+tracker writer. Actual receipt bytes and submitted attachment digests are
+checked before `Applied`; C12 mock approval never establishes submission.
+Private immutable evidence, idempotency and interrupted-write recovery are
+covered by synthetic regressions. Acceptance is pending exact PR and main CI.
+See `docs/C13_APPLICATION_LIFECYCLE.md`.
 
-The adapter binds complete explicit review decisions to exact original JD bytes
-and C03 extraction records/spans, and keeps separately reviewed candidate facts
-scoped to candidate, jurisdiction and period. Missing, ambiguous, contradictory,
-unsupported and malformed information remains `needs_review`. The assessment
-is advisory; profile/location defaults never imply authorization or approval.
-See `docs/C07_ELIGIBILITY.md` for the contract and private runtime boundary.
+C14 advisory outcome learning and C15 comprehensive release acceptance follow
+in roadmap order. Automated macOS CI is separate from actual user Mac acceptance.
+No physical acceptance or real-user workflow result is claimed here.
 
-Local C07 regression: 56 passed, 0 failed, 0 skipped, including 37 new integration
-and adversarial tests plus all 19 preserved tests. Full repository validation:
-11,701 passed, 0 failed, 13 environment/upstream warnings; syntax checks pass for
-1,043 modules. Local Go/browser capabilities are absent and their required CI
-jobs remain mandatory. Acceptance requires final exact-head CI, merge and exact
-merged-main CI.
-C08 has not started.
+Writer token `CO-RELEASE-20261011` belongs to the interactive release mission.
+The existing hourly task stays enabled and strictly read-only until an explicit
+release is recorded in the authoritative ledger and its prompt is restored.
+It must then refresh GitHub and continue the next unfinished checkpoint without
+reimplementing accepted work. Never infer ownership or release from inactivity.
 
-## Writer ownership
-
-Owner: interactive C07 completion task, token `C07-PR9-20261010`.
-The hourly Career Ops automation stays enabled and strictly read-only until this
-owner publishes an explicit release. After verified C07 acceptance and release,
-the hourly task resumes C08 automatically on its next run after a live-state check.
-
-All tests use synthetic data. Candidate declarations and assessments remain
-private runtime inputs. Optional release-publisher credentials are separate from
-product CI; macOS CI does not claim real user Mac acceptance.
+Only synthetic fixtures are committed. Candidate facts, declarations, answer
+memory, application content and evidence remain private runtime data. No real
+applications are submitted by these enhancements. Inherited optional release
+publisher and notification credentials are separate from required product CI.

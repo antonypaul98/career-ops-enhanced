@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C07",
+  "current_checkpoint": "C13 evidenced application lifecycle",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -294,7 +294,7 @@
       "accepted_at": "2026-10-09T01:05:51.024Z"
     },
     "C07": {
-      "status": "implemented_awaiting_exact_head_ci",
+      "status": "accepted",
       "branch": "work/c07-reviewed-input-adapter",
       "pr": 9,
       "base_commit": "4b898ce2263c6da20239cefe459fc695eea7145e",
@@ -320,9 +320,88 @@
         "blockers": [],
         "next_action": "Foundation merged and CI verified; full C07 acceptance remains gated on the reviewed input adapter in PR #9.",
         "final_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+        "final_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
+        "preserved_local_commit": "94278176ac19816ea85eef9cba6dc1b601874423",
         "pr": 7,
+        "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/7",
         "pr_tests_run": 37882794880,
         "pr_tests_conclusion": "success",
+        "pr_other_checks": {
+          "Tests": {
+            "run": 37882794880,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794880"
+          },
+          "No user data in PRs": {
+            "run": 37882794843,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794843"
+          },
+          "Dependency Review": {
+            "run": 37882794796,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794796"
+          },
+          "Direction gate": {
+            "run": 37882794807,
+            "head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+            "attempt": 1,
+            "conclusion": "success",
+            "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/37882794807"
+          }
+        },
+        "pr_jobs": {
+          "ubuntu-latest": {
+            "job": 113666046374,
+            "passed": 11698,
+            "failed": 0,
+            "warnings": 11,
+            "new_eligibility_tests": 13,
+            "conclusion": "success"
+          },
+          "macos-latest": {
+            "job": 113666046381,
+            "passed": 11699,
+            "failed": 0,
+            "warnings": 10,
+            "new_eligibility_tests": 13,
+            "conclusion": "success"
+          },
+          "windows-latest": {
+            "job": 113666046418,
+            "passed": 11696,
+            "failed": 0,
+            "warnings": 11,
+            "new_eligibility_tests": 13,
+            "conclusion": "success"
+          },
+          "cv-visual": {
+            "job": 113666046422,
+            "conclusion": "success"
+          },
+          "upgrade-regression": {
+            "job": 113666046286,
+            "conclusion": "success"
+          }
+        },
+        "merged": true,
+        "merged_main_verification": "success",
+        "completed_full_checkpoint": false,
+        "files_changed": [
+          "enhanced/eligibility.mjs",
+          "tests/eligibility.test.mjs",
+          "update-system.mjs",
+          "docs/C07_ELIGIBILITY.md",
+          "CHECKPOINT_STATE.json",
+          "PROJECT_STATE.md",
+          "docs/ENHANCED_ROADMAP.md"
+        ],
         "merge_commit": "4b898ce2263c6da20239cefe459fc695eea7145e",
         "merged_main_tests_run": 37922616185,
         "merged_main_tests_conclusion": "success"
@@ -343,25 +422,723 @@
         "Private caller inputs and resulting assessments must not be published; no applications are rejected or submitted"
       ],
       "blockers": [],
-      "next_action": "Verify the final PR #9 exact-head required checks, merge with the expected head SHA only if successful, verify exact merged-main CI, then record C07 acceptance and release ownership for C08."
+      "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
+      "final_head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+      "final_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+      "preserved_local_commit": "6688a63bdc86011708febccc4027a8ede09a6628",
+      "preserved_local_integration_commit": "3dfcb880143b1c44e9088c51aa7ffcd4d6397fd2",
+      "publication": "Authorized GitHub Git objects API; identical locally validated tree; fast-forward expected-head update preserving adopted adapter and verified main parents",
+      "acceptance_ledger_parent": "5965c8f84967d9a3d110b30f73c864ef6c5a943b",
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/9",
+      "pr_tests_run": 38057469130,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "pr_tests_event": "pull_request",
+      "pr_jobs": {
+        "upgrade-regression": {
+          "job": 114228778405,
+          "conclusion": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114228778456,
+          "conclusion": "success",
+          "passed": 11705,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11705 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114228778463,
+          "conclusion": "success",
+          "passed": 11706,
+          "failed": 0,
+          "warnings": 10,
+          "c07_tests": 56,
+          "result": "11706 passed, 0 failed, 10 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114228778492,
+          "conclusion": "success",
+          "passed": 11703,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11703 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114228778545,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38057469136,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469136"
+        },
+        "Direction gate": {
+          "run": 38057469150,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469150"
+        },
+        "Dependency Review": {
+          "run": 38057469138,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "attempt": 1,
+          "conclusion": "success",
+          "url": "https://github.com/antonypaul98/career-ops-enhanced/actions/runs/38057469138"
+        }
+      },
+      "pr_exact_head_checks": [
+        {
+          "name": "cv-visual",
+          "job": 114228778545,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (windows-latest)",
+          "job": 114228778492,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (macos-latest)",
+          "job": 114228778463,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (ubuntu-latest)",
+          "job": 114228778456,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "direction-gate",
+          "job": 114228778433,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "Upgrade regression gate",
+          "job": 114228778405,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "dependency-review",
+          "job": 114228778341,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "guard",
+          "job": 114228778250,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "label",
+          "job": 114228775624,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        },
+        {
+          "name": "open-pr",
+          "job": 114228770190,
+          "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+          "conclusion": "success"
+        }
+      ],
+      "pr_required_checks_verified_before_merge_at": "2026-10-10T14:05:20.629Z",
+      "merged": true,
+      "merge_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "merged_main_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+      "merged_main_tests_run": 38058235055,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_tests_event": "push",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114230981122,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114230981215,
+          "conclusion": "success",
+          "passed": 11703,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11703 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114230981245,
+          "conclusion": "success",
+          "passed": 11705,
+          "failed": 0,
+          "warnings": 11,
+          "c07_tests": 56,
+          "result": "11705 passed, 0 failed, 11 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114230981255,
+          "conclusion": "success",
+          "passed": 11706,
+          "failed": 0,
+          "warnings": 10,
+          "c07_tests": 56,
+          "result": "11706 passed, 0 failed, 10 warnings",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114230981319,
+          "conclusion": "success"
+        }
+      },
+      "merged_main_verification": "Successful exact merge-commit Tests; merge retains the exact final PR tree",
+      "completed_full_checkpoint": true,
+      "c07_tests": 56,
+      "added_regression_tests": 37,
+      "files_changed": [
+        "update-system.mjs",
+        "tests/eligibility-input-regression.test.mjs",
+        "docs/C07_ELIGIBILITY.md",
+        "docs/ENHANCED_ROADMAP.md",
+        "CHECKPOINT_STATE.json",
+        "PROJECT_STATE.md"
+      ],
+      "accepted_at": "2026-10-10T14:17:06.563Z"
     },
     "C08": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c08-explainable-score-foundation",
+      "pr": 10,
+      "base_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "scope": "Deterministic explainable 1-5 opportunity scoring over five existing evaluation dimensions, verified candidate keyword coverage and reviewed profile archetypes; score contributions and confidence gaps remain inspectable",
+      "boundaries": [
+        "JD keywords are never candidate evidence; keyword scoring requires verified candidate text and source",
+        "Eligibility, requirement importance, posting legitimacy and historical outcomes are excluded from the numeric score",
+        "Missing or unreviewed signals remain explicit confidence gaps rather than inferred facts",
+        "No application action or auto-submission behavior"
+      ],
+      "local_validation": {
+        "new_tests": "8 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "related_regression": "29 passed, 0 failed across opportunity score, persona selection, keyword matching, score confidence and eligibility boundaries",
+        "syntax": "npm run lint: 1045 .mjs files passed",
+        "updater_coverage": "1843 tracked files covered",
+        "whitespace": "git diff --check passed",
+        "full_local_suite": "Broad quick suite ran extensively without an observed failure but was stopped before completion; exact-head and merged-main CI completed the required full validation"
+      },
+      "final_head": "dfe589a80e21f1956b8a5daba4133a6f446db05f",
+      "pr_tests_run": 38064070985,
+      "pr_tests_conclusion": "success",
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38064070911,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38064070955,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38064070928,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "2b9e0da0874c9b4f94e2f160722c789552b569ae",
+      "merged_main_tests_run": 38067072433,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114256776445,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114256776506,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114256776527,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114256776554,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114256776601,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "Confidence is evidence completeness, not a probability that the candidate will be hired",
+        "Archetype influence requires an explicitly reviewed detected archetype",
+        "Real private candidate inputs and assessments remain outside the public repository"
+      ],
+      "next_action": "Begin C09 discovery and duplicate/stale posting handling by reusing scan/providers, canonical URL keys, liveness and dedup-tracker.",
+      "accepted_at": "2026-10-10T16:28:55.792Z"
     },
     "C09": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c09-discovery-dedup-foundation",
+      "pr": 11,
+      "base_commit": "2b9e0da0874c9b4f94e2f160722c789552b569ae",
+      "scope": "Pure no-write discovery review over existing liveness and scanner identity primitives; explicit new, duplicate, stale, needs_review and invalid outcomes with inspectable canonical URL, company-role, location and requisition identities",
+      "boundaries": [
+        "Only explicitly active postings can become new or duplicate; missing, blocked or transient liveness remains needs_review",
+        "Only authoritative expiry evidence becomes stale",
+        "Distinct requisitions remain distinct and location-aware identity is opt-in",
+        "No pipeline, tracker, scan-history or application writes; application_action is always none",
+        "Synthetic fixtures only; no private candidate data"
+      ],
+      "local_validation": {
+        "new_tests": "10 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "related_regression": "14 Node suites passed across discovery review, liveness, canonical URL, company-role/requisition and location-aware dedup",
+        "full_node_suite": "node --test tests/*.test.mjs: 1523 passed, 0 failed, 4 skipped because local Chromium/pdftotext were unavailable",
+        "syntax": "npm run lint: 1047 .mjs files passed",
+        "updater_coverage": "1845 tracked files covered by SYSTEM_PATHS or USER_PATHS",
+        "whitespace": "git diff --check passed"
+      },
+      "final_head": "9a5c74f3cdf489e642829fc90790b1567e2f83bb",
+      "pr_tests_run": 38075554382,
+      "pr_tests_attempt": 2,
+      "pr_tests_conclusion": "success",
+      "pr_attempt_1_issue": {
+        "job": 114281713993,
+        "platform": "windows-latest",
+        "result": "inherited temporary-directory teardown race: ENOTEMPTY in web/tests/lib/scheduled-jobs-runner.test.mjs; C09 tests had passed",
+        "resolution": "reran only the failed Windows job; attempt 2 succeeded without source changes"
+      },
+      "pr_jobs": {
+        "upgrade-regression": {
+          "job": 114292651095,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114292651372,
+          "conclusion": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114292651767,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114292683876,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114292650264,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38075554377,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38075554364,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38075554378,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+      "merged_main_tree": "aee438b8a016c3f0da458d4bb37b5e4ae984ce1a",
+      "merged_main_tests_run": 38080027059,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114294864897,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114294865046,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114294865084,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114294865118,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114294865179,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "The review consumes caller-supplied current liveness evidence; it does not fetch postings itself",
+        "Company aliases and optional location policy remain explicit configuration rather than inferred identity",
+        "Real user Mac acceptance remains separate from successful macOS CI"
+      ],
+      "next_action": "Begin C10 source-attributed company intelligence by reusing company-funded and deep mode while preserving source provenance, uncertainty, privacy and no-auto-submit boundaries.",
+      "accepted_at": "2026-10-10T19:42:54.498Z"
     },
     "C10": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c10-company-intelligence",
+      "pr": 12,
+      "base_commit": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+      "scope": "Pure bounded company-intelligence brief over five company-side deep-research axes with per-claim attribution, freshness, conflicts, explicit gaps and existing company-funded evidence reuse",
+      "boundaries": [
+        "External company pages, media, filings, job postings, reviews and funding feeds remain untrusted data, never instructions",
+        "Company claims never become candidate facts; candidate angle requires separate authorized evidence",
+        "Incomplete attribution is excluded visibly; conflicting claims remain disputed rather than silently resolved",
+        "No network or filesystem side effects in the builder; no application action or auto-submission behavior",
+        "Synthetic fixtures only; no private candidate data"
+      ],
+      "local_validation": {
+        "new_tests": "10 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "related_regression": "29 Node tests passed across C08-C10, funding, liveness and discovery boundaries",
+        "full_node_suite": "node --test tests/*.test.mjs: 1533 passed, 0 failed, 4 skipped because local Chromium/pdftotext were unavailable",
+        "syntax": "npm run lint: 1049 .mjs files passed",
+        "updater_coverage": "1847 tracked files covered by SYSTEM_PATHS or USER_PATHS",
+        "whitespace": "git diff --check passed"
+      },
+      "final_head": "3b96f1fc06c94d6f1f4314467d08a0b20aac6639",
+      "final_tree": "a6b5419eaed895fbbf52fab14123e4b4feac489a",
+      "pr_tests_run": 38083459719,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "upgrade-regression": {
+          "job": 114305011851,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114305011629,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114305011732,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114305011887,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114305011754,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38083459721,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38083459712,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38083459709,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+      "merged_main_tree": "a6b5419eaed895fbbf52fab14123e4b4feac489a",
+      "merged_main_tests_run": 38094656233,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "upgrade-regression": {
+          "job": 114337976667,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 114337976758,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114337976800,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114337976818,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114337976822,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "The builder consumes caller-supplied public observations; it does not fetch or independently verify sources",
+        "Freshness is deterministic relative to caller-supplied as_of and does not establish truth by itself",
+        "Candidate-specific interview angle remains outside C10 until separately bound to authorized candidate evidence",
+        "Real user Mac acceptance remains separate from successful macOS CI"
+      ],
+      "next_action": "Begin C11 private reusable versus application-specific factual answer memory using the user data root and application artifacts; preserve source/provenance scopes and keep private data out of the public repository.",
+      "accepted_at": "2026-10-10T23:28:34.675Z"
     },
     "C11": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c11-private-answer-memory",
+      "base_commit": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+      "scope": "Private factual-answer memory under the user data root with explicit reusable versus application-specific scopes, source-bound provenance, exact artifact binding for application answers, conservative conflict/review handling, and draft-only/no-submit behavior",
+      "local_validation": {
+        "new_tests": "9 passed, 0 failed, 0 skipped using synthetic fixtures",
+        "full_regression": "node test-all.mjs --quick: 11713 passed, 0 failed, 13 environment/upstream warnings before the cross-platform mode-assertion repair; final exact-head and merged-main CI passed after the test-only Windows portability fix",
+        "syntax": "npm run lint: 1051 .mjs files passed",
+        "updater_registration": "enhanced/answer-memory.mjs and docs/C11_ANSWER_MEMORY.md registered in SYSTEM_PATHS"
+      },
+      "privacy_boundaries": [
+        "Store is confined to the private user data root at data/application-answer-memory.json; no real candidate data committed",
+        "Reusable and application-specific facts are separated; sensitive answers require exact application scope and candidate confirmation",
+        "Only user-confirmed or source-verified candidate evidence is usable; employer/JD requirements never become candidate facts",
+        "Application-specific records are bound to exact application key and artifact SHA-256; mismatches, conflicts and pending review fail closed",
+        "Draft-only memory retrieval cannot fill or submit an application"
+      ],
+      "known_fixed_issues": [
+        "Remote update-system.mjs publication was truncated by connector output wrapping; detected in PR diff and repaired before exact-head CI, then all remote blobs were verified byte-for-byte",
+        "The initial Windows exact-head run failed only because the synthetic test asserted POSIX mode 0600 on Windows; the assertion is now POSIX-only while private-root and ignore checks remain cross-platform"
+      ],
+      "pr": 13,
+      "final_head": "016e462838761c69a904a1db853b60b42c336281",
+      "pr_tests_run": 38099307700,
+      "pr_tests_attempt": 1,
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "ubuntu-latest": {
+          "job": 114351733330,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114351733504,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114351733440,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114351733397,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114351733451,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": {
+        "No user data in PRs": {
+          "run": 38099307701,
+          "conclusion": "success"
+        },
+        "Dependency Review": {
+          "run": 38099307690,
+          "conclusion": "success"
+        },
+        "Direction gate": {
+          "run": 38099307722,
+          "conclusion": "success"
+        }
+      },
+      "merge_commit": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+      "merged_main_tests_run": 38099988490,
+      "merged_main_tests_attempt": 1,
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "ubuntu-latest": {
+          "job": 114353753904,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "macos-latest": {
+          "job": 114353753986,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "windows-latest": {
+          "job": 114353753999,
+          "conclusion": "success",
+          "go_dashboard_tests": "success"
+        },
+        "cv-visual": {
+          "job": 114353753835,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114353754034,
+          "conclusion": "success"
+        }
+      },
+      "completed_full_checkpoint": true,
+      "blockers": [],
+      "limitations": [
+        "Stored answers remain candidate-controlled evidence, not independent legal verification",
+        "Sensitive declarations always require candidate confirmation for the exact application",
+        "Real user Mac acceptance remains separate from successful macOS CI"
+      ],
+      "next_action": "Begin C12 application-specific reasoning and offer comparison per the roadmap after refreshing live state and ownership.",
+      "accepted_at": "2026-10-11T01:05:14.366Z"
     },
     "C12": {
-      "status": "pending"
+      "status": "accepted",
+      "branch": "work/c12-exact-approval",
+      "pr": 14,
+      "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
+      "base_commit": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+      "next_action": "C12 accepted; continue C13 evidenced lifecycle using the canonical tracker and existing set-status writer.",
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/14",
+      "final_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
+      "final_tree": "1b4bdd7c076f27635031c8bbc08bb204e6bb3e25",
+      "pr_tests_run": 38111619670,
+      "pr_tests_event": "pull_request",
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "cv-visual": {
+          "job": 114388239891,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114388239926,
+          "conclusion": "success",
+          "passed": 11721,
+          "failed": 0,
+          "warnings": 10,
+          "c12_tests": 11
+        },
+        "ubuntu-latest": {
+          "job": 114388239964,
+          "conclusion": "success",
+          "passed": 11720,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        },
+        "windows-latest": {
+          "job": 114388239984,
+          "conclusion": "success",
+          "passed": 11718,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        },
+        "upgrade-regression": {
+          "job": 114388240029,
+          "conclusion": "success"
+        }
+      },
+      "pr_other_checks": [
+        {
+          "name": "Dependency Review",
+          "run": 38111619755,
+          "conclusion": "success",
+          "head": "3ab9e607e36757ccd3e1354920dac1411b057f7b"
+        },
+        {
+          "name": "No user data in PRs",
+          "run": 38111619680,
+          "conclusion": "success",
+          "head": "3ab9e607e36757ccd3e1354920dac1411b057f7b"
+        },
+        {
+          "name": "Direction gate",
+          "run": 38111619686,
+          "conclusion": "success",
+          "head": "3ab9e607e36757ccd3e1354920dac1411b057f7b"
+        }
+      ],
+      "merged": true,
+      "merge_commit": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+      "merged_main_tree": "1b4bdd7c076f27635031c8bbc08bb204e6bb3e25",
+      "merged_main_tests_run": 38112276453,
+      "merged_main_tests_event": "push",
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "cv-visual": {
+          "job": 114390137601,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114390137738,
+          "conclusion": "success",
+          "passed": 11721,
+          "failed": 0,
+          "warnings": 10,
+          "c12_tests": 11
+        },
+        "ubuntu-latest": {
+          "job": 114390137771,
+          "conclusion": "success",
+          "passed": 11720,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        },
+        "upgrade-regression": {
+          "job": 114390137772,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114390137828,
+          "conclusion": "success",
+          "passed": 11718,
+          "failed": 0,
+          "warnings": 11,
+          "c12_tests": 11
+        }
+      },
+      "scope": "Exact normalized application content and attachment digests; explicit candidate approval bound to one application and digest; pure mock execution with zero network, browser, file or submission actions.",
+      "limitations": [
+        "Candidate source/review labels are inputs, not independent certification of candidate facts.",
+        "Mock-only approval never authorizes real submission.",
+        "Actual user Mac acceptance remains separate from automated macOS CI."
+      ],
+      "blockers": [],
+      "accepted_at": "2026-10-11T15:02:53.315Z"
     },
     "C13": {
-      "status": "pending"
+      "status": "in_progress",
+      "next_action": "Publish C13, verify exact PR and merged-main required CI, then record acceptance on records/live-checkpoints.",
+      "branch": "work/c13-evidenced-lifecycle",
+      "base_commit": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+      "scope": "Reviewed content-bound observations through the existing canonical tracker writer; private immutable receipt snapshots; lifecycle order, replay protection and interruption recovery."
     },
     "C14": {
       "status": "pending"
@@ -371,11 +1148,11 @@
     }
   },
   "acceptance_metric": {
-    "accepted": 5,
+    "accepted": 11,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Verify the final PR #9 exact-head required checks, merge with the expected head SHA only if successful, verify exact merged-main CI, then record C07 acceptance and release ownership for C08.",
+  "next_action": "Interactive owner CO-RELEASE-20261011 continues C13, then C14 and C15. Hourly stays read-only until explicit release.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -397,22 +1174,141 @@
       "run": 37866928034,
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; GitHub App client-id/app-id input is empty",
+      "run": 38058235065,
+      "head": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "conclusion": "failure",
+      "blocks_checkpoint": false,
+      "required_action_if_release_publication_is_requested": "Configure the release-publisher GitHub App identity and credentials; no product CI gate was waived"
+    },
+    {
+      "issue": "Inherited optional post-merge Discord gh-events-feed webhook is not configured",
+      "run": 38058234976,
+      "head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+      "conclusion": "failure",
+      "blocks_checkpoint": false,
+      "event": "pull_request_target closed; post-merge notification, not a required product gate"
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C09 merged-main product CI",
+      "run": 38080027028,
+      "head": "b0248ebc25b8e1c9c74a23f2f88b80324600e7e2",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C10 merged-main product CI",
+      "run": 38094656214,
+      "head": "bc8e423e71b6e9a9dd6cdb1375290d374d7cee93",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C11 merged-main product CI",
+      "run": 38099988520,
+      "head": "7fdfb26451db64409c6beaa6277f895b48e5df14",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from required C12 merged-main product CI",
+      "run": 38112275911,
+      "head": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional post-merge Discord gh-events-feed notification; separate from required C12 product checks",
+      "run": 38112276003,
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-10T13:49:29.373947+00:00",
-  "last_verified_main": "4b898ce2263c6da20239cefe459fc695eea7145e",
+  "verified_at": "2026-10-11T15:02:53.316Z",
+  "last_verified_main": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
   "writer_handoff": {
-    "owner": "Interactive C07 completion task",
-    "ownership_id": "C07-PR9-20261010",
+    "owner": "Interactive Astra Career Ops usable-release mission",
+    "ownership_id": "CO-RELEASE-20261011",
     "status": "active",
-    "source_branch": "work/c07-reviewed-input-adapter",
-    "adopted_head": "87bbf918934b40d38a87c9baa660561a621eedfd",
-    "pr": 9,
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "hourly_mode": "read_only",
+    "source_branch": "work/c13-evidenced-lifecycle",
+    "adopted_head": "3ab9e607e36757ccd3e1354920dac1411b057f7b",
+    "pr": null,
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
-    "release_requirement": "Explicit release from this owner after C07 acceptance records or a precise blocked handoff; never infer release from silence or elapsed time",
+    "release_requirement": "Explicit owner release after fully verified checkpoint acceptance or a precise preserved blocked handoff, plus restoration of the existing hourly prompt; never infer release from inactivity",
+    "ownership_receipt": "https://github.com/antonypaul98/career-ops-enhanced/pull/14#issuecomment-6105511358",
+    "budget": "Actual five-hour/weekly allowance inaccessible (BUDGET UNKNOWN); user reports 71% five-hour remaining; reserve 20–25% for verification and handoff.",
     "no_private_candidate_data_committed": true,
-    "no_applications_submitted": true
-  }
+    "no_applications_submitted": true,
+    "recorded_at": "2026-10-11T04:42:12.083Z",
+    "next_checkpoint": "C13"
+  },
+  "writer_handoff_history": [
+    {
+      "owner": "Astra/Work C07 small-checkpoint mission",
+      "status": "released",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "release_reason": "Bounded foundation implemented, committed, preserved remotely and exact-head CI verified. Source writing has stopped; this ledger update is the final repository write of the mission.",
+      "source_branch": "work/c07-eligibility-foundation",
+      "source_head": "f0bba99fb5805778e6a8e733f3ea842a33d4618a",
+      "source_worktree": "/workspace/scratch/14ae1d9b8b11/career-ops-c07",
+      "source_worktree_clean": true,
+      "source_tree": "9de908f48b68aebb06272ddaf5ba34cef54cb490",
+      "pr": 7,
+      "no_applications_submitted": true,
+      "no_private_candidate_data_committed": true,
+      "existing_work_preserved": "Historical branches and dirty worktrees were left intact; implementation uses an isolated worktree and new C07 branch.",
+      "usage_allowance": "Actual remaining Astra/Work allowance unavailable through exposed tools; one bounded capability completed.",
+      "user_intervention_required": false,
+      "next_action": "Hourly writer: fetch PR #7 and verify head f0bba99fb5805778e6a8e733f3ea842a33d4618a still has all required green CI. Merge the foundation, then verify exact merged-main Tests. Keep C07 incomplete until the next bounded private source-bound C03/profile input-review adapter is implemented/tested; never infer authorization and do not start C08.",
+      "recorded_at": "2026-10-09T04:27:36.633Z"
+    },
+    {
+      "owner": "Interactive C07 completion task",
+      "ownership_id": "C07-PR9-20261010",
+      "status": "active",
+      "source_branch": "work/c07-reviewed-input-adapter",
+      "adopted_head": "87bbf918934b40d38a87c9baa660561a621eedfd",
+      "pr": 9,
+      "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+      "hourly_mode": "read_only",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "release_requirement": "Explicit release from this owner after C07 acceptance records or a precise blocked handoff; never infer release from silence or elapsed time",
+      "no_private_candidate_data_committed": true,
+      "no_applications_submitted": true
+    },
+    {
+      "owner": "Interactive C07 completion task",
+      "ownership_id": "C07-PR9-20261010",
+      "status": "released",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+      "release_reason": "Complete C07 accepted after exact-head CI, guarded merge and exact merged-main CI. Source writing has stopped; this acceptance/release record is the final repository write of the task.",
+      "source_branch": "work/c07-reviewed-input-adapter",
+      "source_head": "0abf1c2ccac8b58d8573b90ee8327be484967f58",
+      "source_tree": "d0058d4dbdc5ac3ffc35e6be19bf018d544b3170",
+      "source_worktree": "/workspace/scratch/a3e5976ae513/career-ops-c07-finish",
+      "source_worktree_clean": true,
+      "pr": 9,
+      "merge_commit": "015ee9e07e83fa2c12f7d19f40679b263ffff037",
+      "pr_tests_run": 38057469130,
+      "merged_main_tests_run": 38058235055,
+      "merged_main_tests_conclusion": "success",
+      "next_checkpoint": "C08",
+      "resume": "Automatically on the next scheduled run after refreshing state and checking for conflicting ownership",
+      "acceptance_authority": "records/live-checkpoints; this verified acceptance/release supersedes historical pending/active fields in the tested main source snapshot",
+      "existing_work_preserved": "Existing implementation, all 19 prior C07 tests, older branches/worktrees and all C02-C06 acceptance records preserved; 37 synthetic regressions added",
+      "no_applications_submitted": true,
+      "no_private_candidate_data_committed": true,
+      "user_intervention_required": false,
+      "blockers": [],
+      "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
+      "recorded_at": "2026-10-10T14:17:06.563Z"
+    }
+  ],
+  "authoritative_branch": "records/live-checkpoints",
+  "authoritative_ledger_commit": "9e8581cc559988160933d9a084d7189d7362e1f5"
 }
