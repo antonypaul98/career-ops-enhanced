@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C13 evidenced application lifecycle",
+  "current_checkpoint": "C14 advisory outcome learning",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -1134,8 +1134,8 @@
       "accepted_at": "2026-10-11T15:02:53.315Z"
     },
     "C13": {
-      "status": "in_progress",
-      "next_action": "Verify required exact-head PR CI; merge with expected-head guard, verify exact merged-main CI and record acceptance.",
+      "status": "accepted",
+      "next_action": "C13 accepted. Continue C14 advisory outcome learning; do not reimplement the lifecycle writer.",
       "branch": "work/c13-evidenced-lifecycle",
       "base_commit": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
       "scope": "Reviewed content-bound observations through the existing canonical tracker writer; private immutable receipt snapshots; lifecycle order, replay protection and interruption recovery.",
@@ -1145,25 +1145,153 @@
       "final_tree": "dd850f412d5d04f155797b5c5a3bcdcdebaaf7f4",
       "preserved_local_commit": "01c444ba4a102304903048e5a150ce6007c6daa1",
       "local_validation": {
-        "focused": "23 passed, 0 failed, 0 skipped",
-        "related": "52 passed, 0 failed, 0 skipped",
-        "syntax": "1,055 modules passed",
-        "full_regression": "Final local run pending; first run exposed one removed --on documentation hint, restored without altering the regression."
-      }
+        "focused": {
+          "passed": 23,
+          "failed": 0,
+          "skipped": 0
+        },
+        "related": {
+          "passed": 52,
+          "failed": 0,
+          "skipped": 0
+        },
+        "syntax": 1055,
+        "full_regression": {
+          "passed": 11719,
+          "failed": 0,
+          "warnings": 12
+        },
+        "whitespace": "passed",
+        "tree": "dd850f412d5d04f155797b5c5a3bcdcdebaaf7f4"
+      },
+      "final_head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+      "pr_tests_run": 38151109938,
+      "pr_tests_event": "pull_request",
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "cv-visual": {
+          "job": 114504588168,
+          "conclusion": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114504588309,
+          "conclusion": "success",
+          "passed": 11723,
+          "failed": 0,
+          "warnings": 11,
+          "c13_passed": 23,
+          "c13_skipped": 0
+        },
+        "windows-latest": {
+          "job": 114504588318,
+          "conclusion": "success",
+          "passed": 11721,
+          "failed": 0,
+          "warnings": 11,
+          "c13_passed": 22,
+          "c13_skipped": 1,
+          "skipped_case": "Directory symlink escape test; private traversal and external-root tests still execute"
+        },
+        "upgrade-regression": {
+          "job": 114504588349,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114504588381,
+          "conclusion": "success",
+          "passed": 11724,
+          "failed": 0,
+          "warnings": 10,
+          "c13_passed": 23,
+          "c13_skipped": 0
+        }
+      },
+      "pr_other_checks": [
+        {
+          "name": "Dependency Review",
+          "run": 38151109961,
+          "head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+          "conclusion": "success"
+        },
+        {
+          "name": "Direction gate",
+          "run": 38151109952,
+          "head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+          "conclusion": "success"
+        },
+        {
+          "name": "No user data in PRs",
+          "run": 38151109909,
+          "head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+          "conclusion": "success"
+        }
+      ],
+      "merged": true,
+      "merge_commit": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
+      "merged_main_tree": "dd850f412d5d04f155797b5c5a3bcdcdebaaf7f4",
+      "merged_main_tests_run": 38151959981,
+      "merged_main_tests_event": "push",
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "cv-visual": {
+          "job": 114507070039,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114507070112,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114507070119,
+          "conclusion": "success",
+          "passed": 11721,
+          "failed": 0,
+          "warnings": 11,
+          "c13_passed": 22,
+          "c13_skipped": 1,
+          "skipped_case": "Directory symlink escape test; private traversal and external-root tests still execute"
+        },
+        "ubuntu-latest": {
+          "job": 114507070153,
+          "conclusion": "success",
+          "passed": 11723,
+          "failed": 0,
+          "warnings": 11,
+          "c13_passed": 23,
+          "c13_skipped": 0
+        },
+        "macos-latest": {
+          "job": 114507070157,
+          "conclusion": "success",
+          "passed": 11724,
+          "failed": 0,
+          "warnings": 10,
+          "c13_passed": 23,
+          "c13_skipped": 0
+        }
+      },
+      "accepted_at": "2026-10-11T15:47:46.335Z",
+      "blockers": [],
+      "limitations": [
+        "Caller review and actual-source labels are an audit contract, not independent employer certification.",
+        "Legacy manual tracker/outcome interfaces remain available for human backfills; enhanced automated observations require lifecycle evidence.",
+        "Actual user Mac acceptance remains separate from CI."
+      ]
     },
     "C14": {
-      "status": "pending"
+      "status": "pending",
+      "next_action": "Implement deterministic, read-only learning from reviewed lifecycle evidence with sample floors; never mutate candidate facts, answers or scoring configuration."
     },
     "C15": {
       "status": "pending"
     }
   },
   "acceptance_metric": {
-    "accepted": 11,
+    "accepted": 12,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Interactive owner CO-RELEASE-20261011 continues C13, then C14 and C15. Hourly stays read-only until explicit release.",
+  "next_action": "Interactive CO-RELEASE-20261011 continues C14 and C15; hourly remains enabled and read-only until explicit release.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1235,10 +1363,17 @@
       "run": 38112276003,
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from C13 required main CI",
+      "run": 38151959973,
+      "head": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-11T15:24:50.698Z",
-  "last_verified_main": "56e114fa73fa72b9d14746a956c2435d3197f1c0",
+  "verified_at": "2026-10-11T15:47:46.335Z",
+  "last_verified_main": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
   "writer_handoff": {
     "owner": "Interactive Astra Career Ops usable-release mission",
     "ownership_id": "CO-RELEASE-20261011",
@@ -1255,7 +1390,7 @@
     "no_private_candidate_data_committed": true,
     "no_applications_submitted": true,
     "recorded_at": "2026-10-11T04:42:12.083Z",
-    "next_checkpoint": "C13"
+    "next_checkpoint": "C14"
   },
   "writer_handoff_history": [
     {
