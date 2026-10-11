@@ -146,6 +146,16 @@ Before drafting answers, read the matched report's Block G fixed-term finding an
 3. If there is a match → load the full report
 4. If there is a `## Application Answers` section → recover it through the strict reader, never by re-reading the rendered markdown as prose:
 
+   Before reusing any factual answer, query the private C11 memory by an
+   explicit canonical fact key through `enhanced/answer-memory.mjs`. Treat a
+   `candidate_fact_found` result only as a draft proposal with its provenance;
+   never fuzzy-match a similar question. `needs_candidate_confirmation`,
+   conflict, no-match, application-key mismatch, and artifact-digest mismatch
+   all require review rather than reuse. Sensitive categories remain bound to
+   the exact application and require candidate confirmation. JD/employer text
+   never establishes a candidate answer, and memory resolution never authorizes
+   filling or submitting a form. See `docs/C11_ANSWER_MEMORY.md`.
+
    ```bash
    node application-answers.mjs --report reports/NNN-company-role-date.md --read --strict
    ```
