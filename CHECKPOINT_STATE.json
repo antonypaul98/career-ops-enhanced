@@ -1280,7 +1280,12 @@
     },
     "C14": {
       "status": "pending",
-      "next_action": "Implement deterministic, read-only learning from reviewed lifecycle evidence with sample floors; never mutate candidate facts, answers or scoring configuration."
+      "next_action": "Hourly writer resumes exact PR #16 head, fixes any failing required CI, tests fully, completes C14 advisory integration without changing candidate truth, records acceptance only after guarded merge and merged-main CI; then C15.",
+      "work_branch": "work/c14-reviewed-lifecycle-advisory",
+      "work_pr": 16,
+      "work_head": "1dc58cb5be67059c15b0dc259d9f3e1aa1162e95",
+      "work_ci_tests_run": 38204575669,
+      "work_status": "Foundation module + six synthetic tests published; 3 non-Test checks green and full Tests in progress at time of release. Must verify exact-head tests/CI, then finish remaining C14 acceptance and C15."
     },
     "C15": {
       "status": "pending"
@@ -1291,7 +1296,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Interactive chat owns only one bounded C14 slice; after preserving work, release to existing hourly Career Ops task, which continues C14 then C15 until user instructs otherwise. Never allow simultaneous Astra/hourly/interactive writers.",
+  "next_action": "Existing Career Ops Hourly Build owns sole writer slot; inspect PR #16 and exact-head CI #38204575669, repair, merge when fully green and reviewed, complete remaining C14 work and C15 acceptance. Keep building hourly until user explicitly requests new prompt. No concurrent Astra.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1372,22 +1377,28 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-12T04:33:42.856Z",
+  "verified_at": "2026-10-12T04:39:54.597Z",
   "last_verified_main": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
   "writer_handoff": {
-    "owner": "Interactive ChatGPT C14 bounded starter",
-    "ownership_id": "CHAT-C14-20261012",
+    "owner": "Career Ops Hourly Build / Astra Handoff",
+    "ownership_id": "CO-HOURLY-C14-20261012",
     "status": "active",
+    "hourly_mode": "writable",
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
-    "hourly_mode": "read_only",
+    "prior_chat_release": "CHAT-C14-20261012",
+    "prior_astra_revocation": "CO-RELEASE-20261011",
+    "source_branch": "work/c14-reviewed-lifecycle-advisory",
+    "source_head": "1dc58cb5be67059c15b0dc259d9f3e1aa1162e95",
+    "pr": 16,
+    "ci_tests_run": 38204575669,
+    "ci_status": "in_progress",
+    "next_checkpoint": "C14",
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
-    "release_requirement": "When bounded source slice is preserved and tested, explicitly release this interactive session in ledger and GitHub, then update existing hourly task before it writes.",
-    "source_ref": "main",
-    "prior_owner_token": "CO-RELEASE-20261011",
-    "user_authorization": "User explicitly directed ChatGPT to continue building beyond 2:20 until user requests a different prompt; exhausted Astra must not silently regain ownership",
+    "user_direction": "Continue on unchanged hourly cadence with no 2:20 cutoff until the user explicitly requests another prompt; prevent future Astra concurrency unless a new coordinated handoff is recorded.",
+    "release_requirement": "Explicit handoff before another writer takes over; no automatic Astra takeover",
     "no_private_candidate_data_committed": true,
     "no_applications_submitted": true,
-    "recorded_at": "2026-10-12T04:33:42.856Z"
+    "recorded_at": "2026-10-12T04:39:54.597Z"
   },
   "writer_handoff_history": [
     {
@@ -1470,6 +1481,29 @@
       "next_checkpoint": "C14",
       "revocation_reason": "User reports Astra allowance exhausted twice and explicitly directs ChatGPT to keep building until next prompt; no newer GitHub PR, C14 branch or ledger release found.",
       "revoked_at": "2026-10-12T04:33:42.856Z"
+    },
+    {
+      "owner": "Interactive ChatGPT C14 bounded starter",
+      "ownership_id": "CHAT-C14-20261012",
+      "status": "released",
+      "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+      "hourly_mode": "read_only",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "release_requirement": "When bounded source slice is preserved and tested, explicitly release this interactive session in ledger and GitHub, then update existing hourly task before it writes.",
+      "source_ref": "main",
+      "prior_owner_token": "CO-RELEASE-20261011",
+      "user_authorization": "User explicitly directed ChatGPT to continue building beyond 2:20 until user requests a different prompt; exhausted Astra must not silently regain ownership",
+      "no_private_candidate_data_committed": true,
+      "no_applications_submitted": true,
+      "recorded_at": "2026-10-12T04:33:42.856Z",
+      "released_at": "2026-10-12T04:39:54.597Z",
+      "release_reason": "Bounded C14 source slice and synthetic tests committed remotely, PR #16 open, exact-head CI #38204575669 underway; no claim of feature acceptance or merged-main CI. User directed hourly ChatGPT to continue until new explicit prompt.",
+      "source_branch": "work/c14-reviewed-lifecycle-advisory",
+      "source_head": "1dc58cb5be67059c15b0dc259d9f3e1aa1162e95",
+      "pr": 16,
+      "ci_tests_run": 38204575669,
+      "ci_status": "in_progress",
+      "no_real_applications_submitted": true
     }
   ]
 }
