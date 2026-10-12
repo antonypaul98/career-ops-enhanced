@@ -1291,7 +1291,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Interactive CO-RELEASE-20261011 continues C14 and C15; hourly remains enabled and read-only until explicit release.",
+  "next_action": "Interactive chat owns only one bounded C14 slice; after preserving work, release to existing hourly Career Ops task, which continues C14 then C15 until user instructs otherwise. Never allow simultaneous Astra/hourly/interactive writers.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1372,25 +1372,22 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-11T15:47:46.335Z",
+  "verified_at": "2026-10-12T04:33:42.856Z",
   "last_verified_main": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
   "writer_handoff": {
-    "owner": "Interactive Astra Career Ops usable-release mission",
-    "ownership_id": "CO-RELEASE-20261011",
+    "owner": "Interactive ChatGPT C14 bounded starter",
+    "ownership_id": "CHAT-C14-20261012",
     "status": "active",
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "hourly_mode": "read_only",
-    "source_branch": "work/c13-evidenced-lifecycle",
-    "adopted_head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
-    "pr": 15,
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
-    "release_requirement": "Explicit owner release after fully verified checkpoint acceptance or a precise preserved blocked handoff, plus restoration of the existing hourly prompt; never infer release from inactivity",
-    "ownership_receipt": "https://github.com/antonypaul98/career-ops-enhanced/pull/14#issuecomment-6105511358",
-    "budget": "Actual five-hour/weekly allowance inaccessible (BUDGET UNKNOWN); user reports 71% five-hour remaining; reserve 20–25% for verification and handoff.",
+    "release_requirement": "When bounded source slice is preserved and tested, explicitly release this interactive session in ledger and GitHub, then update existing hourly task before it writes.",
+    "source_ref": "main",
+    "prior_owner_token": "CO-RELEASE-20261011",
+    "user_authorization": "User explicitly directed ChatGPT to continue building beyond 2:20 until user requests a different prompt; exhausted Astra must not silently regain ownership",
     "no_private_candidate_data_committed": true,
     "no_applications_submitted": true,
-    "recorded_at": "2026-10-11T04:42:12.083Z",
-    "next_checkpoint": "C14"
+    "recorded_at": "2026-10-12T04:33:42.856Z"
   },
   "writer_handoff_history": [
     {
@@ -1453,6 +1450,26 @@
       "blockers": [],
       "next_action": "Hourly writer: refresh live GitHub main, authoritative records/live-checkpoints, repository instructions, branches, PRs and CI; verify this explicit release and no conflicting writer, then automatically resume C08 explainable multi-signal opportunity scoring on the next run. Reuse upstream evaluation blocks, keyword-match and profile archetypes. C07 is accepted; do not restart it.",
       "recorded_at": "2026-10-10T14:17:06.563Z"
+    },
+    {
+      "owner": "Interactive Astra Career Ops usable-release mission",
+      "ownership_id": "CO-RELEASE-20261011",
+      "status": "user_revoked",
+      "hourly_automation": "6ac29813e2388191a93758750202b9dc",
+      "hourly_mode": "read_only",
+      "source_branch": "work/c13-evidenced-lifecycle",
+      "adopted_head": "9b2a0fab64833d39cc96df34bc32eda653b30e75",
+      "pr": 15,
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "release_requirement": "Explicit owner release after fully verified checkpoint acceptance or a precise preserved blocked handoff, plus restoration of the existing hourly prompt; never infer release from inactivity",
+      "ownership_receipt": "https://github.com/antonypaul98/career-ops-enhanced/pull/14#issuecomment-6105511358",
+      "budget": "Actual five-hour/weekly allowance inaccessible (BUDGET UNKNOWN); user reports 71% five-hour remaining; reserve 20–25% for verification and handoff.",
+      "no_private_candidate_data_committed": true,
+      "no_applications_submitted": true,
+      "recorded_at": "2026-10-11T04:42:12.083Z",
+      "next_checkpoint": "C14",
+      "revocation_reason": "User reports Astra allowance exhausted twice and explicitly directs ChatGPT to keep building until next prompt; no newer GitHub PR, C14 branch or ledger release found.",
+      "revoked_at": "2026-10-12T04:33:42.856Z"
     }
   ]
 }
