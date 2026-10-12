@@ -349,6 +349,7 @@ const SYSTEM_PATHS = [
   'prepare-application.mjs',
   'enhanced/application-approval.mjs',
   'enhanced/application-lifecycle.mjs',
+  'enhanced/reviewed-outcome-learning.mjs',
   'application-artifacts.mjs',
   'batch-evaluate-gemini.mjs',
   'providers/',
