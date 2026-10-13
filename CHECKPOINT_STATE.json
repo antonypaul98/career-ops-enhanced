@@ -1303,16 +1303,46 @@
       "pr_tests_event": "pull_request",
       "pr_tests_conclusion": "success",
       "pr_jobs": {
-        "cv-visual": { "job": 114692485582, "conclusion": "success" },
-        "upgrade-regression": { "job": 114692485676, "conclusion": "success" },
-        "windows-latest": { "job": 114692485770, "conclusion": "success" },
-        "macos-latest": { "job": 114692485783, "conclusion": "success" },
-        "ubuntu-latest": { "job": 114692485834, "conclusion": "success" }
+        "cv-visual": {
+          "job": 114692485582,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114692485676,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114692485770,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114692485783,
+          "conclusion": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114692485834,
+          "conclusion": "success"
+        }
       },
       "pr_other_checks": [
-        { "name": "No user data in PRs", "run": 38213406684, "head": "ab251520149cda39259e56d332a1e4c8997fd604", "conclusion": "success" },
-        { "name": "Direction gate", "run": 38213406697, "head": "ab251520149cda39259e56d332a1e4c8997fd604", "conclusion": "success" },
-        { "name": "Dependency Review", "run": 38213406701, "head": "ab251520149cda39259e56d332a1e4c8997fd604", "conclusion": "success" }
+        {
+          "name": "No user data in PRs",
+          "run": 38213406684,
+          "head": "ab251520149cda39259e56d332a1e4c8997fd604",
+          "conclusion": "success"
+        },
+        {
+          "name": "Direction gate",
+          "run": 38213406697,
+          "head": "ab251520149cda39259e56d332a1e4c8997fd604",
+          "conclusion": "success"
+        },
+        {
+          "name": "Dependency Review",
+          "run": 38213406701,
+          "head": "ab251520149cda39259e56d332a1e4c8997fd604",
+          "conclusion": "success"
+        }
       ],
       "merged": true,
       "merge_commit": "41eda953683d04d92088023fc489bd247c547560",
@@ -1321,11 +1351,26 @@
       "merged_main_tests_event": "push",
       "merged_main_tests_conclusion": "success",
       "merged_main_jobs": {
-        "cv-visual": { "job": 114858086264, "conclusion": "success" },
-        "macos-latest": { "job": 114858086660, "conclusion": "success" },
-        "upgrade-regression": { "job": 114858086679, "conclusion": "success" },
-        "windows-latest": { "job": 114858086682, "conclusion": "success" },
-        "ubuntu-latest": { "job": 114858086765, "conclusion": "success" }
+        "cv-visual": {
+          "job": 114858086264,
+          "conclusion": "success"
+        },
+        "macos-latest": {
+          "job": 114858086660,
+          "conclusion": "success"
+        },
+        "upgrade-regression": {
+          "job": 114858086679,
+          "conclusion": "success"
+        },
+        "windows-latest": {
+          "job": 114858086682,
+          "conclusion": "success"
+        },
+        "ubuntu-latest": {
+          "job": 114858086765,
+          "conclusion": "success"
+        }
       },
       "limitations": [
         "Advice is descriptive and evidence-bound; small or ambiguous samples stay withheld or review-only.",
@@ -1337,7 +1382,45 @@
     },
     "C15": {
       "status": "pending",
-      "next_action": "Implement the smallest independently verifiable C15 end-to-end release-validation slice on current main, preserving privacy/integrity and upgrade/rollback behavior. Keep real user Mac acceptance distinct from CI and do not mark C15 accepted until every roadmap gate is verified."
+      "branch": "work/c15-release-validation",
+      "pr": 17,
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/17",
+      "base_commit": "41eda953683d04d92088023fc489bd247c547560",
+      "current_head": "1acdbb959e8c8c7ba2055230bd35b44ce8c64c09",
+      "current_tree": "3d159329ea45edbee100bec95ce40368a5654561",
+      "scope": "Fail-closed, read-only validation of exact source/tree, merged-main, platform/Go, visual, upgrade, privacy, dependency, direction and separate physical user-Mac acceptance receipts; no release action or private-data echo.",
+      "local_validation": {
+        "synthetic_tests": "7 passed, 0 failed",
+        "focused_conventions": "16 passed, 0 failed across release validation and main-module convention",
+        "updater_registration": "1860 tracked files covered; root-test registration passed",
+        "full_regression": "node test-all.mjs --quick: 11725 passed, 0 failed, 12 inherited environment/upstream warnings",
+        "whitespace": "git diff --check passed"
+      },
+      "exact_head_ci": {
+        "head": "1acdbb959e8c8c7ba2055230bd35b44ce8c64c09",
+        "Tests": {
+          "run": 38353305632,
+          "conclusion": "action_required"
+        },
+        "No user data in PRs": {
+          "run": 38353305735,
+          "conclusion": "action_required"
+        },
+        "Dependency Review": {
+          "run": 38353305746,
+          "conclusion": "action_required"
+        },
+        "Direction gate": {
+          "run": 38353305764,
+          "conclusion": "action_required"
+        },
+        "explanation": "GitHub held all workflows before jobs ran; no product-test conclusion exists."
+      },
+      "blockers": [
+        "Repository-admin workflow approval is required for the four held PR #17 runs. The available GitHub connector exposes no Actions run-approval mutation; the repository auto-approver refuses bot-authored PRs and package.json changes by policy.",
+        "After exact-head CI and guarded merge, exact merged-main CI and a separate physical user-Mac acceptance receipt remain required."
+      ],
+      "next_action": "Antony approves the four held workflows at PR #17 / Actions. Hourly writer then verifies exact-head platform/Go/visual/upgrade/privacy/dependency/direction jobs, repairs genuine failures, guarded-merges only when green, verifies merged-main CI, and requests/records physical user-Mac acceptance without treating hosted macOS CI as that receipt."
     }
   },
   "acceptance_metric": {
@@ -1345,7 +1428,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Existing Career Ops Hourly Build owns the sole writer slot for C15. Start the smallest independently verifiable end-to-end release-validation slice from main 41eda953683d04d92088023fc489bd247c547560; preserve privacy/integrity, update/rollback, required CI and separate real user Mac acceptance. No concurrent Astra unless a newer coordinated claim is recorded.",
+  "next_action": "Approve the four action-required workflows for PR #17; then the existing hourly writer continues exact-head verification and C15 completion. C15 remains pending at 13/14.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1433,7 +1516,7 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-13T05:24:19Z",
+  "verified_at": "2026-10-13T05:54:00Z",
   "last_verified_main": "41eda953683d04d92088023fc489bd247c547560",
   "writer_handoff": {
     "owner": "Career Ops Hourly Build / Astra Handoff",
@@ -1443,18 +1526,18 @@
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "prior_chat_release": "CHAT-C14-20261012",
     "prior_astra_revocation": "CO-RELEASE-20261011",
-    "source_branch": "main",
-    "source_head": "41eda953683d04d92088023fc489bd247c547560",
-    "pr": null,
-    "ci_tests_run": 38263018552,
-    "ci_status": "success",
+    "source_branch": "work/c15-release-validation",
+    "source_head": "1acdbb959e8c8c7ba2055230bd35b44ce8c64c09",
+    "pr": 17,
+    "ci_tests_run": 38353305632,
+    "ci_status": "action_required",
     "next_checkpoint": "C15",
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
     "user_direction": "User explicitly authorized this existing hourly builder to resume source writing after the exhausted Astra run. Recheck live ownership before every write; yield only to a newer legitimate active claim and recheck next run.",
     "release_requirement": "Explicit coordinated handoff before another writer takes over; old Astra comments do not create a permanent hold",
     "no_private_candidate_data_committed": true,
     "no_applications_submitted": true,
-    "recorded_at": "2026-10-13T05:24:19Z"
+    "recorded_at": "2026-10-13T05:54:00Z"
   },
   "writer_handoff_history": [
     {
