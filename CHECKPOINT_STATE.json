@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "antonypaul98/career-ops-enhanced",
   "starting_main": "b866e4b4be1223b27d078facacce7f073e90c31b",
-  "current_checkpoint": "C14 advisory outcome learning",
+  "current_checkpoint": "C15 end-to-end release acceptance",
   "checkpoints": {
     "C02": {
       "status": "accepted",
@@ -1279,24 +1279,73 @@
       ]
     },
     "C14": {
-      "status": "pending",
-      "next_action": "Hourly writer resumes exact PR #16 head, fixes any failing required CI, tests fully, completes C14 advisory integration without changing candidate truth, records acceptance only after guarded merge and merged-main CI; then C15.",
-      "work_branch": "work/c14-reviewed-lifecycle-advisory",
-      "work_pr": 16,
-      "work_head": "1dc58cb5be67059c15b0dc259d9f3e1aa1162e95",
-      "work_ci_tests_run": 38204575669,
-      "work_status": "Foundation module + six synthetic tests published; 3 non-Test checks green and full Tests in progress at time of release. Must verify exact-head tests/CI, then finish remaining C14 acceptance and C15."
+      "status": "accepted",
+      "next_action": "C14 accepted. Continue C15 end-to-end privacy, integrity, upgrade, regression and real user Mac acceptance; do not reimplement advisory outcome learning.",
+      "branch": "work/c14-reviewed-lifecycle-advisory",
+      "pr": 16,
+      "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/16",
+      "scope": "Deterministic read-only advisory outcome learning from evidence-backed archive, tracker, submission/outcome and C13 lifecycle receipts; minimum sample floors; no inferred rejection from silence and no automatic mutation of scoring, candidate truth or answers.",
+      "local_validation": {
+        "focused": "6 synthetic C14 tests passed, 0 failed, 0 skipped",
+        "related": "40 C12/C13/C14 tests passed, 0 failed, 0 skipped",
+        "syntax": "1057 .mjs modules passed",
+        "updater_registration": "enhanced/reviewed-outcome-learning.mjs initially failed SYSTEM_PATHS coverage; registration added and coverage/root registration passed",
+        "full_regression": "node test-all.mjs --quick: 11722 passed, 0 failed, 12 inherited environment/upstream warnings"
+      },
+      "initial_head": "1dc58cb5be67059c15b0dc259d9f3e1aa1162e95",
+      "failed_tests_run": 38204575669,
+      "known_fixed_issues": [
+        "The new C14 module was omitted from update-system.mjs SYSTEM_PATHS; exact-head CI exposed the updater coverage failure and the final head registers the module without weakening the guard."
+      ],
+      "final_head": "ab251520149cda39259e56d332a1e4c8997fd604",
+      "final_tree": "451d7b749ebc9e7fb720b81e1874b7f9816cceb3",
+      "pr_tests_run": 38213406683,
+      "pr_tests_event": "pull_request",
+      "pr_tests_conclusion": "success",
+      "pr_jobs": {
+        "cv-visual": { "job": 114692485582, "conclusion": "success" },
+        "upgrade-regression": { "job": 114692485676, "conclusion": "success" },
+        "windows-latest": { "job": 114692485770, "conclusion": "success" },
+        "macos-latest": { "job": 114692485783, "conclusion": "success" },
+        "ubuntu-latest": { "job": 114692485834, "conclusion": "success" }
+      },
+      "pr_other_checks": [
+        { "name": "No user data in PRs", "run": 38213406684, "head": "ab251520149cda39259e56d332a1e4c8997fd604", "conclusion": "success" },
+        { "name": "Direction gate", "run": 38213406697, "head": "ab251520149cda39259e56d332a1e4c8997fd604", "conclusion": "success" },
+        { "name": "Dependency Review", "run": 38213406701, "head": "ab251520149cda39259e56d332a1e4c8997fd604", "conclusion": "success" }
+      ],
+      "merged": true,
+      "merge_commit": "41eda953683d04d92088023fc489bd247c547560",
+      "merged_main_tree": "451d7b749ebc9e7fb720b81e1874b7f9816cceb3",
+      "merged_main_tests_run": 38263018552,
+      "merged_main_tests_event": "push",
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "cv-visual": { "job": 114858086264, "conclusion": "success" },
+        "macos-latest": { "job": 114858086660, "conclusion": "success" },
+        "upgrade-regression": { "job": 114858086679, "conclusion": "success" },
+        "windows-latest": { "job": 114858086682, "conclusion": "success" },
+        "ubuntu-latest": { "job": 114858086765, "conclusion": "success" }
+      },
+      "limitations": [
+        "Advice is descriptive and evidence-bound; small or ambiguous samples stay withheld or review-only.",
+        "No silence-based rejection inference, scoring-configuration mutation, candidate-truth mutation, answer mutation, or application action is authorized.",
+        "Actual user Mac acceptance remains separate from successful macOS CI."
+      ],
+      "blockers": [],
+      "accepted_at": "2026-10-13T05:24:19Z"
     },
     "C15": {
-      "status": "pending"
+      "status": "pending",
+      "next_action": "Implement the smallest independently verifiable C15 end-to-end release-validation slice on current main, preserving privacy/integrity and upgrade/rollback behavior. Keep real user Mac acceptance distinct from CI and do not mark C15 accepted until every roadmap gate is verified."
     }
   },
   "acceptance_metric": {
-    "accepted": 12,
+    "accepted": 13,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Existing Career Ops Hourly Build owns sole writer slot; inspect PR #16 and exact-head CI #38204575669, repair, merge when fully green and reviewed, complete remaining C14 work and C15 acceptance. Keep building hourly until user explicitly requests new prompt. No concurrent Astra.",
+  "next_action": "Existing Career Ops Hourly Build owns the sole writer slot for C15. Start the smallest independently verifiable end-to-end release-validation slice from main 41eda953683d04d92088023fc489bd247c547560; preserve privacy/integrity, update/rollback, required CI and separate real user Mac acceptance. No concurrent Astra unless a newer coordinated claim is recorded.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1375,30 +1424,37 @@
       "head": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
       "conclusion": "failure",
       "blocks_checkpoint": false
+    },
+    {
+      "issue": "Inherited optional release-publisher credentials; separate from C14 required merged-main product CI",
+      "run": 38263018537,
+      "head": "41eda953683d04d92088023fc489bd247c547560",
+      "conclusion": "failure",
+      "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-12T04:39:54.597Z",
-  "last_verified_main": "ca702e7bdc82df4b8d64f8ee3605f6e3b0b08058",
+  "verified_at": "2026-10-13T05:24:19Z",
+  "last_verified_main": "41eda953683d04d92088023fc489bd247c547560",
   "writer_handoff": {
     "owner": "Career Ops Hourly Build / Astra Handoff",
-    "ownership_id": "CO-HOURLY-C14-20261012",
+    "ownership_id": "CO-HOURLY-C15-20261013",
     "status": "active",
     "hourly_mode": "writable",
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "prior_chat_release": "CHAT-C14-20261012",
     "prior_astra_revocation": "CO-RELEASE-20261011",
-    "source_branch": "work/c14-reviewed-lifecycle-advisory",
-    "source_head": "1dc58cb5be67059c15b0dc259d9f3e1aa1162e95",
-    "pr": 16,
-    "ci_tests_run": 38204575669,
-    "ci_status": "in_progress",
-    "next_checkpoint": "C14",
+    "source_branch": "main",
+    "source_head": "41eda953683d04d92088023fc489bd247c547560",
+    "pr": null,
+    "ci_tests_run": 38263018552,
+    "ci_status": "success",
+    "next_checkpoint": "C15",
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
-    "user_direction": "Continue on unchanged hourly cadence with no 2:20 cutoff until the user explicitly requests another prompt; prevent future Astra concurrency unless a new coordinated handoff is recorded.",
-    "release_requirement": "Explicit handoff before another writer takes over; no automatic Astra takeover",
+    "user_direction": "User explicitly authorized this existing hourly builder to resume source writing after the exhausted Astra run. Recheck live ownership before every write; yield only to a newer legitimate active claim and recheck next run.",
+    "release_requirement": "Explicit coordinated handoff before another writer takes over; old Astra comments do not create a permanent hold",
     "no_private_candidate_data_committed": true,
     "no_applications_submitted": true,
-    "recorded_at": "2026-10-12T04:39:54.597Z"
+    "recorded_at": "2026-10-13T05:24:19Z"
   },
   "writer_handoff_history": [
     {
@@ -1504,6 +1560,22 @@
       "ci_tests_run": 38204575669,
       "ci_status": "in_progress",
       "no_real_applications_submitted": true
+    },
+    {
+      "owner": "Temporary Astra C14 automation session",
+      "ownership_id": "CO-ASTRA-C14-20261012",
+      "status": "user_superseded",
+      "next_owner": "Career Ops Hourly Build / Astra Handoff",
+      "next_ownership_id": "CO-HOURLY-C15-20261013",
+      "reason": "The user explicitly authorized the existing hourly builder to resume after that Astra run exhausted before the updated prompt. Live ledger and PR inspection found no newer active Astra claim; this does not infer release from inactivity or CI.",
+      "source_head_at_reconciliation": "41eda953683d04d92088023fc489bd247c547560",
+      "c14_merge_commit": "41eda953683d04d92088023fc489bd247c547560",
+      "c14_merged_main_tests_run": 38263018552,
+      "c14_merged_main_tests_conclusion": "success",
+      "next_checkpoint": "C15",
+      "no_private_candidate_data_committed": true,
+      "no_applications_submitted": true,
+      "recorded_at": "2026-10-13T05:24:19Z"
     }
   ]
 }
