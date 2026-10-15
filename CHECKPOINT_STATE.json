@@ -1400,27 +1400,82 @@
         "head": "1acdbb959e8c8c7ba2055230bd35b44ce8c64c09",
         "Tests": {
           "run": 38353305632,
-          "conclusion": "action_required"
+          "conclusion": "success"
         },
         "No user data in PRs": {
           "run": 38353305735,
-          "conclusion": "action_required"
+          "conclusion": "success"
         },
         "Dependency Review": {
           "run": 38353305746,
-          "conclusion": "action_required"
+          "conclusion": "success"
         },
         "Direction gate": {
           "run": 38353305764,
-          "conclusion": "action_required"
+          "conclusion": "success"
         },
-        "explanation": "GitHub held all workflows before jobs ran; no product-test conclusion exists."
+        "explanation": "All held workflows were repository-admin approved and completed successfully on the unchanged exact PR head."
       },
       "blockers": [
-        "Repository-admin workflow approval is required for the four held PR #17 runs. The available GitHub connector exposes no Actions run-approval mutation; the repository auto-approver refuses bot-authored PRs and package.json changes by policy.",
-        "After exact-head CI and guarded merge, exact merged-main CI and a separate physical user-Mac acceptance receipt remain required."
+        "A separate physical user-Mac acceptance receipt bound to merge commit 696557cdc276dd156f2a66980fd7699605bfa52d remains required. Hosted macOS CI does not satisfy this gate."
       ],
-      "next_action": "Antony approves the four held workflows at PR #17 / Actions. Hourly writer then verifies exact-head platform/Go/visual/upgrade/privacy/dependency/direction jobs, repairs genuine failures, guarded-merges only when green, verifies merged-main CI, and requests/records physical user-Mac acceptance without treating hosted macOS CI as that receipt."
+      "next_action": "Antony runs and confirms the documented C15 acceptance check on a physical user Mac at merge commit 696557cdc276dd156f2a66980fd7699605bfa52d. Record that exact receipt, then accept C15 at 14/14; do not infer physical acceptance from hosted CI.",
+      "pr_jobs": {
+        "Upgrade regression gate": {
+          "job": 116153220960,
+          "conclusion": "success"
+        },
+        "cv-visual": {
+          "job": 116153221216,
+          "conclusion": "success"
+        },
+        "test (macos-latest)": {
+          "job": 116153221239,
+          "conclusion": "success",
+          "go_dashboard": "success"
+        },
+        "test (ubuntu-latest)": {
+          "job": 116153221243,
+          "conclusion": "success",
+          "go_dashboard": "success"
+        },
+        "test (windows-latest)": {
+          "job": 116153221244,
+          "conclusion": "success",
+          "go_dashboard": "success"
+        }
+      },
+      "merged": true,
+      "merge_commit": "696557cdc276dd156f2a66980fd7699605bfa52d",
+      "merged_main_tree": "3d159329ea45edbee100bec95ce40368a5654561",
+      "merged_main_tests_run": 38691347156,
+      "merged_main_tests_event": "push",
+      "merged_main_tests_conclusion": "success",
+      "merged_main_jobs": {
+        "cv-visual": {
+          "job": 116277718164,
+          "conclusion": "success"
+        },
+        "Upgrade regression gate": {
+          "job": 116277718413,
+          "conclusion": "success"
+        },
+        "test (macos-latest)": {
+          "job": 116277718463,
+          "conclusion": "success",
+          "go_dashboard": "success"
+        },
+        "test (windows-latest)": {
+          "job": 116277718525,
+          "conclusion": "success",
+          "go_dashboard": "success"
+        },
+        "test (ubuntu-latest)": {
+          "job": 116277718577,
+          "conclusion": "success",
+          "go_dashboard": "success"
+        }
+      }
     }
   },
   "acceptance_metric": {
@@ -1428,7 +1483,7 @@
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Approve the four action-required workflows for PR #17; then the existing hourly writer continues exact-head verification and C15 completion. C15 remains pending at 13/14.",
+  "next_action": "Antony runs and confirms the documented C15 acceptance check on a physical user Mac at merge commit 696557cdc276dd156f2a66980fd7699605bfa52d. Record that exact receipt, then accept C15 at 14/14; do not infer physical acceptance from hosted CI.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
@@ -1516,8 +1571,8 @@
       "blocks_checkpoint": false
     }
   ],
-  "verified_at": "2026-10-13T05:54:00Z",
-  "last_verified_main": "41eda953683d04d92088023fc489bd247c547560",
+  "verified_at": "2026-10-15T07:14:56.198Z",
+  "last_verified_main": "696557cdc276dd156f2a66980fd7699605bfa52d",
   "writer_handoff": {
     "owner": "Career Ops Hourly Build / Astra Handoff",
     "ownership_id": "CO-HOURLY-C15-20261013",
@@ -1526,12 +1581,12 @@
     "hourly_automation": "6ac29813e2388191a93758750202b9dc",
     "prior_chat_release": "CHAT-C14-20261012",
     "prior_astra_revocation": "CO-RELEASE-20261011",
-    "source_branch": "work/c15-release-validation",
-    "source_head": "1acdbb959e8c8c7ba2055230bd35b44ce8c64c09",
+    "source_branch": "main",
+    "source_head": "696557cdc276dd156f2a66980fd7699605bfa52d",
     "pr": 17,
-    "ci_tests_run": 38353305632,
-    "ci_status": "action_required",
-    "next_checkpoint": "C15",
+    "ci_tests_run": 38691347156,
+    "ci_status": "merged_main_success_physical_mac_pending",
+    "next_checkpoint": "C15 physical user-Mac acceptance",
     "next_owner": "Career Ops Hourly Build / Astra Handoff",
     "user_direction": "User explicitly authorized this existing hourly builder to resume source writing after the exhausted Astra run. Recheck live ownership before every write; yield only to a newer legitimate active claim and recheck next run.",
     "release_requirement": "Explicit coordinated handoff before another writer takes over; old Astra comments do not create a permanent hold",
