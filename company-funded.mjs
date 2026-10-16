@@ -944,10 +944,11 @@ export async function discoverFundedCompanies(opts = {}) {
     sort: opts.sort || DEFAULT_SORT,
     limit: opts.limit || DEFAULT_LIMIT,
     diagnostics,
+    now: opts.now || new Date(),
   });
 
   return {
-    generated_at: isoDate(),
+    generated_at: isoDate(opts.now || new Date()),
     window_months: months,
     sort: opts.sort || DEFAULT_SORT,
     dry_run: Boolean(opts.dryRun),
