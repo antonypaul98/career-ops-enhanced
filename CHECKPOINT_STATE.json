@@ -1381,7 +1381,7 @@
       "accepted_at": "2026-10-13T05:24:19Z"
     },
     "C15": {
-      "status": "pending",
+      "status": "accepted",
       "branch": "work/c15-release-validation",
       "pr": 17,
       "pr_url": "https://github.com/antonypaul98/career-ops-enhanced/pull/17",
@@ -1416,10 +1416,8 @@
         },
         "explanation": "All held workflows were repository-admin approved and completed successfully on the unchanged exact PR head."
       },
-      "blockers": [
-        "A separate physical user-Mac acceptance receipt bound to merge commit 696557cdc276dd156f2a66980fd7699605bfa52d remains required. Hosted macOS CI does not satisfy this gate."
-      ],
-      "next_action": "Antony runs and confirms the documented C15 acceptance check on a physical user Mac at merge commit 696557cdc276dd156f2a66980fd7699605bfa52d. Record that exact receipt, then accept C15 at 14/14; do not infer physical acceptance from hosted CI.",
+      "blockers": [],
+      "next_action": "C15 accepted after successful physical user-Mac validation bound to merge commit 696557cdc276dd156f2a66980fd7699605bfa52d.",
       "pr_jobs": {
         "Upgrade regression gate": {
           "job": 116153220960,
@@ -1475,15 +1473,26 @@
           "conclusion": "success",
           "go_dashboard": "success"
         }
-      }
+      },
+      "physical_mac_acceptance": {
+        "environment": "physical_user_mac",
+        "performed_by": "user",
+        "confirmed": true,
+        "conclusion": "success",
+        "head": "696557cdc276dd156f2a66980fd7699605bfa52d",
+        "validator_decision": "ready",
+        "missing": [],
+        "verified_at": "2026-10-16T18:39:41Z"
+      },
+      "accepted_at": "2026-10-16T18:39:41Z"
     }
   },
   "acceptance_metric": {
-    "accepted": 13,
+    "accepted": 14,
     "total": 14,
     "method": "equal checkpoint count; not effort or upstream-feature completion"
   },
-  "next_action": "Antony runs and confirms the documented C15 acceptance check on a physical user Mac at merge commit 696557cdc276dd156f2a66980fd7699605bfa52d. Record that exact receipt, then accept C15 at 14/14; do not infer physical acceptance from hosted CI.",
+  "next_action": "C02-C15 acceptance complete: 14/14 checkpoints accepted. Continue post-checkpoint backlog engineering under existing safety and ownership controls.",
   "non_product_issues": [
     {
       "issue": "Optional release-publisher credentials",
