@@ -108,7 +108,7 @@ function parseInterval(raw, name) {
   if (!OFFSET_TIME.test(startText) || !OFFSET_TIME.test(endText)) return { ambiguous: true };
   const start = new Date(startText); const end = new Date(endText);
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return { ambiguous: true };
-  return { ambiguous: false, start, end };
+  return { ambiguous: false, start, end, startText, endText };
 }
 
 function overlaps(a, b) { return a.start < b.end && b.start < a.end; }
@@ -131,6 +131,8 @@ export function evaluateInterviewProposal(proposal, profile, {
   const interval = parseInterval(proposal, 'proposal');
   const base = { schema_version: 1, schedule_id: schedule.schedule_id,
     schedule_provenance_sha256: schedule.provenance_sha256,
+    proposal_sha256: interval.ambiguous ? null
+      : SHA256(JSON.stringify({ start_at: interval.startText, end_at: interval.endText })),
     outbound: { send: false, authorization_present: outbound_email_authorized === true } };
   if (interval.ambiguous) return { ...base, decision: 'ambiguous_time', reply_eligible: false,
     review_required: true, reasons: ['explicit-offset-times-required'] };

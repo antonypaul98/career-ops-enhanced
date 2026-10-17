@@ -352,6 +352,7 @@ const SYSTEM_PATHS = [
   'enhanced/reviewed-outcome-learning.mjs',
   'enhanced/job-correspondence.mjs',
   'enhanced/interview-availability.mjs',
+  'enhanced/interview-reply-draft.mjs',
   'enhanced/release-validation.mjs',
   'application-artifacts.mjs',
   'batch-evaluate-gemini.mjs',
