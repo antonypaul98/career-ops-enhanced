@@ -38,6 +38,7 @@ test('marks a proposed time inside an approved slot without sending', () => {
     end_at: '2026-10-19T10:00:00-04:00' }, profile(), { outbound_email_authorized: true });
   assert.equal(result.decision, 'within_approved_slot');
   assert.equal(result.reply_eligible, true);
+  assert.match(result.proposal_sha256, /^[a-f0-9]{64}$/);
   assert.deepEqual(result.outbound, { send: false, authorization_present: true });
 });
 
@@ -55,6 +56,7 @@ test('fails closed for out-of-slot and ambiguous timezone proposals', () => {
     end_at: '2026-10-19T09:30:00' }, profile());
   assert.equal(outside.decision, 'outside_approved_slot');
   assert.equal(ambiguous.decision, 'ambiguous_time');
+  assert.equal(ambiguous.proposal_sha256, null);
 });
 
 test('calendar conflicts override approved availability', () => {
