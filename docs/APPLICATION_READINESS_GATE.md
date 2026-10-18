@@ -10,3 +10,19 @@
 - Bundle fields are never echoed. The gate returns only the digest and validation state.
 - Passing the gate does not grant exact-content approval and never fills, sends or submits an application.
 
+## Redacted runtime report
+
+`enhanced/application-readiness-report.mjs` turns one explicit JSON payload into
+an operational decision report. It accepts a file path or `-` for stdin, emits
+JSON to stdout, and does not persist output.
+
+```sh
+node enhanced/application-readiness-report.mjs private-input.json
+node enhanced/application-readiness-report.mjs - --compact < private-input.json
+```
+
+The report includes decisions, gate statuses, fit values and counts. It excludes
+the raw application key, candidate text, requirement and question wording,
+provenance quotes, job-gate sources, bundle fields, artifact paths and content
+digest. It performs no network, browser, email, calendar or application action.
+
