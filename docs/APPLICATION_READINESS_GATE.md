@@ -26,3 +26,15 @@ the raw application key, candidate text, requirement and question wording,
 provenance quotes, job-gate sources, bundle fields, artifact paths and content
 digest. It performs no network, browser, email, calendar or application action.
 
+## Discovery-to-review contract
+
+`enhanced/discovery-readiness.mjs` connects the existing C09 discovery review
+to this redacted report. Liveness and dedup statuses are derived from the
+discovery decision rather than accepted from the caller. Posting legitimacy
+remains a separately sourced, timestamped review receipt.
+
+The bridge handles one explicit posting and returns only the discovery decision,
+reason code, liveness class and redacted readiness report. It does not include
+the posting URL, company, role, requisition, description, candidate content or
+canonical identity, and it cannot write the pipeline, tracker or Evidence Vault.
+
