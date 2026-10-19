@@ -38,3 +38,19 @@ reason code, liveness class and redacted readiness report. It does not include
 the posting URL, company, role, requisition, description, candidate content or
 canonical identity, and it cannot write the pipeline, tracker or Evidence Vault.
 
+## Candidate submission handoff
+
+`enhanced/candidate-submission-handoff.mjs` is the final read-only bridge after
+exact content approval. It reruns the complete readiness gate, validates that
+the candidate's C12 mock approval still matches the exact sealed bundle, and
+returns the reviewed fields, attachment digests and an explicit candidate
+checklist.
+
+The returned object contains private application content and must not be logged,
+committed or treated as a public report. It performs zero network requests,
+browser actions, file writes or tracker mutations. Career Ops never presses
+Submit: the candidate acts in their ordinary browser, preserves an actual portal
+success page or employer acknowledgement, and then uses that receipt in the
+reviewed C13 lifecycle flow. The handoff itself is not submission evidence and
+cannot authorize the tracker state `Applied`.
+
