@@ -75,6 +75,7 @@
     "career-evidence": "node enhanced/evidence-vault.mjs",
     "answer-memory:test": "node --test tests/answer-memory.test.mjs",
     "application-approval:test": "node --test tests/application-approval.test.mjs",
+    "application-handoff:test": "node --test tests/candidate-submission-handoff.test.mjs",
     "application-lifecycle:test": "node --test tests/application-lifecycle.test.mjs",
     "release:validate": "node enhanced/release-validation.mjs",
     "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs",
