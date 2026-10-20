@@ -96,6 +96,10 @@ test('executor performs at most the one specifically authorized consequential ac
   assert.equal(result.decision, 'submitted_awaiting_verified_receipt');
   assert.equal(result.consequential_actions, 1);
   assert.equal(result.applied_status_authorized, false);
+  const changed = { ...p, max_consequential_actions: 2 };
+  const refused = await executeApprovedSubmission(changed, () => { calls.push('unexpected'); });
+  assert.equal(refused.decision, 'blocked');
+  assert.equal(calls.length, 1);
 });
 
 test('login, MFA, CAPTCHA, new fields and missing final review pause rather than bypass', () => {
@@ -143,6 +147,10 @@ test('verified receipt authorizes Applied exactly once and retries are idempoten
   } };
   assert.equal((await recordAppliedExactlyOnce(verified, store)).decision, 'applied_recorded');
   assert.equal((await recordAppliedExactlyOnce(verified, store)).decision, 'already_recorded');
+  assert.equal(writes, 1);
+  const tampered = structuredClone(verified);
+  tampered.applied_authorization.max_tracker_mutations = 2;
+  assert.equal((await recordAppliedExactlyOnce(tampered, store)).decision, 'blocked');
   assert.equal(writes, 1);
 });
 
