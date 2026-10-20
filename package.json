@@ -78,6 +78,7 @@
     "application-approval:test": "node --test tests/application-approval.test.mjs",
     "application-handoff:test": "node --test tests/candidate-submission-handoff.test.mjs",
     "application-launch:test": "node --test tests/application-launch.test.mjs",
+    "application-submission:test": "node --test tests/approved-application-submission.test.mjs",
     "application-lifecycle:test": "node --test tests/application-lifecycle.test.mjs",
     "release:validate": "node enhanced/release-validation.mjs",
     "jd:evidence-gap": "node enhanced/jd-evidence-gap.mjs",
