@@ -354,6 +354,7 @@ const SYSTEM_PATHS = [
   'enhanced/application-readiness-report.mjs',
   'enhanced/candidate-submission-handoff.mjs',
   'enhanced/application-launch.mjs',
+  'enhanced/approved-application-submission.mjs',
   'enhanced/application-lifecycle.mjs',
   'enhanced/reviewed-outcome-learning.mjs',
   'enhanced/job-correspondence.mjs',
