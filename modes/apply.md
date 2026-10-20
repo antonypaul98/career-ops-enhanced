@@ -147,6 +147,15 @@ candidate authority. The C12 executor is mock-only: it may show `would_fill`
 and `would_attach`, but performs no browser action, network request, file write,
 form fill, or submission. See `docs/C12_EXACT_APPLICATION_APPROVAL.md`.
 
+After the separate candidate-controlled handoff is ready, the local
+`start-application.mjs` command can request that the ordinary system browser
+open the exact reviewed HTTPS URL. It requires a second candidate confirmation
+bound to the application key, content digest, and URL digest. Pause and resume
+at login, MFA, CAPTCHA, any new or changed field, and final Submit. The command
+does not fill or advance the form; the candidate alone performs the browser
+steps and submits. A browser-open request is not a submission receipt and never
+authorizes `Applied`. See `docs/START_APPLICATION.md`.
+
 **With Playwright:** Take a snapshot of the active page. Read title, URL, and visible content.
 
 **Without Playwright:** Ask the candidate to:
