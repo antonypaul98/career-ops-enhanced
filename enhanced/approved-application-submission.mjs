@@ -128,21 +128,19 @@ export function createExactSubmissionApproval({ readiness_input, approval, start
 
 function validSubmissionApproval(submitApproval, checked) {
   if (!submitApproval || submitApproval.schema_version !== 1) return false;
-  const { approval_digest: claimed, ...core } = submitApproval;
-  return SHA256.test(claimed ?? '') && hash(core) === claimed
-    && submitApproval.application_key === checked.seal.application_key
-    && submitApproval.content_digest === checked.seal.content_digest
-    && submitApproval.url_digest === checked.seal.url_digest
-    && submitApproval.fields_digest === checked.seal.fields_digest
-    && submitApproval.artifacts_digest === checked.seal.artifacts_digest
-    && submitApproval.observation_digest === checked.observation_digest
-    && submitApproval.resume_token === checked.resume_token
-    && submitApproval.approved_by === 'candidate'
-    && submitApproval.statement === SUBMIT_CONFIRMATION_STATEMENT
-    && submitApproval.scope === 'submit_exact_application_once'
-    && submitApproval.max_consequential_actions === 1
+  const core = { schema_version: 1, application_key: checked.seal.application_key,
+    content_digest: checked.seal.content_digest, url_digest: checked.seal.url_digest,
+    fields_digest: checked.seal.fields_digest, artifacts_digest: checked.seal.artifacts_digest,
+    observation_digest: checked.observation_digest, resume_token: checked.resume_token,
+    approved_by: 'candidate', approved_at: submitApproval.approved_at,
+    statement: SUBMIT_CONFIRMATION_STATEMENT, scope: 'submit_exact_application_once',
+    max_consequential_actions: 1 };
+  const expected = { ...core, approval_digest: hash(core) };
+  return SHA256.test(submitApproval.approval_digest ?? '')
+    && canonicalJson(submitApproval) === canonicalJson(expected)
     && typeof submitApproval.approved_at === 'string'
-    && Number.isFinite(Date.parse(submitApproval.approved_at));
+    && Number.isFinite(Date.parse(submitApproval.approved_at))
+    && Date.parse(submitApproval.approved_at) >= Date.parse(checked.observed.observed_at);
 }
 
 /** Re-check every gate and the current browser observation immediately before submit. */
@@ -170,7 +168,15 @@ export function prepareApprovedSubmission({ readiness_input, approval, start_con
 
 /** Invoke exactly one injected browser submit action. A click is never a receipt. */
 export async function executeApprovedSubmission(plan, submitExactApprovedForm) {
-  if (plan?.decision !== 'ready_to_submit_once' || typeof submitExactApprovedForm !== 'function') {
+  const executionCore = plan && { application_key: plan.application_key, content_digest: plan.content_digest,
+    url_digest: plan.url_digest, fields_digest: plan.fields_digest, artifacts_digest: plan.artifacts_digest,
+    observation_digest: plan.observation_digest, submit_approval_digest: plan.submit_approval_digest,
+    resume_token: plan.resume_token };
+  const expectedPlan = executionCore && { schema_version: 1, decision: 'ready_to_submit_once', ...executionCore,
+    execution_digest: hash(executionCore), allowed_action: 'submit_exact_approved_form',
+    max_consequential_actions: 1, tracker_mutation: false, applied_status_authorized: false };
+  if (!expectedPlan || canonicalJson(plan) !== canonicalJson(expectedPlan)
+    || typeof submitExactApprovedForm !== 'function') {
     return blocked('ready_submission_plan_and_executor_required', plan?.resume_token ?? null);
   }
   let result;
@@ -262,7 +268,13 @@ export function verifySubmissionReceipt(execution, receipt = {}, { now = Date.no
 /** Call the canonical lifecycle adapter at most once for this receipt authorization. */
 export async function recordAppliedExactlyOnce(verified, store = {}) {
   const auth = verified?.applied_authorization;
+  const authCore = auth && { schema_version: 1, application_key: auth.application_key,
+    content_digest: auth.content_digest, execution_digest: auth.execution_digest,
+    receipt_digest: auth.receipt_digest, scope: 'record_applied_once', max_tracker_mutations: 1 };
+  const validAuth = authCore && canonicalJson(auth) === canonicalJson({ ...authCore,
+    authorization_digest: hash(authCore) }) && verified.receipt?.receipt_digest === auth.receipt_digest;
   if (verified?.decision !== 'verified_receipt' || !SHA256.test(auth?.authorization_digest ?? '')
+    || !validAuth
     || typeof store.has !== 'function' || typeof store.record !== 'function') {
     return blocked('verified_receipt_and_idempotent_store_required');
   }
