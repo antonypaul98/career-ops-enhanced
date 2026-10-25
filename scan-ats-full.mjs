@@ -87,7 +87,7 @@ const CACHE_TTL_HOURS = 24;
 // before interpolation, and entryOnHost (below) re-parses each finished
 // careers_url and drops anything that doesn't resolve to the ATS's own host —
 // so a tampered dataset can at worst name boards that don't exist.
-const DATASET_BASE = 'https://raw.githubusercontent.com/Feashliaa/job-board-aggregator/main/data';
+const DATASET_BASE = 'https://raw.githubusercontent.com/Riley-Dorrington/job-board-aggregator/main/data';
 
 // Default fan-out. Correct for sources whose boards each live on their OWN
 // host — workday is {tenant}.{instance}.myworkdayjobs.com, so 20 in flight is
