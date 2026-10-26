@@ -9,7 +9,7 @@ import { titleFit } from "@/lib/title-fit.mjs";
 import { resolveScanTimeoutMs, scanTimeoutMessage } from "./scan-timeout.mjs";
 import { ATS_LABEL, ATS_SOURCES, type AtsSource, type DiscoveredOffer, type ExploreFilters, type FitBand, type ScanEvent } from "@/lib/explore";
 import { mergeScanResults, timedOutMessage } from "./scan-merge.mjs";
-import { matchesExploreQualifications } from "../../../../lib/explore-qualifier.mjs";
+import { matchesExploreQualifications } from "@/lib/explore-qualifier.mjs";
 
 export type { DiscoveredOffer, ScanEvent, AtsSource } from "@/lib/explore";
 export { ATS_SOURCES } from "@/lib/explore";
