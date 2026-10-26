@@ -48,7 +48,8 @@ function fixture() {
   const start = prepareCandidateApplicationStart({ readiness_input, approval, start_confirmation });
   const observation = { application_key: KEY, current_url: bundle.application.url,
     rendered_fields: start.reviewed_fields, attached_artifacts: start.reviewed_artifacts,
-    unexpected_fields: [], final_review: true, observed_at: WHEN };
+    unexpected_fields: [], final_review: true, observed_at: WHEN,
+    browser_contract_digest: 'e'.repeat(64) };
   const submit_approval = createExactSubmissionApproval({ readiness_input, approval, start_confirmation,
     observation, confirmation: { confirmed: true, statement: SUBMIT_CONFIRMATION_STATEMENT,
       approved_at: WHEN } }, { now: NOW });
@@ -69,12 +70,13 @@ test('no submit occurs without exact explicit application approval', async () =>
   assert.equal(result.consequential_actions, 0);
 });
 
-test('changed package, URL, fields and artifacts make approval stale and fail closed', () => {
+test('changed package, URL, fields, artifacts and browser contract make approval stale and fail closed', () => {
   for (const mutate of [
     f => { f.readiness_input.application_bundle.fields[0].value = 'Changed'; },
     f => { f.observation.current_url += '?changed=1'; },
     f => { f.observation.rendered_fields[0].value = 'Changed'; },
     f => { f.observation.attached_artifacts[0].sha256 = 'b'.repeat(64); },
+    f => { f.observation.browser_contract_digest = 'f'.repeat(64); },
   ]) {
     const f = fixture(); mutate(f);
     const result = prepareApprovedSubmission(f);
