@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { scoreTone } from "@/lib/format";
 import { resolveCliId } from "@/lib/saved-cli";
 import { readJobStream } from "@/lib/job-stream.mjs";
+import { createJobAbortRegistry } from "@/lib/job-abort-registry.mjs";
 
 export type JobStep = { kind: "tool" | "status"; label: string; ts: number };
 export type JobResult = { score: number | null; summary: string; tone: "good" | "warn" | "bad" | "muted" };
@@ -30,6 +31,7 @@ type StartOpts = { title: string; subtitle?: string; kind: string; input: string
 type Ctx = {
   jobs: Job[];
   startJob: (opts: StartOpts) => string | null;
+  cancelJob: (id: string) => void;
   removeJob: (id: string) => void;
   clearFinished: () => void;
 };
@@ -61,6 +63,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const seq = useRef(0);
   const loaded = useRef(false);
+  const aborts = useRef(createJobAbortRegistry());
 
   // restore history
   useEffect(() => {
@@ -94,6 +97,10 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
   const startJob = useCallback(
     (opts: StartOpts): string | null => {
       const id = `job-${Date.now()}-${seq.current++}`;
+      const controller = new AbortController();
+      // Register before CLI resolution: cancel must win even if the user clicks
+      // while the saved runtime is still being validated.
+      aborts.current.register(id, controller);
       const job: Job = {
         id,
         title: opts.title,
@@ -128,6 +135,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
           patch(id, (j) => ({ ...j, steps: [...j.steps, step] }));
         });
         if (!cliId) {
+          aborts.current.forget(id, controller);
           patch(id, (j) => ({
             ...j,
             status: "error",
@@ -141,6 +149,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
         let doneTokens = 0; // per-run token cost, forwarded on the done event (#6)
         let doneCostUsd: number | null = null;
         const finish = (status: "done" | "error", lastLabel?: string) => {
+          aborts.current.forget(id, controller);
           const result = status === "done" ? parseVerdict(verdictLine || text) : undefined;
           const cost = status === "done" && doneTokens > 0 ? { tokens: doneTokens, usd: doneCostUsd ?? undefined } : undefined;
           patch(id, (j) => ({
@@ -167,10 +176,13 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
         };
 
         try {
+          // A cancel during CLI resolution must not launch the worker afterward.
+          if (controller.signal.aborted) return;
           const res = await fetch("/api/run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ kind: opts.kind, input: opts.input, cliId }),
+            signal: controller.signal,
           });
           if (!res.ok || !res.body) {
             const e = await res.json().catch(() => ({}));
@@ -200,6 +212,9 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
           doneCostUsd = completion.costUsd ?? null;
           finish("done", "Done");
         } catch {
+          // cancelJob already records the user-requested terminal state. Do not
+          // overwrite it with a misleading network failure after abort().
+          if (controller.signal.aborted) return;
           finish("error", "Connection error");
         }
       })();
@@ -209,8 +224,24 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     [patch],
   );
 
+  const cancelJob = useCallback(
+    (id: string) => {
+      if (!aborts.current.cancel(id)) return;
+      patch(id, (j) =>
+        j.status === "running"
+          ? {
+              ...j,
+              status: "error",
+              endedAt: Date.now(),
+              steps: [...j.steps, { kind: "status", label: "Cancelled by user", ts: Date.now() }],
+            }
+          : j,
+      );
+    },
+    [patch],
+  );
   const removeJob = useCallback((id: string) => setJobs((js) => js.filter((j) => j.id !== id)), []);
   const clearFinished = useCallback(() => setJobs((js) => js.filter((j) => j.status === "running")), []);
 
-  return <JobsContext.Provider value={{ jobs, startJob, removeJob, clearFinished }}>{children}</JobsContext.Provider>;
+  return <JobsContext.Provider value={{ jobs, startJob, cancelJob, removeJob, clearFinished }}>{children}</JobsContext.Provider>;
 }
