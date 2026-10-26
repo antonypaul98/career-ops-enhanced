@@ -51,7 +51,9 @@ function validateContract(contract) {
   requiredText(contract.submit.expected_text, 'contract.submit.expected_text');
   exactKeys(contract.receipt, ['selectors', 'success_url_prefixes'], 'contract.receipt');
   if (!Array.isArray(contract.receipt.selectors) || !contract.receipt.selectors.length) throw new Error('contract.receipt.selectors is required');
-  if (!Array.isArray(contract.receipt.success_url_prefixes)) throw new Error('contract.receipt.success_url_prefixes must be an array');
+  if (!Array.isArray(contract.receipt.success_url_prefixes) || !contract.receipt.success_url_prefixes.length) {
+    throw new Error('contract.receipt.success_url_prefixes is required');
+  }
   contract.receipt.selectors.forEach((entry, index) => {
     exactKeys(entry, ['selector', 'kind'], `contract.receipt.selectors[${index}]`);
     requiredText(entry.selector, `contract.receipt.selectors[${index}].selector`);
@@ -61,6 +63,15 @@ function validateContract(contract) {
     if (!validateApplicationLaunchUrl(prefix).valid) throw new Error('receipt success URL prefixes must be public HTTPS URLs');
   }
   return contract;
+}
+
+function matchesSuccessUrl(currentValue, prefixValue) {
+  const current = new URL(currentValue);
+  const prefix = new URL(prefixValue);
+  if (current.origin !== prefix.origin) return false;
+  const pathPrefix = prefix.pathname.endsWith('/') ? prefix.pathname : `${prefix.pathname}/`;
+  if (current.pathname !== prefix.pathname && !current.pathname.startsWith(pathPrefix)) return false;
+  return !prefix.search || current.search === prefix.search;
 }
 
 async function visible(locator) {
@@ -114,6 +125,13 @@ export async function observeFinalReview(page, rawContract, { observedAt = new D
     }
     attachedArtifacts.push({ kind: artifact.kind, sha256: artifact.sha256 });
   }
+  for (const [index, entry] of contract.receipt.selectors.entries()) {
+    const locator = page.locator(entry.selector);
+    if (await locator.count() === 1 && await visible(locator)) {
+      const quote = String(await locator.innerText().catch(() => '')).trim();
+      if (quote) unexpectedFields.push(`receipt:${index}:already_visible`);
+    }
+  }
   const controls = page.locator('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
   const total = await controls.count();
   for (let index = 0; index < total; index += 1) {
@@ -135,6 +153,7 @@ export async function observeFinalReview(page, rawContract, { observedAt = new D
     attached_artifacts: attachedArtifacts,
     unexpected_fields: [...new Set(unexpectedFields)].sort(),
     observed_at: observedAt,
+    browser_contract_digest: hash(contract),
     login_required: challenge.login_required,
     mfa_required: challenge.mfa_required,
     captcha_required: challenge.captcha_required,
@@ -166,14 +185,16 @@ export async function capturePlaywrightReceipt(page, rawContract, execution,
   { observedAt = new Date().toISOString(), source = 'private-browser-receipt.json' } = {}) {
   const contract = validateContract(structuredClone(rawContract));
   if (execution?.decision !== 'submitted_awaiting_verified_receipt') throw new Error('completed submission execution is required');
+  if (execution.browser_contract_digest !== hash(contract)) throw new Error('browser contract changed after approval');
   const currentUrl = String(page.url());
-  const urlAllowed = contract.receipt.success_url_prefixes.some(prefix => currentUrl.startsWith(prefix));
+  const urlAllowed = contract.receipt.success_url_prefixes.some(prefix => matchesSuccessUrl(currentUrl, prefix));
+  if (!urlAllowed) return null;
   for (const entry of contract.receipt.selectors) {
     const locator = page.locator(entry.selector);
     if (await locator.count() !== 1 || !await visible(locator)) continue;
     const quote = String(await locator.innerText()).trim().slice(0, 2000);
     if (!quote) continue;
-    const reference = urlAllowed ? currentUrl : `DOM:${entry.selector}`;
+    const reference = currentUrl;
     const evidence = { url: currentUrl, selector: entry.selector, quote, reference, observed_at: observedAt };
     return { kind: entry.kind, origin: 'observed_actual', application_key: execution.application_key,
       content_digest: execution.content_digest, execution_digest: execution.execution_digest,
