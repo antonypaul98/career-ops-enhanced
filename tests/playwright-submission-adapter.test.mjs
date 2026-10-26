@@ -45,6 +45,7 @@ browserTest('reads one exact synthetic final-review form and attached artifact',
   assert.deepEqual(observed.attached_artifacts, [{ kind: 'resume', sha256: 'a'.repeat(64) }]);
   assert.deepEqual(observed.unexpected_fields, []);
   assert.equal(observed.current_url, URL);
+  assert.match(observed.browser_contract_digest, /^[a-f0-9]{64}$/);
   assert.equal(observed.final_review, true);
   assert.equal(observed.login_required, false);
   assert.equal(observed.mfa_required, false);
@@ -60,6 +61,13 @@ browserTest('unexpected controls and login/MFA/CAPTCHA pause signals are surface
   assert.equal(observed.login_required, true);
   assert.equal(observed.mfa_required, true);
   assert.equal(observed.captcha_required, true);
+}));
+
+browserTest('pre-existing success markers block final review before any submit action', () => withPage(async page => {
+  await page.locator('body').evaluate(node => node.insertAdjacentHTML(
+    'beforeend', '<main id="receipt">Unrelated pre-existing success text.</main>'));
+  const observed = await observeFinalReview(page, contract, { observedAt: WHEN });
+  assert.deepEqual(observed.unexpected_fields, ['receipt:0:already_visible']);
 }));
 
 browserTest('executor re-reads exact DOM, clicks once, and is single-use', () => withPage(async page => {
@@ -83,22 +91,38 @@ browserTest('executor fails closed if the form changes after approval', () => wi
   await assert.rejects(() => executor({ action: 'submit_exact_approved_form', execution_digest: 'b'.repeat(64) }), /changed/);
 }));
 
-browserTest('receipt capture requires visible concrete post-submit evidence and does not mutate state', () => withPage(async page => {
+browserTest('receipt requires the sealed contract, an allowed success URL, and visible post-submit evidence', () => withPage(async page => {
+  const observed = await observeFinalReview(page, contract, { observedAt: WHEN });
   const execution = { decision: 'submitted_awaiting_verified_receipt', application_key: 'synthetic-042',
-    content_digest: 'c'.repeat(64), execution_digest: 'd'.repeat(64) };
+    content_digest: 'c'.repeat(64), execution_digest: 'd'.repeat(64),
+    browser_contract_digest: observed.browser_contract_digest };
   assert.equal(await capturePlaywrightReceipt(page, contract, execution, { observedAt: WHEN }), null);
-  await page.locator('body').evaluate(node => node.insertAdjacentHTML('beforeend', '<main id="receipt">Application received. Reference SYN-42.</main>'));
+  await page.locator('body').evaluate(node => node.insertAdjacentHTML(
+    'beforeend', '<main id="receipt">Application received. Reference SYN-42.</main>'));
+  assert.equal(await capturePlaywrightReceipt(page, contract, execution, { observedAt: WHEN }), null);
+  await page.goto('https://jobs.synthetic-acme.example/confirmation/SYN-42');
+  await page.locator('body').evaluate(node => node.insertAdjacentHTML(
+    'beforeend', '<main id="receipt">Application received. Reference SYN-42.</main>'));
   const receipt = await capturePlaywrightReceipt(page, contract, execution, { observedAt: WHEN });
   assert.equal(receipt.kind, 'ats_success_page');
   assert.equal(receipt.origin, 'observed_actual');
+  assert.equal(receipt.reference, 'https://jobs.synthetic-acme.example/confirmation/SYN-42');
   assert.match(receipt.sha256, /^[a-f0-9]{64}$/);
   assert.equal(receipt.tracker_mutation, undefined);
   assert.equal(receipt.applied_status_authorized, undefined);
+
+  const changed = structuredClone(contract);
+  changed.receipt.selectors[0].selector = 'body';
+  await assert.rejects(() => capturePlaywrightReceipt(page, changed, execution, { observedAt: WHEN }),
+    /browser contract changed after approval/);
 }));
 
 test('contract rejects unknown capabilities and fixtures contain no private candidate data', () => {
   const unsafe = structuredClone(contract);
   unsafe.submit.javascript = 'document.forms[0].submit()';
   assert.throws(() => validatePlaywrightSubmissionContract(unsafe), /unsupported keys/);
+  const noSuccessUrl = structuredClone(contract);
+  noSuccessUrl.receipt.success_url_prefixes = [];
+  assert.throws(() => validatePlaywrightSubmissionContract(noSuccessUrl), /success_url_prefixes is required/);
   assert.doesNotMatch(JSON.stringify({ contract, reviewHtml }), /antony|gmail|@/i);
 });

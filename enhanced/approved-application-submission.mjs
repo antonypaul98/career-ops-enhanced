@@ -67,6 +67,7 @@ function normalizeObservation(observation = {}) {
       ? observation.attached_artifacts.map(({ kind, sha256 }) => ({ kind, sha256 })) : [],
     unexpected_fields: Array.isArray(observation.unexpected_fields) ? [...observation.unexpected_fields] : [],
     observed_at: observation.observed_at,
+    browser_contract_digest: observation.browser_contract_digest,
     login_required: observation.login_required === true,
     mfa_required: observation.mfa_required === true,
     captcha_required: observation.captcha_required === true,
@@ -79,6 +80,9 @@ function checkObservation(start, observation) {
   const observed = normalizeObservation(observation);
   if (typeof observed.observed_at !== 'string' || !Number.isFinite(Date.parse(observed.observed_at))) {
     return blocked('observation_timestamp_invalid', start.resume.token);
+  }
+  if (!SHA256.test(observed.browser_contract_digest ?? '')) {
+    return blocked('browser_contract_digest_invalid', start.resume.token);
   }
   if (observed.login_required) return paused('login_required', start.resume.token);
   if (observed.mfa_required) return paused('mfa_required', start.resume.token);
@@ -158,6 +162,7 @@ export function prepareApprovedSubmission({ readiness_input, approval, start_con
     fields_digest: checked.seal.fields_digest,
     artifacts_digest: checked.seal.artifacts_digest,
     observation_digest: checked.observation_digest,
+    browser_contract_digest: checked.observed.browser_contract_digest,
     submit_approval_digest: submitApproval.approval_digest,
     resume_token: checked.resume_token,
   };
@@ -170,7 +175,8 @@ export function prepareApprovedSubmission({ readiness_input, approval, start_con
 export async function executeApprovedSubmission(plan, submitExactApprovedForm) {
   const executionCore = plan && { application_key: plan.application_key, content_digest: plan.content_digest,
     url_digest: plan.url_digest, fields_digest: plan.fields_digest, artifacts_digest: plan.artifacts_digest,
-    observation_digest: plan.observation_digest, submit_approval_digest: plan.submit_approval_digest,
+    observation_digest: plan.observation_digest, browser_contract_digest: plan.browser_contract_digest,
+    submit_approval_digest: plan.submit_approval_digest,
     resume_token: plan.resume_token };
   const expectedPlan = executionCore && { schema_version: 1, decision: 'ready_to_submit_once', ...executionCore,
     execution_digest: hash(executionCore), allowed_action: 'submit_exact_approved_form',
@@ -207,6 +213,7 @@ export async function executeApprovedSubmission(plan, submitExactApprovedForm) {
   return { schema_version: 1, decision: 'submitted_awaiting_verified_receipt',
     application_key: plan.application_key, content_digest: plan.content_digest,
     url_digest: plan.url_digest, execution_digest: plan.execution_digest,
+    browser_contract_digest: plan.browser_contract_digest,
     submit_approval_digest: plan.submit_approval_digest, resume_token: plan.resume_token,
     submitted_at: submittedAt, consequential_actions: 1, tracker_mutation: false,
     applied_status_authorized: false, actual_receipt_required: true };
