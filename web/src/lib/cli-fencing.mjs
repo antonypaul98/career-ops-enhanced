@@ -40,19 +40,20 @@ const CODEX_READ_ONLY = "read-only";
 const CODEX_WORKSPACE_WRITE = "workspace-write";
 
 /**
- * Refuse Hermes for workers that write. This is a check by name, outside FENCERS,
- * and it covers Hermes alone: every other runtime passes, including the ones
- * absent from FENCERS, which still run write-capable workers with their default
- * access (fencingReport reports them as unfenced). Hermes is limited to workers
- * whose capability record has `writes: false` because career-ops has no verified
- * way to translate that record into Hermes's own approval/sandbox controls.
+ * Write-capable workers must use a runtime with a verified permission adapter.
+ *
+ * A warning is sufficient for advisory/read-only work because the worker is not
+ * authorized to persist artifacts. It is not sufficient for evaluate/fix-portal:
+ * those workers intentionally write canonical reports, tracker state or portals.
+ * Letting an unfenced runtime perform those writes turns "default access" into an
+ * unbounded mutation authority. Fail closed until that runtime is in FENCERS.
  *
  * @param {string} cliId
  * @param {import("./worker-capabilities.mjs").Capabilities} capabilities
  * @returns {boolean}
  */
 export function isCliAllowedForCapabilities(cliId, { writes }) {
-  return cliId !== "hermes" || !writes;
+  return !writes || Object.hasOwn(FENCERS, cliId);
 }
 
 

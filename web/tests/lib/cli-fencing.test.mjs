@@ -46,13 +46,18 @@ test("the fixture these guards read still looks like itself", () => {
   }
 });
 
-test("Hermes is blocked for write-capable run kinds", () => {
-  assert.equal(isCliAllowedForCapabilities("hermes", capabilitiesFor("pdf")), true, "Hermes must remain available for pdf/read-only runs");
-  assert.equal(isCliAllowedForCapabilities("hermes", capabilitiesFor("research")), true, "Hermes must remain available for research runs");
-  for (const kind of ["evaluate", "fix-portal"]) {
-    assert.equal(isCliAllowedForCapabilities("hermes", capabilitiesFor(kind)), false, `Hermes must be blocked for ${kind}`);
+test("unfenced runtimes are blocked for write-capable run kinds", () => {
+  const unfenced = ["hermes", "gemini", "opencode", "copilot", "qwen", "antigravity", "grok", "made-up-cli"];
+  for (const cliId of unfenced) {
+    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("pdf")), true, `${cliId} may remain available for local read-only runs`);
+    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("research")), true, `${cliId} may remain available for advisory runs`);
+    for (const kind of ["evaluate", "fix-portal"]) {
+      assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor(kind)), false, `${cliId} must be blocked for ${kind}`);
+    }
   }
-  assert.equal(isCliAllowedForCapabilities("claude", capabilitiesFor("evaluate")), true, "fenced runtimes must remain available for write-capable runs");
+  for (const cliId of ["claude", "codex"]) {
+    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("evaluate")), true, `${cliId} is verified for write-capable runs`);
+  }
 });
 
 test("a local read-only worker gets a true read-only sandbox", () => {
