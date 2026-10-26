@@ -93,6 +93,8 @@ function ingestJsonOffer(
     source,
     url,
     employmentType: o.employmentType === "c2c" || o.employmentType === "full_time" ? o.employmentType : "unknown",
+    sponsorship: o.sponsorship === "offered" || o.sponsorship === "not_offered" ? o.sponsorship : "unknown",
+    clearance: o.clearance === "not_required" || o.clearance === "required" ? o.clearance : "unknown",
     matchedKeyword: firstMatch(o.title, filters.positive),
     ...fitField(o.title, roleTargets),
   };
@@ -145,7 +147,7 @@ export function scannerSupportsJson(): boolean {
   }
 }
 
-type JsonOffer = { company?: string; title?: string; url?: string; location?: string | null; postedAt?: string | null; source?: string; employmentType?: "c2c" | "full_time" | "unknown" };
+type JsonOffer = { company?: string; title?: string; url?: string; location?: string | null; postedAt?: string | null; source?: string; employmentType?: "c2c" | "full_time" | "unknown"; sponsorship?: "offered" | "not_offered" | "unknown"; clearance?: "not_required" | "required" | "unknown" };
 type ScanJson = {
   companiesAvailable?: number;
   companiesScanned?: number;
