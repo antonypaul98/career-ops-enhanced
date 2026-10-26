@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, Ban, Clock, MapPin, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { ATS_LABEL, ATS_SOURCES, cleanChips, type AtsSource, type ExploreFilters } from "@/lib/explore";
+import { ATS_LABEL, ATS_SOURCES, cleanChips, type AtsSource, type ExploreFilters, type EmploymentKind } from "@/lib/explore";
 
 const RECENCY = [
   { label: "24h", days: 1 },
@@ -112,6 +112,10 @@ export function FilterBuilder({
 }) {
   const [advanced, setAdvanced] = useState(false);
   const set = (patch: Partial<ExploreFilters>) => onChange({ ...filters, ...patch });
+  const toggleEmployment = (kind: EmploymentKind) => {
+    const kinds = filters.employmentTypes;
+    set({ employmentTypes: kinds.includes(kind) ? kinds.filter((k) => k !== kind) : [...kinds, kind] });
+  };
   const toggleAts = (a: AtsSource) => {
     const has = filters.ats.includes(a);
     const next = has ? filters.ats.filter((x) => x !== a) : [...filters.ats, a];
@@ -148,6 +152,25 @@ export function FilterBuilder({
           ariaLabel="City or location"
           onChange={(v) => set({ allow: v })}
         />
+      </div>
+
+      <div className="space-y-2 rounded-xl border border-border bg-surface/30 p-3">
+        <Label hint="USA and states/DC only; unclear or global locations excluded">Search country</Label>
+        <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
+          <input type="checkbox" checked={filters.usOnly} onChange={(e) => set({ usOnly: e.target.checked })} />
+          United States only
+        </label>
+        <Label hint="C2C must be explicitly advertised; unknown contracts are not C2C">Employment type</Label>
+        <div className="flex flex-wrap gap-3">
+          {([["c2c", "Corp-to-Corp (C2C)"], ["full_time", "Full-time / permanent advertised"], ["unknown", "Unspecified · review only"]] as [EmploymentKind, string][]).map(([kind, label]) => (
+            <label key={kind} className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
+              <input type="checkbox" checked={filters.employmentTypes.includes(kind)} onChange={() => toggleEmployment(kind)} />
+              {label}
+            </label>
+          ))}
+        </div>
+        {filters.employmentTypes.length === 0 && <p className="text-[12px] text-faint">No employment selections means any type (still subject to the country filter).</p>}
+        <p className="text-[11px] text-faint">These are discovery hints, not verified contract terms or application eligibility. Review each JD before applying.</p>
       </div>
 
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
