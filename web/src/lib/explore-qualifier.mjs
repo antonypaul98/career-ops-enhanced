@@ -31,6 +31,10 @@ export function usLocationVerdict(location) {
 
 export function matchesExploreQualifications(offer, filters) {
   if (filters.usOnly && usLocationVerdict(offer.location) !== "us") return false;
+  // No absence-as-proof: jobs without an explicit no-clearance statement or
+  // explicit employer sponsorship offer remain ineligible for these strict filters.
+  if (filters.requireSponsorship && offer.sponsorship !== "offered") return false;
+  if (filters.noClearance && offer.clearance !== "not_required") return false;
   const kinds = filters.employmentTypes;
   if (Array.isArray(kinds) && kinds.length > 0) {
     // Never upgrade an unclassified/legacy offer to C2C or full-time.
