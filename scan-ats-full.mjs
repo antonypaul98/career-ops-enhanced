@@ -68,6 +68,7 @@ import { getCareerOpsRoot } from './path-resolver.mjs';
 import { KNOWN_ATS_VENDORS } from './ats-vendor.mjs';
 import { loadHistoryAtsSeeds } from './history-ats-seeds.mjs';
 import { loadProviders } from './providers/_registry.mjs';
+import { employmentVerdict } from './lib/explore-qualifier.mjs';
 
 // ── Config ──────────────────────────────────────────────────────────
 
@@ -582,6 +583,7 @@ export function formatLiveOfferLine(job, source) {
     title: job.title,
     url: job.url,
     location: job.location || null,
+    employmentType: employmentVerdict(job),
     postedAt,
     source: source || job.source || '',
   });
@@ -1516,6 +1518,7 @@ async function main() {
         title: o.title,
         url: o.url,
         location: o.location || null,
+        employmentType: employmentVerdict(o),
         postedAt: o.postedAt ? new Date(o.postedAt).toISOString().slice(0, 10) : null,
         dateStatus: o.dateStatus || (o.postedAt ? 'dated' : 'unknown'),
         blacklisted: Boolean(o.blacklisted),
