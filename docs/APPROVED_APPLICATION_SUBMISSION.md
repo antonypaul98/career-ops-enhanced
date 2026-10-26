@@ -14,6 +14,18 @@ npm run submit:application:browser -- --mode inspect \
   --profile-dir data/private/browser-profiles/<application> \
   --output data/private/<application>-observation.json
 
+npm run approve:application:submission -- --mode review \
+  --input data/private/<application>-browser.json \
+  --inspection data/private/<application>-observation.json \
+  --output data/private/<application>-submission-review.json
+
+npm run approve:application:submission -- --mode approve \
+  --input data/private/<application>-browser.json \
+  --inspection data/private/<application>-observation.json \
+  --output data/private/<application>-browser-approved.json \
+  --challenge <exact-challenge-digest-shown-in-review> \
+  --statement "I approve submitting this exact application, with this exact URL, fields, and artifacts, one time."
+
 npm run submit:application:browser -- --mode submit \
   --input data/private/<application>-browser-approved.json \
   --profile-dir data/private/browser-profiles/<application> \
@@ -22,11 +34,16 @@ npm run submit:application:browser -- --mode submit \
 ```
 
 `inspect` never submits. It records the current final-review DOM so the exact
-application-specific approval can bind to it. `submit` re-runs every readiness
-gate, re-reads the DOM immediately before the action, and permits one click on
-the one selector and button text in the approved private contract. Any login,
-MFA, CAPTCHA, unexpected control, changed field, changed attachment, URL
-change, or changed Submit control pauses or blocks. The persistent profile
+application-specific approval can bind to it. `review` re-runs the gates and
+creates a digest for exactly that application, URL, rendered field set,
+attachment set, observation, and browser contract; it authorizes nothing.
+`approve` requires that exact digest plus the literal one-application statement
+and creates the sealed private input for `submit`. Output files are create-only
+so a prior approval cannot be silently replaced. `submit` re-runs every
+readiness gate, re-reads the DOM immediately before the action, and permits one
+click on the one selector and button text in the approved private contract.
+Any login, MFA, CAPTCHA, unexpected control, changed field, changed attachment,
+URL change, or changed Submit control pauses or blocks. The persistent profile
 preserves candidate-assisted resume state without storing credentials here.
 
 After the click, a visible configured ATS/employer success element is captured
@@ -55,14 +72,19 @@ fields, and it is not a general web-form robot.
 3. In the browser, pause for the candidate to complete protected login, MFA,
    CAPTCHA, disclosures, or any unexpected field. Rebuild the package if the
    URL, rendered fields, or attachments differ.
-4. At the final review page, the browser adapter supplies the observed URL,
-   rendered fields, artifact digests, application key, and observation time to
-   `createExactSubmissionApproval()`. Show the exact package and require the
-   literal `SUBMIT_CONFIRMATION_STATEMENT` for this one application.
-5. Re-observe the page and call `prepareApprovedSubmission()` immediately
+4. At the final review page, run browser `inspect`, then run approval `review`.
+   Show the candidate the resulting application identity, exact URL, reviewed
+   fields, artifact digests, and challenge digest. The review authorizes zero
+   actions.
+5. Only after the candidate reviews that exact output, run approval `approve`
+   with the displayed challenge digest and literal
+   `SUBMIT_CONFIRMATION_STATEMENT`. A reusable “yes”, a challenge from another
+   application, or any stale/changed package fails closed. Repeat inspect and
+   review after any change.
+6. Re-observe the page and call `prepareApprovedSubmission()` immediately
    before `executeApprovedSubmission()`. The injected adapter receives only
    one permitted action: `submit_exact_approved_form`.
-6. After the click, keep the tracker unchanged. Capture the actual ATS success
+7. After the click, keep the tracker unchanged. Capture the actual ATS success
    page or employer acknowledgement in the private candidate data root. Verify
    it with `verifySubmissionReceipt()`, bridge it into the existing C13 flow
    with `createAppliedLifecycleDraftFromReceipt()`, then confirm and record it
