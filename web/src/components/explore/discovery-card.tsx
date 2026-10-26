@@ -88,6 +88,7 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
         <span className="rounded border border-border px-1.5 py-0.5 font-medium text-muted">{ATS_LABEL[offer.ats as AtsSource] ?? offer.ats}</span>
         {fresh && <span className="text-faint">{fresh}</span>}
+        {offer.employmentType && <span className="rounded border border-border px-1.5 py-0.5 font-medium text-muted" title="Advisory classification from posting; check employer terms before applying">{offer.employmentType === "c2c" ? "C2C advertised" : offer.employmentType === "full_time" ? "Full-time advertised" : "Type unverified"}</span>}
         {unverified && (
           <span
             className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-600 dark:text-amber-300"
