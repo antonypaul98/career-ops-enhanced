@@ -9,6 +9,7 @@ import { titleFit } from "@/lib/title-fit.mjs";
 import { resolveScanTimeoutMs, scanTimeoutMessage } from "./scan-timeout.mjs";
 import { ATS_LABEL, ATS_SOURCES, type AtsSource, type DiscoveredOffer, type ExploreFilters, type FitBand, type ScanEvent } from "@/lib/explore";
 import { mergeScanResults, timedOutMessage } from "./scan-merge.mjs";
+import { matchesExploreQualifications } from "../../../../lib/explore-qualifier.mjs";
 
 export type { DiscoveredOffer, ScanEvent, AtsSource } from "@/lib/explore";
 export { ATS_SOURCES } from "@/lib/explore";
@@ -80,6 +81,7 @@ function ingestJsonOffer(
 ): void {
   const url = (o.url || "").trim();
   if (!url || seen.has(url) || !o.company || !o.title) return;
+  if (!matchesExploreQualifications(o, filters)) return;
   seen.add(url);
   const source = o.source || `${currentAts}-full`;
   const offer: DiscoveredOffer = {
@@ -90,6 +92,7 @@ function ingestJsonOffer(
     ats: source.replace(/-full$/, ""),
     source,
     url,
+    employmentType: o.employmentType === "c2c" || o.employmentType === "full_time" ? o.employmentType : "unknown",
     matchedKeyword: firstMatch(o.title, filters.positive),
     ...fitField(o.title, roleTargets),
   };
@@ -142,7 +145,7 @@ export function scannerSupportsJson(): boolean {
   }
 }
 
-type JsonOffer = { company?: string; title?: string; url?: string; location?: string | null; postedAt?: string | null; source?: string };
+type JsonOffer = { company?: string; title?: string; url?: string; location?: string | null; postedAt?: string | null; source?: string; employmentType?: "c2c" | "full_time" | "unknown" };
 type ScanJson = {
   companiesAvailable?: number;
   companiesScanned?: number;
@@ -284,7 +287,7 @@ function runScanner(
       const trimmed = line.trim();
       if (pending && /^https?:\/\//i.test(trimmed)) {
         const url = trimmed.split(/\s+/)[0];
-        if (!seen.has(url)) {
+        if (!seen.has(url) && matchesExploreQualifications({ ...pending, url, employmentType: "unknown" }, filters)) {
           seen.add(url);
           const offer: DiscoveredOffer = { ...pending, url, matchedKeyword: firstMatch(pending.title, filters.positive), ...fitField(pending.title, roleTargets) };
           offers.push(offer);
