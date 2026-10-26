@@ -348,6 +348,7 @@ const SYSTEM_PATHS = [
   'cv-title-check.mjs',
   'prepare-application.mjs',
   'start-application.mjs',
+  'approve-application-submission.mjs',
   'submit-application-browser.mjs',
   'enhanced/application-approval.mjs',
   'enhanced/discovery-readiness.mjs',

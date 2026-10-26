@@ -98,6 +98,42 @@ function checkObservation(start, observation) {
     observation_digest: hash(observed), resume_token: start.resume.token };
 }
 
+function submissionReviewFromChecked(start, checked) {
+  const challengeCore = {
+    schema_version: 1,
+    application: {
+      key: start.application.key,
+      company: start.application.company,
+      role: start.application.role,
+      url: start.launch_url,
+    },
+    content_digest: checked.seal.content_digest,
+    url_digest: checked.seal.url_digest,
+    fields_digest: checked.seal.fields_digest,
+    artifacts_digest: checked.seal.artifacts_digest,
+    observation_digest: checked.observation_digest,
+    browser_contract_digest: checked.observed.browser_contract_digest,
+    resume_token: checked.resume_token,
+    reviewed_fields: checked.seal.reviewed_fields,
+    reviewed_artifacts: checked.seal.reviewed_artifacts,
+    required_statement: SUBMIT_CONFIRMATION_STATEMENT,
+    scope: 'submit_exact_application_once',
+    max_consequential_actions: 1,
+  };
+  return { ...challengeCore, decision: 'needs_exact_submission_approval',
+    challenge_digest: hash(challengeCore), consequential_actions: 0,
+    tracker_mutation: false, applied_status_authorized: false };
+}
+
+/** Build the exact human-review challenge without authorizing or performing Submit. */
+export function createExactSubmissionReview({ readiness_input, approval, start_confirmation, observation } = {}) {
+  const start = prepareCandidateApplicationStart({ readiness_input, approval, start_confirmation });
+  if (start.decision !== 'ready_to_open') throw new Error(`application start is not ready: ${start.reason ?? start.decision}`);
+  const checked = checkObservation(start, observation);
+  if (checked.decision !== 'exact_final_review') throw new Error(`final review is not exact: ${checked.reason}`);
+  return submissionReviewFromChecked(start, checked);
+}
+
 /** Create the final consequential-action approval, bound to the exact observed form. */
 export function createExactSubmissionApproval({ readiness_input, approval, start_confirmation, observation, confirmation } = {},
   { now = Date.now() } = {}) {
@@ -105,8 +141,12 @@ export function createExactSubmissionApproval({ readiness_input, approval, start
   if (start.decision !== 'ready_to_open') throw new Error(`application start is not ready: ${start.reason ?? start.decision}`);
   const checked = checkObservation(start, observation);
   if (checked.decision !== 'exact_final_review') throw new Error(`final review is not exact: ${checked.reason}`);
+  const review = submissionReviewFromChecked(start, checked);
   if (confirmation?.confirmed !== true || confirmation.statement !== SUBMIT_CONFIRMATION_STATEMENT) {
     throw new Error('explicit application-specific submit confirmation is required');
+  }
+  if (confirmation.challenge_digest !== review.challenge_digest) {
+    throw new Error('exact submission review challenge is required');
   }
   const approvedAt = timestamp(confirmation.approved_at, 'approved_at', now);
   if (Date.parse(approvedAt) < Date.parse(checked.observed.observed_at)) {
@@ -120,6 +160,7 @@ export function createExactSubmissionApproval({ readiness_input, approval, start
     fields_digest: checked.seal.fields_digest,
     artifacts_digest: checked.seal.artifacts_digest,
     observation_digest: checked.observation_digest,
+    review_digest: review.challenge_digest,
     resume_token: checked.resume_token,
     approved_by: 'candidate',
     approved_at: approvedAt,
@@ -130,12 +171,13 @@ export function createExactSubmissionApproval({ readiness_input, approval, start
   return { ...core, approval_digest: hash(core) };
 }
 
-function validSubmissionApproval(submitApproval, checked) {
+function validSubmissionApproval(submitApproval, checked, reviewDigest) {
   if (!submitApproval || submitApproval.schema_version !== 1) return false;
   const core = { schema_version: 1, application_key: checked.seal.application_key,
     content_digest: checked.seal.content_digest, url_digest: checked.seal.url_digest,
     fields_digest: checked.seal.fields_digest, artifacts_digest: checked.seal.artifacts_digest,
-    observation_digest: checked.observation_digest, resume_token: checked.resume_token,
+    observation_digest: checked.observation_digest, review_digest: reviewDigest,
+    resume_token: checked.resume_token,
     approved_by: 'candidate', approved_at: submitApproval.approved_at,
     statement: SUBMIT_CONFIRMATION_STATEMENT, scope: 'submit_exact_application_once',
     max_consequential_actions: 1 };
@@ -154,7 +196,10 @@ export function prepareApprovedSubmission({ readiness_input, approval, start_con
   if (start.decision !== 'ready_to_open') return blocked(`start:${start.reason ?? start.decision}`);
   const checked = checkObservation(start, observation);
   if (checked.decision !== 'exact_final_review') return checked;
-  if (!validSubmissionApproval(submitApproval, checked)) return blocked('submit_approval_invalid_or_stale', checked.resume_token);
+  const review = submissionReviewFromChecked(start, checked);
+  if (!validSubmissionApproval(submitApproval, checked, review.challenge_digest)) {
+    return blocked('submit_approval_invalid_or_stale', checked.resume_token);
+  }
   const executionCore = {
     application_key: checked.seal.application_key,
     content_digest: checked.seal.content_digest,

@@ -4,7 +4,7 @@ import { createApplicationBundle, createExactApproval } from '../enhanced/applic
 import { prepareCandidateSubmissionHandoff } from '../enhanced/candidate-submission-handoff.mjs';
 import { START_CONFIRMATION_STATEMENT, createApplicationStartConfirmation,
   prepareCandidateApplicationStart } from '../enhanced/application-launch.mjs';
-import { SUBMIT_CONFIRMATION_STATEMENT, createExactSubmissionApproval,
+import { SUBMIT_CONFIRMATION_STATEMENT, createExactSubmissionApproval, createExactSubmissionReview,
   prepareApprovedSubmission, executeApprovedSubmission, verifySubmissionReceipt,
   recordAppliedExactlyOnce, createAppliedLifecycleDraftFromReceipt } from '../enhanced/approved-application-submission.mjs';
 
@@ -50,10 +50,11 @@ function fixture() {
     rendered_fields: start.reviewed_fields, attached_artifacts: start.reviewed_artifacts,
     unexpected_fields: [], final_review: true, observed_at: WHEN,
     browser_contract_digest: 'e'.repeat(64) };
+  const review = createExactSubmissionReview({ readiness_input, approval, start_confirmation, observation });
   const submit_approval = createExactSubmissionApproval({ readiness_input, approval, start_confirmation,
     observation, confirmation: { confirmed: true, statement: SUBMIT_CONFIRMATION_STATEMENT,
-      approved_at: WHEN } }, { now: NOW });
-  return { readiness_input, approval, start_confirmation, observation, submit_approval, bundle };
+      challenge_digest: review.challenge_digest, approved_at: WHEN } }, { now: NOW });
+  return { readiness_input, approval, start_confirmation, observation, review, submit_approval, bundle };
 }
 
 function plan(f = fixture()) {
@@ -68,6 +69,23 @@ test('no submit occurs without exact explicit application approval', async () =>
   const result = await executeApprovedSubmission(missing, () => { calls += 1; });
   assert.equal(calls, 0);
   assert.equal(result.consequential_actions, 0);
+});
+
+test('final approval requires the exact one-application review challenge', () => {
+  const f = fixture();
+  assert.equal(f.review.decision, 'needs_exact_submission_approval');
+  assert.equal(f.review.application.key, KEY);
+  assert.equal(f.review.consequential_actions, 0);
+  assert.equal(f.review.tracker_mutation, false);
+  assert.equal(f.review.applied_status_authorized, false);
+  assert.throws(() => createExactSubmissionApproval({ ...f, confirmation: { confirmed: true,
+    statement: SUBMIT_CONFIRMATION_STATEMENT, challenge_digest: '0'.repeat(64), approved_at: WHEN } },
+  { now: NOW }), /exact submission review challenge is required/);
+  const changed = structuredClone(f);
+  changed.observation.browser_contract_digest = 'f'.repeat(64);
+  assert.throws(() => createExactSubmissionApproval({ ...changed, confirmation: { confirmed: true,
+    statement: SUBMIT_CONFIRMATION_STATEMENT, challenge_digest: f.review.challenge_digest,
+    approved_at: WHEN } }, { now: NOW }), /exact submission review challenge is required/);
 });
 
 test('changed package, URL, fields, artifacts and browser contract make approval stale and fail closed', () => {
