@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { employmentVerdict, usLocationVerdict, matchesExploreQualifications } from "../lib/explore-qualifier.mjs";
+import { employmentVerdict } from "../lib/explore-qualifier.mjs";
+import { usLocationVerdict, matchesExploreQualifications } from "../web/src/lib/explore-qualifier.mjs";
 
 test("USA-only accepts explicit states, DC, and US remote, not ambiguous remote", () => {
   for (const loc of ["Austin, TX", "New York, NY", "California", "Washington, DC", "Remote - United States", "Remote, USA", "Chicago, Illinois"]) {
