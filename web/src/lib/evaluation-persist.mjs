@@ -1,7 +1,6 @@
 import { link, mkdir, open, unlink } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { formatReportNumber, releaseReportNumbers, reserveReportNumbers } from "../../../reserve-report-num.mjs";
 import { createProcessTreeStopper } from "./process-tree.mjs";
 
 const HEADER = "num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport\tnotes\turl";
@@ -30,16 +29,17 @@ async function writeExclusiveAtomic(finalPath, data) {
     await handle.close();
   }
   try {
-    // Hard-link publication is atomic and refuses an existing target; rename()\n    // would silently overwrite on POSIX, defeating the backend-owned path gate.\n    await link(temporary, finalPath);\n    await unlink(temporary);
+    await link(temporary, finalPath);
+    await unlink(temporary);
   } catch (error) {
     await unlink(temporary).catch(() => {});
     throw error;
   }
 }
 
-function runMerge(root, options = {}) {
+function runScript(root, args, options = {}) {
   const spawnFn = options.spawnFn ?? spawn;
-  const child = spawnFn(process.execPath, [path.join(root, "merge-tracker.mjs")], {
+  const child = spawnFn(process.execPath, args, {
     cwd: root,
     env: { ...process.env, CAREER_OPS_ROOT: root },
     stdio: ["ignore", "pipe", "pipe"],
@@ -57,11 +57,22 @@ function runMerge(root, options = {}) {
     child.once("close", (code, signal) => {
       stopper.settled();
       options.signal?.removeEventListener("abort", onAbort);
-      if (options.signal?.aborted) return reject(Object.assign(new Error("Evaluation persistence was cancelled; generated files remain resumable and no false completion was recorded."), { code: "ABORT_ERR" }));
-      if (code !== 0) return reject(new Error(`merge-tracker.mjs failed (${signal || code}): ${stderr.trim().slice(0, 500)}`));
+      if (options.signal?.aborted) return reject(Object.assign(new Error("Evaluation persistence was cancelled; no false completion was recorded."), { code: "ABORT_ERR" }));
+      if (code !== 0) return reject(new Error(`${path.basename(args[0])} failed (${signal || code}): ${stderr.trim().slice(0, 500)}`));
       resolve({ stdout, stderr });
     });
   });
+}
+
+async function reserve(root, options) {
+  if (options.reserveFn) return options.reserveFn({ root, signal: options.signal });
+  const result = await runScript(root, [path.join(root, "reserve-report-num.mjs")], options);
+  const num = String(result.stdout).trim();
+  if (!/^\d{3,}$/.test(num)) throw new Error("reserve-report-num.mjs returned an invalid report number.");
+  return {
+    num,
+    release: () => runScript(root, [path.join(root, "reserve-report-num.mjs"), "--release", num], { ...options, signal: undefined }),
+  };
 }
 
 /**
@@ -70,9 +81,9 @@ function runMerge(root, options = {}) {
  */
 export async function persistEvaluation({ root, payload, today, postedAt, signal }, options = {}) {
   if (signal?.aborted) throw Object.assign(new Error("Evaluation persistence cancelled before reservation."), { code: "ABORT_ERR" });
-  const reservations = await reserveReportNumbers(1, { rootDir: root });
-  const numeric = reservations[0];
-  const num = formatReportNumber(numeric);
+  const reservation = await reserve(root, { ...options, signal });
+  const num = String(reservation.num);
+  if (!/^\d{3,}$/.test(num)) throw new Error("Report reservation returned an invalid number.");
   const company = safeCell(payload.company, "Company");
   const role = safeCell(payload.role, "Role");
   const note = safeCell(payload.note, "Note");
@@ -93,12 +104,14 @@ export async function persistEvaluation({ root, payload, today, postedAt, signal
     reportWritten = true;
     await writeExclusiveAtomic(additionPath, HEADER + "\n" + row + "\n");
     additionWritten = true;
-    const merged = await (options.mergeFn ? options.mergeFn({ root, signal }) : runMerge(root, { signal, spawnFn: options.spawnFn, stopOptions: options.stopOptions }));
+    const merged = options.mergeFn
+      ? await options.mergeFn({ root, signal })
+      : await runScript(root, [path.join(root, "merge-tracker.mjs")], { ...options, signal });
     return { num, reportRelative, additionPath, merged };
   } catch (error) {
     if (!additionWritten && reportWritten) await unlink(reportPath).catch(() => {});
     throw error;
   } finally {
-    await releaseReportNumbers(reservations, { rootDir: root }).catch(() => {});
+    await reservation.release?.().catch(() => {});
   }
 }
