@@ -22,5 +22,6 @@ test("the worker affordance cancels running jobs and only dismisses settled jobs
 test("request-stream cancellation terminates the spawned CLI", () => {
   const cancel = route.slice(route.indexOf("cancel() {"));
   assert.notEqual(cancel.indexOf("cancel() {"), -1);
-  assert.match(cancel, /child\.kill\("SIGTERM"\)/);
+  assert.match(cancel, /runAbort\.abort\(\)/);
+  assert.match(cancel, /childStopper\.stop\(\)/);
 });
