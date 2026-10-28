@@ -226,6 +226,9 @@ export async function POST(req: Request) {
   // until that work actually settles, instead of releasing the tracker-delete
   // guard while mark-pdf-ready.mjs is still actively writing applications.md.
   let pdfRenderPromise: Promise<void> | null = null;
+  // Evaluation persistence also outlives the worker process. Keep the tracker
+  // guard until reservation release and any merge subprocess have settled.
+  let evaluationPersistPromise: Promise<void> | null = null;
   // Cancellation only requests termination. Keep the guard until the child
   // actually closes and any render/mark work has finished.
   const finishRun = createRunFinalizer(child, () => {
@@ -296,6 +299,11 @@ export async function POST(req: Request) {
           // timer per abandoned request.
           closed = true;
           if (heartbeat) clearInterval(heartbeat);
+          if (killer) clearTimeout(killer);
+          // A broken transport is a real cancellation signal. Abort backend
+          // follow-up work and terminate the entire worker process tree.
+          runAbort.abort();
+          childStopper.stop();
         }
       };
       // Say so when the chosen runtime has no permission mechanism we can apply.
@@ -549,23 +557,29 @@ export async function POST(req: Request) {
         } else if (kind === "evaluate") {
           const envelope = evaluationFilter?.result();
           if (!envelope?.ok) {
-            const envelopeError = envelope && "error" in envelope ? envelope.error : "The evaluator returned no valid sealed report.";
+            const envelopeError =
+              envelope && "error" in envelope && typeof envelope.error === "string"
+                ? envelope.error
+                : "The evaluator returned no valid sealed report.";
             send({ type: "error", msg: envelopeError.slice(0, 200) });
           } else {
-            try {
-              send({ type: "status", label: "Validating and saving report…" });
-              const saved = await persistEvaluation({
-                root: careerOpsRoot(),
-                payload: envelope,
-                today,
-                postedAt,
-                signal: runAbort.signal,
-              });
-              send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
-              send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
-            } catch (error) {
-              send({ type: "error", msg: `Report was not recorded: ${error instanceof Error ? error.message : String(error)}`.slice(0, 200) });
-            }
+            evaluationPersistPromise = (async () => {
+              try {
+                send({ type: "status", label: "Validating and saving report…" });
+                const saved = await persistEvaluation({
+                  root: careerOpsRoot(),
+                  payload: envelope,
+                  today,
+                  postedAt,
+                  signal: runAbort.signal,
+                });
+                send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
+                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
+              } catch (error) {
+                send({ type: "error", msg: `Report was not recorded: ${error instanceof Error ? error.message : String(error)}`.slice(0, 200) });
+              }
+            })();
+            await evaluationPersistPromise;
           }
         } else {
           send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
@@ -579,11 +593,12 @@ export async function POST(req: Request) {
       if (killer) clearTimeout(killer);
       runAbort.abort();
       childStopper.stop();
-      if (pdfRenderPromise) {
-        // Render/mark keeps running after this client disconnects — wait for
-        // it to settle before releasing the guard, so a concurrent tracker
-        // delete can't race mark-pdf-ready.mjs's still-in-flight write.
-        pdfRenderPromise.finally(finishRun);
+      const followupPromise = evaluationPersistPromise ?? pdfRenderPromise;
+      if (followupPromise) {
+        // Follow-up writes keep running briefly after cancellation while their
+        // subprocess tree stops and reservations are released. Do not release
+        // the tracker guard until that cleanup has actually settled.
+        followupPromise.finally(finishRun);
       } else {
         finishRun();
       }
