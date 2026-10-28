@@ -46,18 +46,21 @@ test("the fixture these guards read still looks like itself", () => {
   }
 });
 
-test("unfenced runtimes are blocked for write-capable run kinds", () => {
-  const unfenced = ["hermes", "gemini", "opencode", "copilot", "qwen", "antigravity", "grok", "made-up-cli"];
+test("OpenCode is verified for read-only evaluation but never model-side writes", () => {
+  const unfenced = ["hermes", "gemini", "copilot", "qwen", "antigravity", "grok", "made-up-cli"];
   for (const cliId of unfenced) {
-    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("pdf")), true, `${cliId} may remain available for local read-only runs`);
-    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("research")), true, `${cliId} may remain available for advisory runs`);
-    for (const kind of ["evaluate", "fix-portal"]) {
-      assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor(kind)), false, `${cliId} must be blocked for ${kind}`);
-    }
+    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("evaluate")), true, `${cliId} may run the read-only evaluator`);
+    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("fix-portal")), false, `${cliId} must be blocked for write repair`);
   }
-  for (const cliId of ["claude", "codex"]) {
-    assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("evaluate")), true, `${cliId} is verified for write-capable runs`);
-  }
+  assert.equal(isCliAllowedForCapabilities("opencode", capabilitiesFor("evaluate")), true);
+  assert.throws(
+    () => fenceArgs({ cliId: "opencode", args: ["run", "PROMPT"], capabilities: CAPS.workspaceWrite }),
+    /read-only/,
+  );
+  assert.deepEqual(
+    fenceArgs({ cliId: "opencode", args: ["run", "PROMPT"], capabilities: CAPS.networkReadOnly }).args,
+    ["run", "--agent", "career-ops-readonly", "PROMPT"],
+  );
 });
 
 test("a local read-only worker gets a true read-only sandbox", () => {
