@@ -33,7 +33,8 @@
  * or not sandboxed at all.
  */
 
-import { verifyClaudeArgs } from "./claude-invocation.mjs";\nimport { fenceOpenCodeArgs } from "./opencode-readonly.mjs";
+import { verifyClaudeArgs } from "./claude-invocation.mjs";
+import { fenceOpenCodeArgs } from "./opencode-readonly.mjs";
 
 /** Codex sandbox policies, in the spelling `sandbox_mode` accepts. */
 const CODEX_READ_ONLY = "read-only";
