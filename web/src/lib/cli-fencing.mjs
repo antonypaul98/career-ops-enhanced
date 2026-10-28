@@ -53,6 +53,8 @@ const CODEX_WORKSPACE_WRITE = "workspace-write";
  * @returns {boolean}
  */
 export function isCliAllowedForCapabilities(cliId, { writes }) {
+  // OpenCode is verified only for read-only workers; canonical persistence stays in the backend.
+  if (cliId === "opencode" && writes) return false;
   return !writes || Object.hasOwn(FENCERS, cliId);
 }
 
