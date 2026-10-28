@@ -70,11 +70,12 @@ test("pdf needs neither writes nor the network", () => {
 });
 
 test("only the model-side portal repair may write", () => {
-  // Evaluation artifacts are persisted by the backend after envelope validation;\n  // only portal repair still needs model-side writes.
+  // Evaluation artifacts are persisted by the backend after envelope validation;
+  // only portal repair still needs model-side writes.
   const writers = KNOWN_KINDS.filter((k) => capabilitiesFor(k).writes);
 
-  // Then exactly those two, and nothing has quietly joined them.
-  assert.deepEqual(writers.sort(), ["evaluate", "fix-portal"]);
+  assert.deepEqual(writers.sort(), ["fix-portal"]);
+  assert.equal(capabilitiesFor("evaluate"), CAPS.networkReadOnly);
 });
 
 test("the policy and Claude's tool scope agree for every kind", () => {
