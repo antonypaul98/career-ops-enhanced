@@ -1,4 +1,4 @@
-import { mkdir, open, rename, unlink } from "node:fs/promises";
+import { link, mkdir, open, unlink } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { formatReportNumber, releaseReportNumbers, reserveReportNumbers } from "../../../reserve-report-num.mjs";
@@ -30,7 +30,7 @@ async function writeExclusiveAtomic(finalPath, data) {
     await handle.close();
   }
   try {
-    await rename(temporary, finalPath);
+    // Hard-link publication is atomic and refuses an existing target; rename()\n    // would silently overwrite on POSIX, defeating the backend-owned path gate.\n    await link(temporary, finalPath);\n    await unlink(temporary);
   } catch (error) {
     await unlink(temporary).catch(() => {});
     throw error;
