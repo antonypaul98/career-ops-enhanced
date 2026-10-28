@@ -11,7 +11,7 @@ test("backend chooses canonical paths and writes a headered tracker addition", a
   writeFileSync(path.join(root, "data", "applications.md"), "| # | Date | Company | Role | Status | Score | PDF | Report | Notes | URL |\n|---|---|---|---|---|---|---|---|---|---|\n");
   const payload = { company: "Acme", role: "Engineer", score: 4, note: "Synthetic fixture only", postingUrl: "https://example.com/jobs/1", reportMarkdown: "# Evaluation: Acme — Engineer\n\n**URL:** https://example.com/jobs/1\n\n## Machine Summary\n\n```yaml\ncompany: Acme\nrole: Engineer\nscore: 4\nfinal_decision: REVIEW\nconfidence: high\nwork_auth: confirmed\nrisk_summary: none\nscore_evidence: strong match\n```\n\n## A — Fit\nGood.\n## B — Requirements\nMet.\n## C — Evidence\nVerified.\n## D — Gaps\nNone.\n## E — Eligibility\nConfirmed.\n## F — Recommendation\nReview.\n## G — Posting Legitimacy\nVerified.\n## H — Draft Application Answers\nDraft only.\n## Risk Summary\nNone.\n## Score Evidence\nStrong match.\n## Keywords extracted\nNode.js\n## Keyword Coverage\nCovered.\n## Job Description\nSynthetic fixture description.\n" };
   let merged = 0;
-  const result = await persistEvaluation({ root, payload, today: "2026-10-28", postedAt: "2026-10-27" }, { mergeFn: async () => { merged++; } });
+  const result = await persistEvaluation({ root, payload, today: "2026-10-28", postedAt: "2026-10-27" }, { reserveFn: async () => ({ num: "001", release: async () => {} }), mergeFn: async () => { merged++; } });
   assert.equal(merged, 1);
   assert.match(result.reportRelative, /^reports\/001-acme-2026-10-28\.md$/);
   const addition = readFileSync(result.additionPath, "utf8").split("\n");
