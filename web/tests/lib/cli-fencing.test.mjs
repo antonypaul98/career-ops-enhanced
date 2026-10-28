@@ -351,7 +351,7 @@ test("claude is fenced by its own tool flags, so its argv passes through", () =>
 
 test("a CLI with no verified mechanism is passed through and reported honestly", () => {
   // Given the runtimes nobody has been able to verify a fencing mechanism for
-  for (const cliId of ["gemini", "opencode", "copilot", "qwen", "antigravity", "grok"]) {
+  for (const cliId of ["gemini", "copilot", "qwen", "antigravity", "grok"]) {
     const original = ["-p", "PROMPT"];
     const { args } = fenceArgs({ cliId, args: original, capabilities: CAPS.workspaceWrite });
 
@@ -536,7 +536,7 @@ test("fencingReport answers for the runtimes the routes actually ask about", () 
     // reassuring answer.
     assert.equal(fencingReport({ cliId, cliName: cliId, capabilities: CAPS.localReadOnly }).level, "none");
   }
-  for (const cliId of ["claude", "codex"]) {
+  for (const cliId of ["claude", "codex", "opencode"]) {
     assert.equal(fencingReport({ cliId, cliName: cliId, capabilities: CAPS.localReadOnly }).level, "full");
   }
 });
