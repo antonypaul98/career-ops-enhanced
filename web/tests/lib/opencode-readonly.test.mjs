@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { assertResolvedOpenCodeAgentReadOnly, fenceOpenCodeArgs, prepareOpenCodeReadOnlyLaunch, readOpenCodeConfigForTest } from "../../src/lib/opencode-readonly.mjs";
+import { assertResolvedOpenCodeAgentReadOnly, prepareOpenCodeReadOnlyLaunch, readOpenCodeConfigForTest } from "../../src/lib/opencode-readonly.mjs";
+import { fenceOpenCodeArgs } from "../../src/lib/opencode-fencing.mjs";
 import { CAPS } from "../../src/lib/worker-capabilities.mjs";
 
 test("OpenCode read-only argv binds the dedicated agent and refuses writers", () => {
