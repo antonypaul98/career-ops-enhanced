@@ -18,7 +18,7 @@ test("the fixture these guards read still looks like itself", () => {
   // When the list is empty or missing
   // Then every case below would pass by measuring nothing — refuse that first.
   assert.ok(Array.isArray(KNOWN_KINDS) && KNOWN_KINDS.length > 0, "KNOWN_KINDS must be a non-empty array");
-  assert.ok(KNOWN_KINDS.includes("evaluate"), "KNOWN_KINDS must still contain the writing kinds");
+  assert.ok(KNOWN_KINDS.includes("evaluate"), "KNOWN_KINDS must still contain evaluation");
 });
 
 test("every known kind has an explicit capability record", () => {
@@ -69,8 +69,8 @@ test("pdf needs neither writes nor the network", () => {
   assert.equal(caps.network, false, "pdf reads local files only — no fetch");
 });
 
-test("only the persisting kinds may write", () => {
-  // Given the kinds that produce canonical artifacts (reports, tracker, portals)
+test("only the model-side portal repair may write", () => {
+  // Evaluation artifacts are persisted by the backend after envelope validation;\n  // only portal repair still needs model-side writes.
   const writers = KNOWN_KINDS.filter((k) => capabilitiesFor(k).writes);
 
   // Then exactly those two, and nothing has quietly joined them.
