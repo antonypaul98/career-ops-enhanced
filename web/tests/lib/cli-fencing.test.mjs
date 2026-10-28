@@ -53,6 +53,7 @@ test("OpenCode is verified for read-only evaluation but never model-side writes"
     assert.equal(isCliAllowedForCapabilities(cliId, capabilitiesFor("fix-portal")), false, `${cliId} must be blocked for write repair`);
   }
   assert.equal(isCliAllowedForCapabilities("opencode", capabilitiesFor("evaluate")), true);
+  assert.equal(isCliAllowedForCapabilities("opencode", capabilitiesFor("fix-portal")), false);
   assert.throws(
     () => fenceArgs({ cliId: "opencode", args: ["run", "PROMPT"], capabilities: CAPS.workspaceWrite }),
     /read-only/,
