@@ -34,7 +34,7 @@
  */
 
 import { verifyClaudeArgs } from "./claude-invocation.mjs";
-import { fenceOpenCodeArgs } from "./opencode-readonly.mjs";
+import { fenceOpenCodeArgs } from "./opencode-fencing.mjs";
 
 /** Codex sandbox policies, in the spelling `sandbox_mode` accepts. */
 const CODEX_READ_ONLY = "read-only";
