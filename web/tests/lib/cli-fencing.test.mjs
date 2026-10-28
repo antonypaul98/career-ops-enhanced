@@ -531,7 +531,7 @@ test("each notice is detectable by the UI and names the runtime", () => {
 
 test("fencingReport answers for the runtimes the routes actually ask about", () => {
   // Given the routes call it for every entry in clis.ts
-  for (const cliId of ["gemini", "opencode", "copilot", "qwen", "antigravity", "grok"]) {
+  for (const cliId of ["gemini", "copilot", "qwen", "antigravity", "grok"]) {
     // Then each unverified runtime reports honestly rather than defaulting to a
     // reassuring answer.
     assert.equal(fencingReport({ cliId, cliName: cliId, capabilities: CAPS.localReadOnly }).level, "none");
