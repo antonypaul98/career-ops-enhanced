@@ -549,7 +549,8 @@ export async function POST(req: Request) {
         } else if (kind === "evaluate") {
           const envelope = evaluationFilter?.result();
           if (!envelope?.ok) {
-            send({ type: "error", msg: (envelope?.error || "The evaluator returned no valid sealed report.").slice(0, 200) });
+            const envelopeError = envelope && "error" in envelope ? envelope.error : "The evaluator returned no valid sealed report.";
+            send({ type: "error", msg: envelopeError.slice(0, 200) });
           } else {
             try {
               send({ type: "status", label: "Validating and saving report…" });
