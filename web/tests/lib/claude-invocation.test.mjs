@@ -262,12 +262,11 @@ test("claudeCliArgs: carries the prompt and the streaming flags", () => {
   assert.equal(argValue(args, "--permission-mode"), "acceptEdits");
 });
 
-test("claudeCliArgs: evaluate still ships write access", () => {
-  // Given an evaluation, which genuinely persists report + tracker artifacts
-  const allowed = argValue(claudeCliArgs({ kind: "evaluate", prompt: "x" }), "--allowedTools");
-
-  // Then its argv keeps write access — so removing it is a deliberate act
-  assert.equal(grantsWriteCapability({ allowed, disallowed: "" }), true);
+test("claudeCliArgs: evaluate is model-side read-only", () => {
+  const args = claudeCliArgs({ kind: "evaluate", prompt: "x" });
+  const allowed = argValue(args, "--allowedTools");
+  const disallowed = argValue(args, "--disallowedTools");
+  assert.equal(grantsWriteCapability({ allowed, disallowed }), false);
 });
 
 test("argValue: absent or dangling flags yield an empty string, not a crash", () => {
