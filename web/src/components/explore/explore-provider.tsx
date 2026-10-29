@@ -226,10 +226,9 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
                 setSources((s) => ({ ...s, [ev.ats]: { ...s[ev.ats as AtsSource], state: "active", companies: ev.companies } }));
                 break;
               case "progress":
-                // `matches` is the engine's running total. Live `offer` events
-                // (stderr JSON in --json mode) populate the card list; this
-                // number still drives the hero counter.
-                setMatchCount((m) => Math.max(m, ev.matches));
+                // Scanner progress counts all title matches, before the US/type
+                // gate. Only count cards surviving the selected filters.
+                setMatchCount(acc.length);
                 setSources((s) => ({ ...s, [ev.ats]: { ...s[ev.ats as AtsSource], state: "active", done: ev.scanned, total: ev.total } }));
                 break;
               case "atsDone":

@@ -262,6 +262,7 @@ const SYSTEM_PATHS = [
   'lib/placeholder-cell.mjs',
   'lib/tracker-addition.mjs',
   'lib/scan-summary-marker.mjs',
+  'lib/explore-qualifier.mjs',
   'lib/is-main-module.mjs',
   'lib/mjs-files.mjs',
   'lib/scratch-dirs.mjs',
