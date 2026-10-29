@@ -1,10 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { employmentVerdict } from "../lib/explore-qualifier.mjs";
-import { usLocationVerdict, matchesExploreQualifications } from "../web/src/lib/explore-qualifier.mjs";
+import { readFileSync, existsSync } from "node:fs";
+import { employmentVerdict, clearanceVerdict } from "../lib/explore-qualifier.mjs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const hasWeb = existsSync(join(ROOT, "web", "src"));
+const { usLocationVerdict, matchesExploreQualifications } = hasWeb
+  ? await import("../web/src/lib/explore-qualifier.mjs") : {};
 
-test("USA-only accepts explicit states, DC, and US remote, not ambiguous remote", () => {
+test("USA-only accepts explicit states, DC, and US remote, not ambiguous remote", { skip: !hasWeb }, () => {
   for (const loc of ["Austin, TX", "New York, NY", "California", "Washington, DC", "Remote - United States", "Remote, USA", "Chicago, Illinois"]) {
     assert.equal(usLocationVerdict(loc), "us", loc);
   }
@@ -31,7 +36,7 @@ test("full-time detected from positive evidence, not from full-time contract hou
   assert.equal(employmentVerdict({title:"Data Engineer",description:"We are hiring engineers"}), "unknown");
 });
 
-test("selected C2C plus full-time rejects unknown and foreign posts", () => {
+test("selected C2C plus full-time rejects unknown and foreign posts", { skip: !hasWeb }, () => {
   const f = {usOnly:true,employmentTypes:["c2c","full_time"]};
   assert.equal(matchesExploreQualifications({location:"Austin, TX",employmentType:"c2c"},f),true);
   assert.equal(matchesExploreQualifications({location:"Remote, USA",employmentType:"full_time"},f),true);
@@ -42,7 +47,7 @@ test("selected C2C plus full-time rejects unknown and foreign posts", () => {
   assert.equal(matchesExploreQualifications({location:"Austin, TX",employmentType:"unknown"},{...f,employmentTypes:["unknown"]}),true);
 });
 
-test("scanner sends only category labels, never full private job text; approval files untouched", () => {
+test("scanner sends only category labels, never full private job text; approval files untouched", { skip: !hasWeb }, () => {
   const scanner = readFileSync(new URL("../scan-ats-full.mjs",import.meta.url),"utf8");
   const web = readFileSync(new URL("../web/src/lib/core/scan.ts",import.meta.url),"utf8");
   const ui = readFileSync(new URL("../web/src/components/explore/filter-builder.tsx",import.meta.url),"utf8");
@@ -53,4 +58,10 @@ test("scanner sends only category labels, never full private job text; approval 
   assert.match(ui,/United States only/);
   assert.match(ui,/Corp-to-Corp \(C2C\)/);
   assert.doesNotMatch(scanner.slice(scanner.indexOf("export function formatLiveOfferLine"),scanner.indexOf("export function parseLiveOfferLine")),/description:|resume:|answer:/);
+});
+
+
+test('explicit no-clearance wording is not mistaken for a positive requirement', () => {
+  assert.equal(clearanceVerdict({ description: 'No security clearance is required.' }), 'not_required');
+  assert.equal(clearanceVerdict({ description: 'No security clearance is required. Must have active secret clearance for the onsite role.' }), 'required');
 });

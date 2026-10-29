@@ -14,7 +14,7 @@ test("accepts one complete sealed evaluation", () => {
 
 test("changed URL and incomplete reports fail closed", () => {
   assert.equal(parseEvaluationEnvelope(envelope, { expectedUrl: "https://example.com/jobs/2" }).ok, false);
-  const incomplete = envelope.replace("## H — Draft Application Answers", "## Missing");
+  const incomplete = envelope.replace("## A — Fit", "## Missing");
   assert.equal(parseEvaluationEnvelope(incomplete, { expectedUrl: payload.postingUrl }).ok, false);
 });
 
@@ -23,4 +23,13 @@ test("stream filter withholds private report body while retaining it for validat
   const visible = [filter.push(envelope.slice(0, 80)), filter.push(envelope.slice(80)), filter.flush()].join("");
   assert.ok(!visible.includes("Synthetic fixture description"));
   assert.equal(filter.result().ok, true);
+});
+
+
+test("oferta only requires draft answers for scores at least 4.5", () => {
+  const low = { ...payload, reportMarkdown: report.replace("## H — Draft Application Answers\nDraft only.\n", "") };
+  const wrap = value => `<<evaluation-json>>\n${JSON.stringify(value)}\n<</evaluation-json>>`;
+  assert.equal(parseEvaluationEnvelope(wrap(low)).ok, true);
+  const high = { ...low, score: 4.5, reportMarkdown: low.reportMarkdown.replace("score: 4", "score: 4.5") };
+  assert.equal(parseEvaluationEnvelope(wrap(high)).ok, false);
 });

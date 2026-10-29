@@ -100,7 +100,7 @@ export function validateEvaluationPayload(value, options = {}) {
   if (!reportMarkdown.includes("**URL:** " + postingUrl)) return { ok: false, error: "Report header URL does not match the sealed posting URL." };
 
   const letters = reportLetters(reportMarkdown);
-  const missingLetters = REQUIRED_LETTERS.filter((letter) => !letters.has(letter));
+  const missingLetters = REQUIRED_LETTERS.filter((letter) => (letter !== "H" || score >= 4.5) && !letters.has(letter));
   if (missingLetters.length) return { ok: false, error: "Report is incomplete; missing section(s): " + missingLetters.join(", ") + "." };
   for (const heading of REQUIRED_HEADINGS) {
     if (!new RegExp("^## " + escapeRegExp(heading) + "\\b", "mi").test(reportMarkdown)) {

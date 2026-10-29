@@ -24,6 +24,10 @@ export function preflightMaterialized(root, entries) {
     try {
       const stat = statSync(fullPath);
       if (!stat.isFile()) throw Object.assign(new Error("not a regular file"), { code: "EINVAL" });
+      // Refuse unmaterialized macOS files before a synchronous cloud read stalls.
+      if (process.platform === "darwin" && stat.size > 0 && stat.blocks === 0) {
+        throw Object.assign(new Error("file has no local blocks"), { code: "ENODATA" });
+      }
       fd = openSync(fullPath, "r");
       const sample = Buffer.alloc(Math.min(4096, Math.max(1, stat.size)));
       readSync(fd, sample, 0, sample.length, 0);

@@ -47,6 +47,9 @@ export function createProcessTreeStopper(child, options = {}) {
   }
 
   function settled() {
+    // The leader may close while a grandchild ignores SIGTERM. Keep the
+    // bounded group escalation alive until it has signalled those descendants.
+    if (stopping) return;
     if (escalation) clearTimeout(escalation);
     escalation = null;
   }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, X, FileText, Loader2 } from "lucide-react";
+import { X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CompanyLogo } from "@/components/company-logo";
 import { scoreNum, scoreTone } from "@/lib/format";
@@ -11,16 +11,16 @@ import { companyPresentation } from "@/lib/company-presentation.mjs";
 import type { Application } from "@/lib/career-ops";
 
 // Awaiting-decision row: a scored role with no terminal status. Primary action
-// opens the report (PDF + Apply live there). Skip / Applied still write status.
+// opens the report (PDF + Apply live there). Skip records Discarded; Applied requires the evidenced lifecycle workflow.
 export function DecisionCard({ app }: { app: Application }) {
   const router = useRouter();
-  const [busy, setBusy] = useState<"" | "Applied" | "Discarded">("");
+  const [busy, setBusy] = useState<"" | "Discarded">("");
   const [done, setDone] = useState<string | null>(null);
   const score = scoreNum(app.score);
   const tone = scoreTone(app.score);
   const company = companyPresentation(app);
 
-  const setStatus = async (status: "Applied" | "Discarded") => {
+  const setStatus = async (status: "Discarded") => {
     setBusy(status);
     try {
       await fetch("/api/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ n: app.n, status }) });
@@ -71,16 +71,9 @@ export function DecisionCard({ app }: { app: Application }) {
         >
           {busy === "Discarded" ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />} Skip
         </button>
-        <button
-          type="button"
-          disabled={!!busy}
-          onClick={() => setStatus("Applied")}
-          title="Record Applied without opening the apply flow"
-          className="inline-flex shrink-0 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-faint transition hover:text-foreground disabled:opacity-60 max-sm:min-h-[44px]"
-        >
-          {busy === "Applied" ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-          Applied
-        </button>
+        <Link href="/approvals" className="text-xs text-muted hover:text-foreground">
+          Approval Center
+        </Link>
       </div>
     </div>
   );
