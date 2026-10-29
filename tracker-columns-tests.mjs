@@ -1147,59 +1147,67 @@ function mergeOne(tsv, name = '2-globex.tsv') {
   }
 }
 
-// ── the web's run prompt is a TSV writer too (#3517) ───────────────────────
-// web/src/lib/run-prompts.mjs dictates the addition row to the agent, so the
-// prompt is an emitter of this format even though it emits no bytes itself. A
-// header it spells differently than tracker-aliases.json knows would not go
-// red anywhere: merge-tracker would read the row as headerless and fall back to
-// content sniffing — the exact path that cannot order a `—` / `—` row. Assert
-// the prompt's own example lines against the real ingest, not against a copy of
-// the labels.
+// ── web evaluation TSV belongs to the trusted backend, not the agent ───────
+// The evaluation worker now returns a sealed read-only envelope. The backend
+// writes the headered TSV and merges it. Exercise the REAL backend emitter and
+// the REAL merge-tracker consumer together; do not require TSV in the prompt.
 if (!HAS_WEB) {
-  skipWeb('web run-prompt TSV header matches the ingest contract');
+  skipWeb('web evaluation backend TSV matches the ingest contract');
 } else {
   try {
-    // Relative specifier, like the other web imports in this file: an absolute
-    // path is not a valid ESM specifier on Windows (`D:\...` reads as a URL
-    // scheme), which is how this test passed on ubuntu/macos and failed there.
     const { buildPrompt } = await import('./web/src/lib/run-prompts.mjs');
+    const { persistEvaluation } = await import('./web/src/lib/evaluation-persist.mjs');
     const prompt = buildPrompt({ kind: 'evaluate', input: 'https://example.com/jobs/2', memory: '', today: '2026-02-02' });
-    const tabLines = prompt.split('\n').filter(l => l.includes('\t'));
-
-    if (tabLines.length !== 2) {
-      fail(`web run prompt shows a header line and one data line — got ${tabLines.length}`);
+    const tabLines = prompt.split('\n').filter(line => line.includes('\t'));
+    if (tabLines.length === 0
+        && /backend.not you.runs reserve-report-num\.mjs/i.test(prompt)
+        && /do not write any file/i.test(prompt)) {
+      pass('web evaluation prompt delegates TSV persistence to the trusted backend');
     } else {
-      const header = tabLines[0].trim().split('\t');
-      const { missing, duplicates, unknown } = resolveTsvColumns(header);
-      if (!missing.length && !duplicates.length && !unknown.length) {
-        pass('web run prompt: every header label resolves through tracker-aliases.json');
-      } else {
-        fail(`web run prompt header — missing ${JSON.stringify(missing)}, duplicates ${JSON.stringify(duplicates)}, unknown ${JSON.stringify(unknown)}`);
-      }
-
-      // Fill the prompt's own template with real values, by NAME, and merge it.
-      const VALUES = {
-        num: '2', date: '2026-02-02', company: 'Globex', role: 'Manager',
-        status: 'Applied', score: '4.5/5', pdf: '❌', report: '—',
-        notes: 'row as the web dictates it', url: 'https://example.com/jobs/2',
-      };
-      const dataWidth = tabLines[1].trim().split('\t').length;
-      if (dataWidth !== header.length) {
-        fail(`web run prompt: header labels ${header.length} columns but the data row shows ${dataWidth}`);
-      }
-      const row = header.map(h => VALUES[h.trim().toLowerCase()] ?? '').join('\t');
-      const sb = makeSandbox(HEADER_9, { '2-globex.tsv': `${header.join('\t')}\n${row}\n` });
-      const merge = runCaptured('merge-tracker.mjs', sb);
-      const cells = (dataRows(sb.tracker).find(l => l.includes('Globex')) || '').split('|').map(c => c.trim());
-      rmSync(sb.dir, { recursive: true, force: true });
-      if (merge.code === 0 && cells[5] === '4.5/5' && cells[6] === 'Applied') {
-        pass('web run prompt: the row it dictates merges into the right columns');
-      } else {
-        fail(`web run prompt row merge (code ${merge.code}) — cells ${JSON.stringify(cells)}\n${merge.stdout}`);
-      }
+      fail('web evaluation prompt must not dictate a TSV row or authorize worker file writes');
     }
-  } catch (e) {
-    fail(`web run-prompt TSV header test crashed: ${e.message}`);
+
+    const sb = makeSandbox(HEADER_9);
+    const backendAdditions = join(sb.dir, 'batch', 'tracker-additions');
+    mkdirSync(backendAdditions, { recursive: true });
+    try {
+      const result = await persistEvaluation({
+        root: sb.dir,
+        today: '2026-02-02',
+        payload: {
+          company: 'Globex', role: 'Manager', score: 4.5,
+          note: 'synthetic backend row', postingUrl: 'https://example.com/jobs/2',
+          reportMarkdown: '# Synthetic evaluation\n',
+        },
+      }, {
+        reserveFn: async () => ({ num: '002', release: async () => {} }),
+        mergeFn: async () => {
+          const merge = runScript('merge-tracker.mjs', [], { ...sb, additions: backendAdditions });
+          if (merge.code !== 0) throw new Error(merge.stdout);
+        },
+      });
+      const additionLines = readFileSync(result.additionPath, 'utf8').trimEnd().split('\n');
+      const header = additionLines[0].split('\t');
+      const { missing, duplicates, unknown } = resolveTsvColumns(header);
+      if (!missing.length && !duplicates.length && !unknown.length
+          && additionLines.length === 2
+          && additionLines[1].split('\t').length === header.length) {
+        pass('backend TSV header and row conform to the canonical ingest schema');
+      } else {
+        fail('backend TSV header/row mismatch: ' + JSON.stringify({ missing, duplicates, unknown, lines: additionLines.length }));
+      }
+      const row = dataRows(sb.tracker).find(line => line.includes('Globex')) || '';
+      const cells = row.split('|').map(cell => cell.trim());
+      if (cells[5] === '4.5/5' && cells[6] === 'Evaluated') {
+        pass('backend-written evaluation row merges into the correct tracker columns');
+      } else {
+        fail('backend evaluation row merge produced unexpected cells: ' + JSON.stringify(cells));
+      }
+    } finally {
+      rmSync(sb.dir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    fail('web backend TSV integration test crashed: ' + error.message);
   }
 }
 
