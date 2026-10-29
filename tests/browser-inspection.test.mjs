@@ -162,8 +162,8 @@ test('durable approval claims survive separate processes and reject replay', t =
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const moduleUrl = new URL('../submit-application-browser.mjs', import.meta.url).href;
   const code = `import {reserveSubmissionAttempt} from ${JSON.stringify(moduleUrl)};
-    console.log(reserveSubmissionAttempt(process.argv[1], 'a'.repeat(64)));`;
-  const run = () => spawnSync(process.execPath, ['--input-type=module', '-e', code, root], { encoding: 'utf8' });
+    console.log(reserveSubmissionAttempt(${JSON.stringify(root)}, 'a'.repeat(64)));`;
+  const run = () => spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' });
   const first = run(); const retry = run();
   assert.equal(first.status, 0); assert.equal(retry.status, 0);
   assert.equal(first.stdout.trim(), 'true'); assert.equal(retry.stdout.trim(), 'false');
