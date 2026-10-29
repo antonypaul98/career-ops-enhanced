@@ -1171,7 +1171,8 @@ if (!HAS_WEB) {
     const backendAdditions = join(sb.dir, 'batch', 'tracker-additions');
     mkdirSync(backendAdditions, { recursive: true });
     try {
-      const result = await persistEvaluation({
+      let emittedAddition = '';
+      await persistEvaluation({
         root: sb.dir,
         today: '2026-02-02',
         payload: {
@@ -1182,11 +1183,13 @@ if (!HAS_WEB) {
       }, {
         reserveFn: async () => ({ num: '002', release: async () => {} }),
         mergeFn: async () => {
+          const additionPath = join(backendAdditions, '002-globex.tsv');
+          emittedAddition = readFileSync(additionPath, 'utf8');
           const merge = runScript('merge-tracker.mjs', [], { ...sb, additions: backendAdditions });
           if (merge.code !== 0) throw new Error(merge.stdout);
         },
       });
-      const additionLines = readFileSync(result.additionPath, 'utf8').trimEnd().split('\n');
+      const additionLines = emittedAddition.trimEnd().split('\n');
       const header = additionLines[0].split('\t');
       const { missing, duplicates, unknown } = resolveTsvColumns(header);
       if (!missing.length && !duplicates.length && !unknown.length
