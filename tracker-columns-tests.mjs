@@ -1149,8 +1149,8 @@ function mergeOne(tsv, name = '2-globex.tsv') {
 
 // ── web evaluation TSV belongs to the trusted backend, not the agent ───────
 // The evaluation worker now returns a sealed read-only envelope. The backend
-// writes the headered TSV and merges it. Exercise the REAL backend emitter and
-// the REAL merge-tracker consumer together; do not require TSV in the prompt.
+// writes the headered TSV and merges it. Capture the emitted bytes immediately
+// before the real consumer ingests and removes them; do not require TSV in the prompt.
 if (!HAS_WEB) {
   skipWeb('web evaluation backend TSV matches the ingest contract');
 } else {
