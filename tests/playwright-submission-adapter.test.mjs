@@ -1,10 +1,13 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { observeFinalReview, createPlaywrightSubmitExecutor, capturePlaywrightReceipt,
   validatePlaywrightSubmissionContract } from '../enhanced/playwright-submission-adapter.mjs';
 
+const resumeBytes = Buffer.from('%PDF-1.4 synthetic resume bytes');
+const resumeHash = createHash('sha256').update(resumeBytes).digest('hex');
 const URL = 'https://jobs.synthetic-acme.example/apply/42';
 const WHEN = '2026-10-21T00:00:00.000Z';
 const browserTest = existsSync(chromium.executablePath()) ? test : test.skip;
@@ -13,7 +16,7 @@ const contract = {
   application_key: 'synthetic-042',
   target_url: URL,
   fields: [{ key: 'first_name', label: 'First name', selector: '#first-name', read: 'value' }],
-  artifacts: [{ kind: 'resume', sha256: 'a'.repeat(64), selector: '#resume', display_name: 'synthetic-resume.pdf' }],
+  artifacts: [{ kind: 'resume', sha256: resumeHash, selector: '#resume', display_name: 'synthetic-resume.pdf' }],
   submit: { selector: '#submit', expected_text: 'Submit application' },
   receipt: {
     selectors: [{ selector: '#receipt', kind: 'ats_success_page' }],
@@ -28,11 +31,12 @@ const reviewHtml = `<!doctype html><html><body>
 </body></html>`;
 
 async function withPage(fn) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: process.env.CAREER_OPS_HEADED_TEST !== '1' });
   try {
     const page = await browser.newPage();
     await page.route('https://jobs.synthetic-acme.example/**', route => route.fulfill({ status: 200, contentType: 'text/html', body: reviewHtml }));
     await page.goto(URL);
+    await page.locator('#resume').setInputFiles({ name: 'synthetic-resume.pdf', mimeType: 'application/pdf', buffer: resumeBytes });
     return await fn(page);
   } finally {
     await browser.close();
@@ -42,7 +46,7 @@ async function withPage(fn) {
 browserTest('reads one exact synthetic final-review form and attached artifact', () => withPage(async page => {
   const observed = await observeFinalReview(page, contract, { observedAt: WHEN });
   assert.deepEqual(observed.rendered_fields, [{ key: 'first_name', label: 'First name', value: 'Synthetic' }]);
-  assert.deepEqual(observed.attached_artifacts, [{ kind: 'resume', sha256: 'a'.repeat(64) }]);
+  assert.deepEqual(observed.attached_artifacts, [{ kind: 'resume', sha256: resumeHash }]);
   assert.deepEqual(observed.unexpected_fields, []);
   assert.equal(observed.current_url, URL);
   assert.match(observed.browser_contract_digest, /^[a-f0-9]{64}$/);
@@ -126,3 +130,24 @@ test('contract rejects unknown capabilities and fixtures contain no private cand
   assert.throws(() => validatePlaywrightSubmissionContract(noSuccessUrl), /success_url_prefixes is required/);
   assert.doesNotMatch(JSON.stringify({ contract, reviewHtml }), /antony|gmail|@/i);
 });
+
+ browserTest('same filename with different file bytes fails closed', () => withPage(async page => {
+  await page.locator('#resume').setInputFiles({ name: 'synthetic-resume.pdf', mimeType: 'application/pdf', buffer: Buffer.from('wrong bytes') });
+  const observed = await observeFinalReview(page, contract);
+  assert.deepEqual(observed.attached_artifacts, []);
+  assert.ok(observed.unexpected_fields.includes('artifact:resume:digest_mismatch'));
+}));
+
+browserTest('filename attributes and missing file bytes cannot establish artifact identity', () => withPage(async page => {
+  await page.locator('#resume').setInputFiles([]);
+  const observed = await observeFinalReview(page, contract);
+  assert.deepEqual(observed.attached_artifacts, []);
+  assert.ok(observed.unexpected_fields.includes('artifact:resume:bytes_unavailable'));
+}));
+
+browserTest('executor rehashes file bytes after approval and refuses replacement', () => withPage(async page => {
+  const observed = await observeFinalReview(page, contract);
+  const executor = createPlaywrightSubmitExecutor({ page, contract, expected_observation: observed });
+  await page.locator('#resume').setInputFiles({ name: 'synthetic-resume.pdf', mimeType: 'application/pdf', buffer: Buffer.from('replacement') });
+  await assert.rejects(() => executor({ action: 'submit_exact_approved_form', execution_digest: 'b'.repeat(64) }), /changed/);
+}));

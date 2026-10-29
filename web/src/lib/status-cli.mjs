@@ -106,3 +106,11 @@ export function trackerRowArg(n) {
   const row = String(n).trim();
   return /^\d+$/.test(row) ? row : null;
 }
+
+
+/** Manual dashboard status edits cannot stand in for verified submission evidence. */
+export function statusEvidenceError(canonicalStatus) {
+  return canonicalStatus === "Applied"
+    ? "Applied requires a verified submission receipt and the reviewed lifecycle workflow. Review the application in Approval Center; this status shortcut cannot record it."
+    : null;
+}

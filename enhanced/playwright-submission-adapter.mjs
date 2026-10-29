@@ -95,6 +95,19 @@ async function challengeState(page) {
   return { url, body, login_required: loginRequired, mfa_required: mfaRequired, captcha_required: captchaRequired };
 }
 
+/** Browser-side File reader, also exercised in native Safari device validation.
+ * Return bytes, not a page-supplied digest. Bound allocation; ambiguous, empty,
+ * oversized, server-only or inaccessible attachments are unverifiable.
+ */
+export async function readSelectedFile(node) {
+  if (node.tagName !== 'INPUT' || node.type !== 'file' || node.files?.length !== 1) return null;
+  const file = node.files[0];
+  if (file.size === 0 || file.size > 25 * 1024 * 1024) return null;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (node.files.length !== 1 || node.files[0] !== file || bytes.length !== file.size) return null;
+  return { name: file.name, bytes: Array.from(bytes) };
+}
+
 /** Read the current final-review DOM into the exact observation used by the kernel. */
 export async function observeFinalReview(page, rawContract, { observedAt = new Date().toISOString() } = {}) {
   const contract = validateContract(structuredClone(rawContract));
@@ -108,7 +121,18 @@ export async function observeFinalReview(page, rawContract, { observedAt = new D
       unexpectedFields.push(field.key);
       continue;
     }
-    renderedFields.push({ key: field.key, label: field.label, value: await readValue(locator, field.read) });
+    const label = await locator.evaluate(node => {
+      const labelledBy = node.getAttribute('aria-labelledby');
+      if (labelledBy) return labelledBy.split(/\s+/).map(id => document.getElementById(id)?.textContent ?? '').join(' ').trim();
+      const ariaLabel = node.getAttribute('aria-label');
+      if (ariaLabel) return ariaLabel.trim();
+      return Array.from(node.labels ?? []).map(label => label.textContent.trim()).join(' ');
+    });
+    if (label !== field.label) {
+      unexpectedFields.push(`field:${field.key}:label_changed`);
+      continue;
+    }
+    renderedFields.push({ key: field.key, label, value: await readValue(locator, field.read) });
   }
   const attachedArtifacts = [];
   for (const artifact of contract.artifacts) {
@@ -117,13 +141,23 @@ export async function observeFinalReview(page, rawContract, { observedAt = new D
       unexpectedFields.push(`artifact:${artifact.kind}`);
       continue;
     }
-    const name = String(await locator.getAttribute('data-career-ops-file-name').catch(() => '')
-      || await locator.inputValue().catch(() => '')).replace(/^.*[\\/]/, '');
-    if (name !== artifact.display_name) {
+    // Read the selected File itself. Display text/DOM attributes and local paths
+    // cannot prove what is attached in this browser session.
+    const selected = await locator.evaluate(readSelectedFile).catch(() => null);
+    if (!selected) {
+      unexpectedFields.push(`artifact:${artifact.kind}:bytes_unavailable`);
+      continue;
+    }
+    if (selected.name !== artifact.display_name) {
       unexpectedFields.push(`artifact:${artifact.kind}:changed`);
       continue;
     }
-    attachedArtifacts.push({ kind: artifact.kind, sha256: artifact.sha256 });
+    const actualHash = createHash('sha256').update(Buffer.from(selected.bytes)).digest('hex');
+    if (actualHash !== artifact.sha256) {
+      unexpectedFields.push(`artifact:${artifact.kind}:digest_mismatch`);
+      continue;
+    }
+    attachedArtifacts.push({ kind: artifact.kind, sha256: actualHash });
   }
   for (const [index, entry] of contract.receipt.selectors.entries()) {
     const locator = page.locator(entry.selector);

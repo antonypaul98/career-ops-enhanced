@@ -7,12 +7,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { cliSubstitutionNotice, cliUnavailableError, resolveCliOrFallback } from "@/lib/clis";
 import { localISODate } from "@/lib/followups";
-import { accumulateTokens, hasNewCompletedReport, isFatalGenericStderr, killMsForKind, timeoutMessage } from "@/lib/run-cli-support.mjs";
+import { accumulateTokens, isFatalGenericStderr, killMsForKind, timeoutMessage } from "@/lib/run-cli-support.mjs";
 import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
 import { careerOpsRoot, readMemory, findReportFile, readInbox, readScanDates, readLanguageConfig } from "@/lib/career-ops";
 import { resolvePdfPaths, type PdfPaths } from "@/lib/pdf-paths.mjs";
 import { renderAndMarkPdf, writeCvHtml, pdfRunOutcome } from "@/lib/pdf-render.mjs";
 import { createCvEnvelopeFilter, type CvEnvelope } from "@/lib/cv-envelope.mjs";
+import { createEvaluationEnvelopeFilter } from "@/lib/evaluation-envelope.mjs";
+import { persistEvaluation } from "@/lib/evaluation-persist.mjs";
+import { preflightMaterialized } from "@/lib/materialization-preflight.mjs";
+import { createProcessTreeStopper } from "@/lib/process-tree.mjs";
 import { buildPrompt, isShellSafeCompanyName } from "@/lib/run-prompts.mjs";
 import { capabilitiesFor } from "@/lib/worker-capabilities.mjs";
 import { fencingReport, isCliAllowedForCapabilities } from "@/lib/cli-fencing.mjs";
@@ -97,6 +101,21 @@ export async function POST(req: Request) {
     );
   }
 
+  if (kind === "evaluate") {
+    const materialized = preflightMaterialized(careerOpsRoot(), [
+      required,
+      "cv.md",
+      { path: "config/profile.yml", required: false },
+      { path: "modes/_profile.md", required: false },
+    ]);
+    if (!materialized.ok) {
+      return new Response(JSON.stringify({ error: materialized.error }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const today = localISODate();
 
   // Precompute deterministic scratch + final paths so the agent never chooses
@@ -151,23 +170,7 @@ export async function POST(req: Request) {
   // envelope-parsing routes rely on.
   const args = isClaude ? claudeCliArgs({ kind, prompt }) : (spec.streamArgs ?? spec.args)(prompt);
 
-  // For write-needing kinds, snapshot reports/ so we can verify the worker
-  // actually persisted (non-Claude CLIs lack Write auth and silently no-op).
-  // Names, not a count: reserving a number writes reports/NNN-RESERVED.md and the
-  // final report REPLACES it, so the `.md` count is unchanged and a count-delta
-  // gate reported "didn't save a report" for an evaluation that saved fine (#2085).
-  const reportsDir = path.join(careerOpsRoot(), "reports");
-  const reportEntries = () => {
-    try {
-      return fs.readdirSync(reportsDir);
-    } catch {
-      return [];
-    }
-  };
-  const persists = kind === "evaluate";
-  const reportsBefore = persists ? reportEntries() : [];
-  // Tracker-mutating runs hold a write token so a row delete can't race their merge
-  // (tracker.mjs delete doesn't yet share a lock with merge-tracker — see run-registry).
+  // Evaluation workers are read-only; the backend persists only after validating their sealed envelope.
   const writeToken = kind === "evaluate" || kind === "pdf" ? acquireTrackerWrite() : null;
 
   // stdin must reach EOF or the CLI waits on piped input that never comes: Codex's
@@ -205,6 +208,7 @@ export async function POST(req: Request) {
   // writeCvHtml and on to the renderer — and no structural check would catch it,
   // because the envelope markers and </html> are ASCII and still match. Setting
   // the encoding makes Node hold partial sequences across chunks.
+  const childStopper = createProcessTreeStopper(child);
   child.stdout.setEncoding("utf8");
   child.stderr.setEncoding("utf8");
   const enc = new TextEncoder();
@@ -215,12 +219,16 @@ export async function POST(req: Request) {
   let closed = false;
   let killer: ReturnType<typeof setTimeout> | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
+  const runAbort = new AbortController();
   // pdf-kind's render+mark work (renderPdf, below) keeps running detached even
   // after the agent child closes — and even after a client disconnect fires
   // cancel(). Track its promise so cancel() can defer releasing writeToken
   // until that work actually settles, instead of releasing the tracker-delete
   // guard while mark-pdf-ready.mjs is still actively writing applications.md.
   let pdfRenderPromise: Promise<void> | null = null;
+  // Evaluation persistence also outlives the worker process. Keep the tracker
+  // guard until reservation release and any merge subprocess have settled.
+  let evaluationPersistPromise: Promise<void> | null = null;
   // Cancellation only requests termination. Keep the guard until the child
   // actually closes and any render/mark work has finished.
   const finishRun = createRunFinalizer(child, () => {
@@ -278,7 +286,7 @@ export async function POST(req: Request) {
       let killedByTimeout = false;
       killer = setTimeout(() => {
         killedByTimeout = true;
-        try { child.kill("SIGTERM"); } catch { /* ignore */ }
+        childStopper.stop();
       }, killMs);
       const send = (obj: unknown) => {
         if (closed) return;
@@ -291,6 +299,11 @@ export async function POST(req: Request) {
           // timer per abandoned request.
           closed = true;
           if (heartbeat) clearInterval(heartbeat);
+          if (killer) clearTimeout(killer);
+          // A broken transport is a real cancellation signal. Abort backend
+          // follow-up work and terminate the entire worker process tree.
+          runAbort.abort();
+          childStopper.stop();
         }
       };
       // Say so when the chosen runtime has no permission mechanism we can apply.
@@ -331,6 +344,7 @@ export async function POST(req: Request) {
       // holding the 15-25 KB body out of the run log, which is the agent's
       // narration — see cv-envelope.mjs.
       const cvFilter = kind === "pdf" ? createCvEnvelopeFilter() : null;
+      const evaluationFilter = kind === "evaluate" ? createEvaluationEnvelopeFilter({ expectedUrl: input }) : null;
       // While the agent emits the 15-25 KB <<cv-html>> envelope, cvFilter swallows
       // every byte, so the response stream goes completely silent for as long as
       // the model takes to write the CV — a minute or more. Nothing downstream can
@@ -340,7 +354,7 @@ export async function POST(req: Request) {
       // the stream never idles during the filtered phase. Unknown event types are
       // ignored by the client's switch, so this is safe for older tabs too.
       const sendAgentText = (text: string) => {
-        const visible = cvFilter ? cvFilter.push(text) : text;
+        const visible = cvFilter ? cvFilter.push(text) : evaluationFilter ? evaluationFilter.push(text) : text;
         if (visible) send({ type: "text", text: visible });
       };
       /** Surface non-fatal issues in the run log rather than only a server log. */
@@ -452,8 +466,9 @@ export async function POST(req: Request) {
         }
       };
 
-      child.on("error", (e) => { send({ type: "error", msg: e.message }); close(); });
-      child.on("close", (code) => {
+      child.on("error", (e) => { childStopper.settled(); send({ type: "error", msg: e.message }); close(); });
+      child.on("close", async (code) => {
+        childStopper.settled();
         // A trailing line with no newline would otherwise never be tested.
         if (stderrBuf) { flagStderrLine(stderrBuf); stderrBuf = ""; }
         // A disconnected client must not start a new PDF render. Still finish
@@ -533,25 +548,39 @@ export async function POST(req: Request) {
           return close();
         }
 
-        const wroteReport = hasNewCompletedReport(reportsBefore, reportEntries());
-        // Honesty gate (#9): a green "done" with a parsed score requires a CLEAN exit,
-        // real output, AND (for evaluations) a report actually written. Anything else
-        // is surfaced — an errored run must never be banked as a confident score.
         const baseErr = noOutputError();
         if (baseErr) {
           send({ type: "error", msg: baseErr });
-        } else if (persists && !wroteReport) {
-          // The worker ran but never wrote the report/tracker row (e.g. a CLI
-          // without file-write authorization) — surface it instead of a fake score.
-          send({ type: "error", msg: "This evaluation didn't save a report, so it's not in your tracker. Full evaluation is verified on Claude Code." });
         } else if (!cleanExit || sawError) {
-          // Produced output (maybe even a report) but did NOT finish cleanly — flag it
-          // instead of recording a confident score off a half-finished run. sawError
-          // here means an authoritative structured error already sent its own
-          // message above; a bare non-clean exit gets the stderr snippet instead,
-          // when the heuristic classifier found one.
           const detail = !sawError && stderrErrorSnippet ? ` (${stderrErrorSnippet})` : "";
           send({ type: "error", msg: `This run hit an error before finishing, so it isn't recorded as a confident result — re-run it to verify.${detail}`.slice(0, 200) });
+        } else if (kind === "evaluate") {
+          const envelope = evaluationFilter?.result();
+          if (!envelope?.ok) {
+            const envelopeError =
+              envelope && "error" in envelope && typeof envelope.error === "string"
+                ? envelope.error
+                : "The evaluator returned no valid sealed report.";
+            send({ type: "error", msg: envelopeError.slice(0, 200) });
+          } else {
+            evaluationPersistPromise = (async () => {
+              try {
+                send({ type: "status", label: "Validating and saving report…" });
+                const saved = await persistEvaluation({
+                  root: careerOpsRoot(),
+                  payload: envelope,
+                  today,
+                  postedAt,
+                  signal: runAbort.signal,
+                });
+                send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
+                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
+              } catch (error) {
+                send({ type: "error", msg: `Report was not recorded: ${error instanceof Error ? error.message : String(error)}`.slice(0, 200) });
+              }
+            })();
+            await evaluationPersistPromise;
+          }
         } else {
           send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
         }
@@ -562,12 +591,14 @@ export async function POST(req: Request) {
       closed = true;
       if (heartbeat) clearInterval(heartbeat);
       if (killer) clearTimeout(killer);
-      try { child.kill("SIGTERM"); } catch { /* ignore */ }
-      if (pdfRenderPromise) {
-        // Render/mark keeps running after this client disconnects — wait for
-        // it to settle before releasing the guard, so a concurrent tracker
-        // delete can't race mark-pdf-ready.mjs's still-in-flight write.
-        pdfRenderPromise.finally(finishRun);
+      runAbort.abort();
+      childStopper.stop();
+      const followupPromise = evaluationPersistPromise ?? pdfRenderPromise;
+      if (followupPromise) {
+        // Follow-up writes keep running briefly after cancellation while their
+        // subprocess tree stops and reservations are released. Do not release
+        // the tracker guard until that cleanup has actually settled.
+        followupPromise.finally(finishRun);
       } else {
         finishRun();
       }

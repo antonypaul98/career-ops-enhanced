@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { prepareOpenCodeReadOnlyLaunch } from "./opencode-readonly.mjs";
 import { fenceArgs } from "./cli-fencing.mjs";
 import { prepareCliLaunch } from "./cli-launch.mjs";
 
@@ -62,7 +63,17 @@ export function spawnHeadlessCli(binPath, args, options, fencing) {
   // shell, so launch the .js/.exe it wraps (a no-op elsewhere; cli-launch.mjs).
   // After fencing, so the fencers see the CLI's own argv rather than node's.
   const launch = prepareCliLaunch(binPath, fencedArgs);
-  const child = spawn(launch.command, launch.args, options);
+  const openCode = fencing.cliId === "opencode"
+    ? prepareOpenCodeReadOnlyLaunch(launch.command, { cwd: options.cwd, env: options.env, capabilities: fencing.capabilities })
+    : null;
+  const child = spawn(launch.command, launch.args, {
+    ...options,
+    env: openCode?.env ?? options.env,
+    // A dedicated process group lets cancellation stop grandchildren as well.
+    detached: options.detached ?? process.platform !== "win32",
+  });
+  child.once("close", () => openCode?.cleanup());
+  child.once("error", () => openCode?.cleanup());
   child.stdin?.end();
   return child;
 }

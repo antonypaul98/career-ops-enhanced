@@ -6,14 +6,14 @@
  * credentials, solves challenges, approves content, or writes Applied.
  */
 
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { isMainModule } from './lib/is-main-module.mjs';
 import { canonicalJson } from './enhanced/application-approval.mjs';
 import { prepareCandidateApplicationStart } from './enhanced/application-launch.mjs';
-import { executeApprovedSubmission, prepareApprovedSubmission, verifySubmissionReceipt }
+import { executeApprovedSubmission, inspectApplicationObservation, prepareApprovedSubmission, verifySubmissionReceipt }
   from './enhanced/approved-application-submission.mjs';
 import { capturePlaywrightReceipt, createPlaywrightSubmitExecutor, observeFinalReview }
   from './enhanced/playwright-submission-adapter.mjs';
@@ -75,24 +75,42 @@ function atomicText(path, value) {
   renameSync(temp, path);
 }
 
-function pauseFromObservation(observation, resumeToken) {
-  const reason = observation.login_required ? 'login_required'
-    : observation.mfa_required ? 'mfa_required'
-      : observation.captcha_required ? 'captcha_required'
-        : observation.unexpected_fields.length ? 'new_or_changed_fields'
-          : !observation.final_review ? 'final_review_required' : null;
-  return reason ? { schema_version: 1, decision: 'paused', reason, resume_token: resumeToken,
-    observation, consequential_actions: 0, tracker_mutation: false, applied_status_authorized: false } : null;
+/** Durable one-attempt claim. Never remove it after an uncertain browser outcome. */
+export function reserveSubmissionAttempt(directory, approvalDigest) {
+  if (!/^[a-f0-9]{64}$/.test(approvalDigest ?? '')) throw new Error('invalid submit approval digest');
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  let fd;
+  try {
+    fd = openSync(resolve(directory, `${approvalDigest}.json`), 'wx', 0o600);
+  } catch (error) {
+    if (error.code === 'EEXIST') return false;
+    throw error;
+  }
+  try {
+    writeFileSync(fd, JSON.stringify({ approval_digest: approvalDigest, status: 'attempt_reserved',
+      reserved_at: new Date().toISOString() }) + '\n');
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  // Persist the directory entry on POSIX before permitting any browser action.
+  if (process.platform !== 'win32') {
+    const directoryFd = openSync(directory, 'r');
+    try { fsyncSync(directoryFd); } finally { closeSync(directoryFd); }
+  }
+  return true;
 }
 
-export async function runBrowserSubmission(input, { mode, profileDir, receiptSource = null,
+export async function runBrowserSubmission(input, { mode, profileDir, receiptSource = null, reserveSubmission = null,
   launchPersistentContext = (dir, options) => chromium.launchPersistentContext(dir, options) } = {}) {
   if (!['inspect', 'submit'].includes(mode)) throw new Error('--mode must be inspect or submit');
   const start = prepareCandidateApplicationStart(input);
   if (start.decision !== 'ready_to_open') return start;
   if (!input.browser_contract) throw new Error('browser_contract is required');
-  const context = await launchPersistentContext(profileDir, { headless: false, viewport: null });
+  let context;
+  let execution;
   try {
+    context = await launchPersistentContext(profileDir, { headless: false, viewport: null });
     const pages = context.pages();
     const page = pages[0] ?? await context.newPage();
     if (page.url() !== start.launch_url) await page.goto(start.launch_url, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -100,11 +118,8 @@ export async function runBrowserSubmission(input, { mode, profileDir, receiptSou
     if (mode === 'submit' && typeof approvedObservedAt !== 'string') throw new Error('approved observation is required for submit mode');
     const observation = await observeFinalReview(page, input.browser_contract,
       approvedObservedAt ? { observedAt: approvedObservedAt } : undefined);
-    const paused = pauseFromObservation(observation, start.resume.token);
-    if (mode === 'inspect') return paused ?? { schema_version: 1, decision: 'exact_final_review_observed',
-      resume_token: start.resume.token, observation, consequential_actions: 0,
-      tracker_mutation: false, applied_status_authorized: false };
-    if (paused) return paused;
+    const inspection = { ...inspectApplicationObservation({ ...input, observation }), observation };
+    if (mode === 'inspect' || inspection.decision !== 'exact_final_review_observed') return inspection;
     if (canonicalJson(observation) !== canonicalJson(input.observation)) {
       return { schema_version: 1, decision: 'blocked', reason: 'browser_observation_changed_after_approval',
         resume_token: start.resume.token, consequential_actions: 0,
@@ -112,9 +127,15 @@ export async function runBrowserSubmission(input, { mode, profileDir, receiptSou
     }
     const plan = prepareApprovedSubmission({ ...input, observation });
     if (plan.decision !== 'ready_to_submit_once') return plan;
+    if (typeof reserveSubmission !== 'function' || !await reserveSubmission(plan.submit_approval_digest)) {
+      return { schema_version: 1, decision: 'blocked',
+        reason: typeof reserveSubmission === 'function' ? 'submission_already_attempted' : 'submission_attempt_store_required',
+        resume_token: start.resume.token, consequential_actions: 0,
+        tracker_mutation: false, applied_status_authorized: false };
+    }
     const executor = createPlaywrightSubmitExecutor({ page, contract: input.browser_contract,
       expected_observation: observation });
-    const execution = await executeApprovedSubmission(plan, executor);
+    execution = await executeApprovedSubmission(plan, executor);
     if (execution.decision !== 'submitted_awaiting_verified_receipt') return execution;
     await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
     const receipt = await capturePlaywrightReceipt(page, input.browser_contract, execution,
@@ -122,8 +143,13 @@ export async function runBrowserSubmission(input, { mode, profileDir, receiptSou
     if (!receipt) return { ...execution, decision: 'paused', reason: 'verified_receipt_not_observed' };
     return { execution, receipt, verified: verifySubmissionReceipt(execution, receipt),
       tracker_mutation: false, applied_written: false };
+  } catch {
+    if (execution) return { ...execution, decision: 'paused', reason: 'receipt_observation_unavailable' };
+    return { schema_version: 1, decision: 'paused', reason: 'browser_observation_unavailable',
+      resume_token: start.resume.token, consequential_actions: 0,
+      tracker_mutation: false, applied_status_authorized: false };
   } finally {
-    await context.close().catch(() => {});
+    await context?.close().catch(() => {});
   }
 }
 
@@ -141,7 +167,8 @@ export async function main(argv = process.argv.slice(2)) {
     if (args.mode === 'submit') receiptPath = privatePath(root, args.receipt);
     const input = JSON.parse(readFileSync(inputPath, 'utf8'));
     const receiptSource = receiptPath ? relative(root.canonical, receiptPath) : null;
-    const result = await runBrowserSubmission(input, { mode: args.mode, profileDir, receiptSource });
+    const result = await runBrowserSubmission(input, { mode: args.mode, profileDir, receiptSource,
+      reserveSubmission: digest => reserveSubmissionAttempt(privatePath(root, 'data/private/submission-attempts'), digest) });
     if (result.receipt?.evidence && receiptPath) atomicText(receiptPath, canonicalJson(result.receipt.evidence));
     atomicJson(outputPath, result);
     console.log(JSON.stringify({ decision: result.decision ?? result.verified?.decision,

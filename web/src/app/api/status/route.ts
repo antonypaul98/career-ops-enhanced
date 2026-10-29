@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import { careerOpsRoot, rootScript } from "@/lib/career-ops";
 import { canonicalizeStatus } from "@/lib/core/states";
-import { parseCliJson, trackerRowArg, clientErrorMessage } from "@/lib/status-cli.mjs";
+import { parseCliJson, trackerRowArg, clientErrorMessage, statusEvidenceError } from "@/lib/status-cli.mjs";
 
 export const runtime = "nodejs"; // delegates to the core CLI via child_process
 
@@ -126,6 +126,8 @@ export async function POST(req: Request) {
   // set-status.mjs validates again against states.yml — this is a fast path,
   // not the authority.
   const canon = canonicalizeStatus(status);
+  const evidenceError = statusEvidenceError(canon);
+  if (evidenceError) return NextResponse.json({ error: evidenceError }, { status: 409 });
   if (!canon) {
     return NextResponse.json({ error: `not a canonical status: ${status}` }, { status: 400 });
   }

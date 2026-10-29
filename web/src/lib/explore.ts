@@ -4,6 +4,8 @@
 // can never drift between the two halves. Server-only logic (spawning the scanner,
 // writing temp files) lives in lib/core/{scan,portals,pipeline}.ts.
 
+export type EmploymentKind = "c2c" | "full_time" | "unknown";
+
 export type AtsSource = "greenhouse" | "lever" | "ashby" | "workday";
 export const ATS_SOURCES: AtsSource[] = ["greenhouse", "lever", "ashby", "workday"];
 export const ATS_LABEL: Record<AtsSource, string> = {
@@ -23,6 +25,10 @@ export type ExploreFilters = {
   block: string[];
   blockHard: string[];
   alwaysAllow: string[];
+  usOnly: boolean;
+  employmentTypes: EmploymentKind[];
+  requireSponsorship: boolean;
+  noClearance: boolean;
   sinceDays: number;
   ats: AtsSource[];
   limitPerAts: number;
@@ -35,6 +41,11 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   block: [],
   blockHard: [],
   alwaysAllow: [],
+  // This fork targets USA job discovery and the candidate's selected role types.
+  usOnly: true,
+  employmentTypes: ["c2c", "full_time"],
+  requireSponsorship: true,
+  noClearance: true,
   sinceDays: 7,
   ats: [...ATS_SOURCES],
   limitPerAts: 150,
@@ -55,6 +66,10 @@ export type DiscoveredOffer = {
   source: string;
   /** which positive keyword matched the title (transparency, e.g. "ai" in "Nail") */
   matchedKeyword?: string;
+  /** Evidence-derived preview classification; unknown is never marketed as C2C. */
+  employmentType?: EmploymentKind;
+  sponsorship?: "offered" | "not_offered" | "unknown";
+  clearance?: "not_required" | "required" | "unknown";
   /** free, zero-token triage hint computed at discovery time from the posting
    *  TITLE vs config/profile.yml target roles (#3260). Recommendation layer
    *  only — never filters or orders anything; Evaluate gives the real A–F.
@@ -154,6 +169,13 @@ export function parseExplorePatch(
   if (raw.limit !== undefined) next.limitPerAts = clampNum(raw.limit, 50, 500, base.limitPerAts);
   if (raw.limitPerAts !== undefined) next.limitPerAts = clampNum(raw.limitPerAts, 50, 500, base.limitPerAts);
   if (raw.ats !== undefined) next.ats = cleanAts(raw.ats);
+  if (raw.usOnly !== undefined) next.usOnly = raw.usOnly === true || raw.usOnly === "true";
+  if (raw.requireSponsorship !== undefined) next.requireSponsorship = raw.requireSponsorship === true || raw.requireSponsorship === "true";
+  if (raw.noClearance !== undefined) next.noClearance = raw.noClearance === true || raw.noClearance === "true";
+  if (raw.employmentTypes !== undefined) {
+    const kinds = Array.isArray(raw.employmentTypes) ? raw.employmentTypes : [];
+    next.employmentTypes = [...new Set(kinds.filter((k): k is EmploymentKind => k === "c2c" || k === "full_time" || k === "unknown"))];
+  }
   return next;
 }
 
@@ -166,6 +188,10 @@ export function filtersToParams(f: ExploreFilters): string {
   if (f.block.length) sp.set("noloc", f.block.join(","));
   if (f.blockHard.length) sp.set("hardno", f.blockHard.join(","));
   if (f.alwaysAllow.length) sp.set("home", f.alwaysAllow.join(","));
+  if (f.usOnly !== DEFAULT_FILTERS.usOnly) sp.set("us", String(f.usOnly));
+  if (f.requireSponsorship !== DEFAULT_FILTERS.requireSponsorship) sp.set("sponsor", String(f.requireSponsorship));
+  if (f.noClearance !== DEFAULT_FILTERS.noClearance) sp.set("noclear", String(f.noClearance));
+  if (f.employmentTypes.join(",") !== DEFAULT_FILTERS.employmentTypes.join(",")) sp.set("types", f.employmentTypes.join(",") || "none");
   if (f.sinceDays !== DEFAULT_FILTERS.sinceDays) sp.set("since", String(f.sinceDays));
   if (f.ats.length !== ATS_SOURCES.length) sp.set("ats", f.ats.join(","));
   if (f.limitPerAts !== DEFAULT_FILTERS.limitPerAts) sp.set("limit", String(f.limitPerAts));
@@ -182,6 +208,10 @@ export function paramsToFilters(sp: URLSearchParams, base: ExploreFilters = DEFA
       block: split(sp.get("noloc")),
       blockHard: split(sp.get("hardno")),
       alwaysAllow: split(sp.get("home")),
+      usOnly: sp.get("us") ?? undefined,
+      requireSponsorship: sp.get("sponsor") ?? undefined,
+      noClearance: sp.get("noclear") ?? undefined,
+      employmentTypes: sp.has("types") ? (sp.get("types") === "none" ? [] : split(sp.get("types"))) : undefined,
       since: sp.get("since") ?? undefined,
       ats: split(sp.get("ats")),
       limit: sp.get("limit") ?? undefined,
@@ -206,5 +236,5 @@ export function paramsToAi(sp: URLSearchParams): string | null {
 /** Is the search broad enough that "nothing found" means "you're current"
  *  (good news) rather than "loosen your filters" (actionable)? */
 export function isBroadSearch(f: ExploreFilters): boolean {
-  return f.positive.length <= 1 && f.block.length === 0 && f.allow.length === 0;
+  return f.positive.length <= 1 && f.block.length === 0 && f.allow.length === 0 && !f.usOnly && f.employmentTypes.length === 0 && !f.requireSponsorship && !f.noClearance;
 }
