@@ -98,6 +98,17 @@ function checkObservation(start, observation) {
     observation_digest: hash(observed), resume_token: start.resume.token };
 }
 
+/** Shared fail-closed comparison for inspection and the approval gate. */
+export function inspectApplicationObservation(input = {}) {
+  const start = prepareCandidateApplicationStart(input);
+  if (start.decision !== 'ready_to_open') return blocked(`start:${start.reason ?? start.decision}`);
+  const checked = checkObservation(start, input.observation);
+  if (checked.decision !== 'exact_final_review') return checked;
+  return { schema_version: 1, decision: 'exact_final_review_observed',
+    resume_token: start.resume.token, consequential_actions: 0,
+    tracker_mutation: false, applied_status_authorized: false };
+}
+
 function submissionReviewFromChecked(start, checked) {
   const challengeCore = {
     schema_version: 1,

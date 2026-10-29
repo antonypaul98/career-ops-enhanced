@@ -273,6 +273,7 @@ const SYSTEM_PATHS = [
   'scan-hn.mjs',
   'scripts/check-syntax.mjs',
   'scripts/export-ats-text.mjs',
+  'scripts/native-safari-acceptance.mjs',
   'scripts/followup-sweep.sh',
   'story-provenance-check.mjs',
   'lib/latex-content.mjs',
