@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { open as openFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { persistEvaluation } from "../../src/lib/evaluation-persist.mjs";
@@ -52,4 +53,95 @@ test("cancelled merge remains resumable and releases the reservation without fal
   assert.equal(released, 1);
   assert.equal(readFileSync(path.join(root, "reports", "002-synthetic-co-2026-10-28.md"), "utf8"), payload.reportMarkdown);
   assert.match(readFileSync(path.join(root, "batch", "tracker-additions", "002-synthetic-co.tsv"), "utf8"), /^num\tdate/m);
+});
+
+
+test("invalid model envelope is rejected before report-number reservation", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "career-ops-persist-invalid-"));
+  let reserved = 0;
+  await assert.rejects(
+    persistEvaluation({
+      root,
+      today: "2026-10-28",
+      payload: {
+        company: "Invalid\nCompany",
+        role: "Engineer",
+        score: 4,
+        note: "Synthetic fixture only",
+        postingUrl: "https://example.com/jobs/invalid",
+        reportMarkdown: "# Synthetic",
+      },
+    }, {
+      reserveFn: async () => {
+        reserved++;
+        return { num: "003", release: async () => {} };
+      },
+    }),
+    /Company must be one non-empty line/,
+  );
+  assert.equal(reserved, 0);
+});
+
+test("atomic write failure removes its private temp file", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "career-ops-persist-write-fail-"));
+  await assert.rejects(
+    persistEvaluation({
+      root,
+      today: "2026-10-28",
+      payload: {
+        company: "Synthetic Co",
+        role: "Engineer",
+        score: 4,
+        note: "Synthetic fixture only",
+        postingUrl: "https://example.com/jobs/write-fail",
+        reportMarkdown: "# Synthetic report",
+      },
+    }, {
+      reserveFn: async () => ({ num: "004", release: async () => {} }),
+      fsOps: {
+        open: async (...args) => {
+          const handle = await openFile(...args);
+          return {
+            writeFile: async () => { throw new Error("synthetic write failure"); },
+            sync: () => handle.sync(),
+            close: () => handle.close(),
+          };
+        },
+      },
+    }),
+    /synthetic write failure/,
+  );
+  assert.deepEqual(readdirSync(path.join(root, "reports")), []);
+});
+
+test("cancellation between addition write and merge never starts tracker mutation", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "career-ops-persist-pre-merge-abort-"));
+  const controller = new AbortController();
+  let mergeCalls = 0;
+  let released = 0;
+  const payload = {
+    company: "Synthetic Co",
+    role: "Engineer",
+    score: 4,
+    note: "Synthetic fixture only",
+    postingUrl: "https://example.com/jobs/pre-merge-abort",
+    reportMarkdown: "# Synthetic report\n",
+  };
+  await assert.rejects(
+    persistEvaluation(
+      { root, payload, today: "2026-10-28", signal: controller.signal },
+      {
+        reserveFn: async () => ({ num: "005", release: async () => { released++; } }),
+        beforeMergeFn: async () => controller.abort(),
+        mergeFn: async () => { mergeCalls++; },
+      },
+    ),
+    /cancelled before tracker merge/,
+  );
+  assert.equal(mergeCalls, 0);
+  assert.equal(released, 1);
+  assert.match(
+    readFileSync(path.join(root, "batch", "tracker-additions", "005-synthetic-co.tsv"), "utf8"),
+    /^num\tdate/m,
+  );
 });
