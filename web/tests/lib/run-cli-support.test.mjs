@@ -637,7 +637,7 @@ test("OpenCode JSONL distinguishes authentication failures and generic errors", 
 
 test("OpenCode JSONL emits completed text but no synthetic, reasoning or tool payload", () => {
   const textPart = { type: "text", part: { type: "text", text: "VERDICT: ready" } };
-  assert.deepEqual(parseOpenCodeEvent(JSON.stringify(textPart)), { text: "VERDICT: ready\\n" });
+  assert.deepEqual(parseOpenCodeEvent(JSON.stringify(textPart)), { text: "VERDICT: ready\n" });
   assert.equal(parseOpenCodeEvent(JSON.stringify({ type: "text",
     part: { type: "text", text: "internal", synthetic: true },
   })), null);
@@ -672,8 +672,8 @@ test("OpenCode dashboard uses structured JSONL and early-stop on provider errors
   const here = dirname(fileURLToPath(import.meta.url));
   const clis = readFileSync(resolve(here, "../../src/lib/clis.ts"), "utf8");
   const route = readFileSync(resolve(here, "../../src/app/api/run/route.ts"), "utf8");
-  assert.match(clis, /id: "opencode"[^\\n]*streamArgs: .*--format", "json"[^\\n]*parseEvent: parseOpenCodeEvent/);
-  assert.match(route, /if \\(cliId === "opencode" && !providerErrorStopRequested\\)/);
-  assert.match(route, /runAbort\\.abort\\(\\);\\s*childStopper\\.stop\\(\\)/);
-  assert.match(route, /if \\(cliId === "opencode" && providerErrorStopRequested\\) return close\\(\\);/);
+  assert.match(clis, /id: "opencode"[^\n]*streamArgs: .*--format", "json"[^\n]*parseEvent: parseOpenCodeEvent/);
+  assert.match(route, /if \(cliId === "opencode" && !providerErrorStopRequested\)/);
+  assert.match(route, /runAbort\.abort\(\);\s*childStopper\.stop\(\)/);
+  assert.match(route, /if \(cliId === "opencode" && providerErrorStopRequested\) return close\(\);/);
 });
