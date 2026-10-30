@@ -64,7 +64,7 @@ export function spawnHeadlessCli(binPath, args, options, fencing) {
   // After fencing, so the fencers see the CLI's own argv rather than node's.
   const launch = prepareCliLaunch(binPath, fencedArgs);
   const openCode = fencing.cliId === "opencode"
-    ? prepareOpenCodeReadOnlyLaunch(launch.command, { cwd: options.cwd, env: options.env, capabilities: fencing.capabilities })
+    ? prepareOpenCodeReadOnlyLaunch(launch.command, { cwd: options.cwd, env: options.env, capabilities: fencing.capabilities, streaming: launch.args.includes("--format") && launch.args.includes("json") })
     : null;
   const child = spawn(launch.command, launch.args, {
     ...options,

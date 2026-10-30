@@ -457,6 +457,7 @@ export async function POST(req: Request) {
             execPath: process.execPath,
             root: careerOpsRoot(),
             pdfPaths: paths,
+            signal: runAbort.signal,
             format,
             reportNum: input,
           });
