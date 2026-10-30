@@ -53,3 +53,19 @@ test("a refused resolved agent removes its private temporary config", () => {
   } }), /refusing/);
   assert.equal(existsSync(configPath), false);
 });
+
+test('quota observer is temporary and enabled only for structured dashboard runs', () => {
+  const probe = (_bin, _args, options) => {
+    const config = readOpenCodeConfigForTest(options.env.OPENCODE_CONFIG);
+    return {status:0,stdout:JSON.stringify(config.agent['career-ops-readonly'])};
+  };
+  const plain = prepareOpenCodeReadOnlyLaunch('/fake/opencode',{spawnSyncFn:probe});
+  const stream = prepareOpenCodeReadOnlyLaunch('/fake/opencode',{spawnSyncFn:probe,streaming:true});
+  try {
+    assert.equal(readOpenCodeConfigForTest(plain.configPath).plugin,undefined);
+    const plugins=readOpenCodeConfigForTest(stream.configPath).plugin;
+    assert.equal(plugins.length,1); assert.equal(new URL(plugins[0]).protocol,'file:');
+    assert.equal(existsSync(new URL(plugins[0])),true);
+    stream.cleanup(); assert.equal(existsSync(new URL(plugins[0])),false);
+  } finally {plain.cleanup();stream.cleanup();}
+});
