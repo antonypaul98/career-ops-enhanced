@@ -20,6 +20,7 @@ import {
   parseClaudeEvent,
   parseCodexEvent,
   parseGrokEvent,
+  parseOpenCodeEvent,
 } from "../../src/lib/run-cli-support.mjs";
 import { createCvEnvelopeFilter } from "../../src/lib/cv-envelope.mjs";
 
@@ -607,4 +608,72 @@ test("a timed-out run reads as a timeout, never as 'didn't save a report' (#3124
   assert.match(msg, /780s time limit/, "the message names the limit it hit");
   assert.match(msg, /re-run|Claude Code/i, "it offers a next step");
   assert.doesNotMatch(msg, /didn't save a report/i, "a timeout must not be blamed on the CLI's ability to write");
+});
+
+test("OpenCode JSONL provider quota errors surface promptly without exposing raw details", () => {
+  const raw = JSON.stringify({
+    type: "error",
+    error: { name: "APIError", data: {
+      message: "Rate limit exceeded: key sk-PRIVATE candidate credentials",
+      statusCode: 429,
+      isRetryable: true,
+    } },
+  });
+  const ev = parseOpenCodeEvent(raw);
+  assert.match(ev.error, /free-model usage limit reached/);
+  assert.doesNotMatch(ev.error, /sk-PRIVATE|candidate credentials/);
+});
+
+test("OpenCode JSONL distinguishes authentication failures and generic errors", () => {
+  assert.match(parseOpenCodeEvent(JSON.stringify({
+    type: "error", error: { name: "APIError", data: { statusCode: 401, message: "secret-token" } },
+  })).error, /authentication or access failed/);
+  const generic = parseOpenCodeEvent(JSON.stringify({
+    type: "error", error: { name: "ProviderError", data: { message: "my private resume content" } },
+  }));
+  assert.match(generic.error, /provider failed/);
+  assert.doesNotMatch(generic.error, /private resume/);
+});
+
+test("OpenCode JSONL emits completed text but no synthetic, reasoning or tool payload", () => {
+  const textPart = { type: "text", part: { type: "text", text: "VERDICT: ready" } };
+  assert.deepEqual(parseOpenCodeEvent(JSON.stringify(textPart)), { text: "VERDICT: ready\\n" });
+  assert.equal(parseOpenCodeEvent(JSON.stringify({ type: "text",
+    part: { type: "text", text: "internal", synthetic: true },
+  })), null);
+  assert.equal(parseOpenCodeEvent(JSON.stringify({ type: "reasoning", part: { text: "secret reasoning" } })), null);
+  assert.deepEqual(parseOpenCodeEvent(JSON.stringify({ type: "tool_use", part: {
+    tool: "webfetch", state: { input: { url: "https://private.example" } },
+  } })), { tool: "webfetch" });
+});
+
+test("OpenCode JSONL usage excludes cache reads and invalid numbers", () => {
+  const ev = parseOpenCodeEvent(JSON.stringify({ type: "step_finish", part: {
+    type: "step-finish", tokens: { input: 60, output: 20, cache: { read: 500, write: 10 } },
+  } }));
+  assert.equal(ev.tokens, 90);
+  assert.equal(parseOpenCodeEvent(JSON.stringify({ type: "step_finish", part: {
+    type: "step-finish", tokens: { input: 2.5, output: 5, cache: { write: -1 } },
+  } })).tokens, 5);
+});
+
+test("OpenCode JSONL parser ignores malformed and unrelated events", () => {
+  for (const value of ["", "null", "2", "[]", "{", JSON.stringify({ type: "step_start", part: {} })]) {
+    const parsed = parseOpenCodeEvent(value);
+    if (value.includes("step_start")) assert.deepEqual(parsed, { status: "Agent ready" });
+    else assert.equal(parsed, null);
+  }
+});
+
+test("OpenCode dashboard uses structured JSONL and early-stop on provider errors", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const { dirname, resolve } = await import("node:path");
+  const here = dirname(fileURLToPath(import.meta.url));
+  const clis = readFileSync(resolve(here, "../../src/lib/clis.ts"), "utf8");
+  const route = readFileSync(resolve(here, "../../src/app/api/run/route.ts"), "utf8");
+  assert.match(clis, /id: "opencode"[^\\n]*streamArgs: .*--format", "json"[^\\n]*parseEvent: parseOpenCodeEvent/);
+  assert.match(route, /if \\(cliId === "opencode" && !providerErrorStopRequested\\)/);
+  assert.match(route, /runAbort\\.abort\\(\\);\\s*childStopper\\.stop\\(\\)/);
+  assert.match(route, /if \\(cliId === "opencode" && providerErrorStopRequested\\) return close\\(\\);/);
 });
