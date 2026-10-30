@@ -4,8 +4,8 @@
  * test-all.mjs — Comprehensive test suite for career-ops
  *
  * Run before merging any PR or pushing changes.
- * Integration contracts such as tracker-columns-tests.mjs must pass here, not
- * only in a narrower component suite.
+ * Integration contracts such as tracker-columns-tests.mjs and structured
+ * worker-failure handling must pass here, not only in a narrower component suite.
  * Tests: syntax, scripts, dashboard, data contract, personal data, paths.
  *
  * Usage:

@@ -304,6 +304,75 @@ export function parseClaudeEvent(line) {
 }
 
 /**
+ * Parse OpenCode's `opencode run --format json` NDJSON stream (v1.19.x).
+ *
+ * OpenCode sends provider failures as `{type:"error",error:{data:{message}}}`
+ * on stdout. Plain-text mode hides that signal until the process exits, which
+ * can leave a quota-exhausted worker running and the UI waiting indefinitely.
+ * Only completed assistant text is forwarded: tool inputs, reasoning,
+ * compaction internals and provider error details are never logged as text.
+ *
+ * @param {string} line
+ * @returns {ParsedEvent | null}
+ */
+export function parseOpenCodeEvent(line) {
+  let event;
+  try {
+    event = JSON.parse(line);
+  } catch {
+    return null;
+  }
+  if (!event || typeof event !== "object" || Array.isArray(event)) return null;
+
+  if (event.type === "step_start") return { status: STATUS_READY };
+
+  if (event.type === "text") {
+    const part = event.part;
+    if (!part || part.type !== "text" || typeof part.text !== "string" || !part.text) return null;
+    // Never forward synthetic continuation prompts or compaction summaries.
+    if (part.synthetic === true || part.metadata?.compaction_continue === true || part.metadata?.compaction === true) return null;
+    const value = part.text;
+    return { text: value.endsWith("\n") ? value : value + "\n" };
+  }
+
+  if (event.type === "tool_use") {
+    const tool = event.part?.tool;
+    return { tool: typeof tool === "string" && tool ? tool.slice(0, 80) : "Working" };
+  }
+
+  if (event.type === "step_finish") {
+    const part = event.part;
+    if (!part || part.type !== "step-finish") return null;
+    const tokens = part.tokens;
+    if (!tokens || typeof tokens !== "object") return null;
+    // OpenCode reports cache reads separately; only add cache writes billed
+    // at the full input rate. Each step is a delta, not a running total.
+    const count = tokenCount(tokens.input) + tokenCount(tokens.output) + tokenCount(tokens.cache?.write);
+    /** @type {ParsedEvent} */
+    const result = { tokens: count };
+    if (typeof part.cost === "number" && Number.isFinite(part.cost) && part.cost >= 0) result.costUsd = part.cost;
+    return result;
+  }
+
+  if (event.type === "error") {
+    const error = event.error;
+    const status = error?.data?.statusCode ?? error?.statusCode;
+    const diagnostic = typeof error?.data?.message === "string" ? error.data.message :
+      (typeof error?.message === "string" ? error.message : "");
+    // Provider messages can contain URLs, credentials or model prompts. Report
+    // only an actionable classification instead of copying untrusted details.
+    if (status === 429 || /(?:quota|rate.?limit|usage.?limit|free.*limit|too many requests|resource exhausted|429)/i.test(diagnostic)) {
+      return { error: "OpenCode free-model usage limit reached. Wait for the provider allowance to reset; no report or PDF was saved." };
+    }
+    if (status === 401 || status === 403 || /(?:unauthorized|invalid api key|not authenticated|forbidden)/i.test(diagnostic)) {
+      return { error: "OpenCode authentication or access failed. Check the free-provider connection; no report or PDF was saved." };
+    }
+    return { error: "OpenCode provider failed before completing. No report or PDF was saved." };
+  }
+  return null;
+}
+
+/**
  * Convert one Grok Build CLI `--output-format streaming-json` line into the
  * same shape the other two parsers produce.
  *

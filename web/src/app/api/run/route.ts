@@ -242,6 +242,7 @@ export async function POST(req: Request) {
       // in processParsedLine below) — never by flagStderrLine. A stderr keyword
       // match is a guess, not a verdict; see stderrErrorSnippet.
       let sawError = false;
+      let providerErrorStopRequested = false;
       let stderrBuf = "";
       // Fallback for a CLI with no CliSpec.stderrIsFatal of its own. Moved into
       // run-cli-support.mjs beside the per-CLI classifiers so it has a reachable
@@ -394,6 +395,14 @@ export async function POST(req: Request) {
         if (ev?.error) {
           sawError = true;
           send({ type: "error", msg: ev.error.slice(0, 200) });
+          // OpenCode's JSONL provider-error event is authoritative. Do not
+          // wait for a quota-exhausted CLI's own retry loop to exit: terminate
+          // its process tree and abort any backend persistence immediately.
+          if (cliId === "opencode" && !providerErrorStopRequested) {
+            providerErrorStopRequested = true;
+            runAbort.abort();
+            childStopper.stop();
+          }
         }
       };
 
@@ -448,6 +457,7 @@ export async function POST(req: Request) {
             execPath: process.execPath,
             root: careerOpsRoot(),
             pdfPaths: paths,
+            signal: runAbort.signal,
             format,
             reportNum: input,
           });
@@ -498,6 +508,10 @@ export async function POST(req: Request) {
           processParsedLine(trailing);
         }
         const cleanExit = code === 0; // non-zero OR null (killed/signal) = NOT clean
+        // The structured OpenCode error was already shown immediately. Never
+        // allow its partial text or sealed envelope into PDF/report persistence,
+        // and do not replace the specific provider error with a generic one.
+        if (cliId === "opencode" && providerErrorStopRequested) return close();
         // Shared by both honesty gates below — the pdf gate receives it as
         // pdfRunOutcome's noOutputMessage — because a CLI that produced no output at
         // all is the same failure mode whether it was evaluating or tailoring

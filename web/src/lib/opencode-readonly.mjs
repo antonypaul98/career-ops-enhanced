@@ -1,6 +1,7 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { OPENCODE_READONLY_AGENT } from "./opencode-fencing.mjs";
 
@@ -79,7 +80,13 @@ export function assertResolvedOpenCodeAgentReadOnly(value, options = {}) {
 export function prepareOpenCodeReadOnlyLaunch(binPath, options = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "career-ops-opencode-"));
   const configPath = path.join(dir, "opencode.json");
-  writeFileSync(configPath, JSON.stringify(configDocument(options.capabilities), null, 2), { mode: 0o600 });
+  const config = configDocument(options.capabilities);
+  if (options.streaming) {
+    const observerPath = path.join(dir, "quota-observer.mjs");
+    copyFileSync(new URL("./opencode-quota-observer.mjs", import.meta.url), observerPath);
+    config.plugin = [pathToFileURL(observerPath).href];
+  }
+  writeFileSync(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
   const env = { ...process.env, ...options.env, OPENCODE_CONFIG: configPath, PWD: String(options.cwd ?? process.cwd()),
     XDG_DATA_HOME: path.join(dir, "data"), XDG_STATE_HOME: path.join(dir, "state") };
   const runSync = options.spawnSyncFn ?? spawnSync;

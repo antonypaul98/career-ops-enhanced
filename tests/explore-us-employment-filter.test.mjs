@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
-import { employmentVerdict, clearanceVerdict } from "../lib/explore-qualifier.mjs";
+import { employmentVerdict, clearanceVerdict, sponsorshipVerdict } from "../lib/explore-qualifier.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -64,4 +64,20 @@ test("scanner sends only category labels, never full private job text; approval 
 test('explicit no-clearance wording is not mistaken for a positive requirement', () => {
   assert.equal(clearanceVerdict({ description: 'No security clearance is required.' }), 'not_required');
   assert.equal(clearanceVerdict({ description: 'No security clearance is required. Must have active secret clearance for the onsite role.' }), 'required');
+});
+
+
+test('negated or contradictory full-time language remains unverified', () => {
+  for (const description of ['This is not a full-time position.', 'No permanent employment offered.',
+    'Full-time employment is not available.', 'Part-time role with full-time benefits.']) {
+    assert.equal(employmentVerdict({description}), 'unknown', description);
+  }
+});
+
+test('sponsorship requires positive evidence and negative evidence takes priority', () => {
+  assert.equal(sponsorshipVerdict({description:'We sponsor visas.'}), 'offered');
+  assert.equal(sponsorshipVerdict({description:'Visa sponsorship is available.'}), 'offered');
+  assert.equal(sponsorshipVerdict({description:'We do not sponsor visas.'}), 'not_offered');
+  assert.equal(sponsorshipVerdict({description:'Visa sponsorship is available. Must work without sponsorship.'}), 'not_offered');
+  assert.equal(sponsorshipVerdict({description:'Applicants welcome.'}), 'unknown');
 });
