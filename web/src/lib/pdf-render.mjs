@@ -15,6 +15,7 @@
  */
 import { createProcessTreeStopper } from "./process-tree.mjs";
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 /**
@@ -201,17 +202,33 @@ export function cleanupPdfScratch(scratchDir, prefix) {
  * Call after writeCvHtml for the same pdfPaths — this reads the HTML that
  * function wrote. `format` is passed in rather than read back off disk, so the two
  * no longer share a file and the only coupling left is the HTML itself.
- * @param {{signal?: AbortSignal, spawnFn: Function, execPath: string, root: string, pdfPaths: {html: string, finalPdf: string}, format: "letter"|"a4", reportNum: string}} args
+ * @param {{evidencePath?: string, signal?: AbortSignal, spawnFn: Function, execPath: string, root: string, pdfPaths: {html: string, finalPdf: string}, format: "letter"|"a4", reportNum: string}} args
  * @returns {Promise<RenderResult>}
  */
-export async function renderAndMarkPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal }) {
+export async function renderAndMarkPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal, evidencePath }) {
   const warnings = [];
+  let evidence;
+  if (evidencePath) {
+    try {
+      evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
+      const htmlHash = createHash("sha256").update(fs.readFileSync(pdfPaths.html)).digest("hex");
+      if (evidence.render?.artifact_sha256 !== htmlHash) throw new Error("C05 HTML changed");
+    }
+    catch { return { kind: "render-failed", error: "Missing C05 render evidence; PDF generation refused." }; }
+  }
 
   const render = await spawnGeneratePdf({ spawnFn, execPath, root, html: pdfPaths.html, finalPdf: pdfPaths.finalPdf, format, reportNum, signal });
   cleanupPdfScratch(path.dirname(pdfPaths.html), `cv-web-${reportNum}.`);
 
   if (!render.ok || signal?.aborted) {
     return { kind: "render-failed", error: render.stderr || "PDF rendering failed." };
+  }
+
+  if (evidence) {
+    try {
+      const pdfHash = createHash("sha256").update(fs.readFileSync(pdfPaths.finalPdf)).digest("hex");
+      fs.writeFileSync(pdfPaths.finalPdf + ".evidence.json", JSON.stringify({ ...evidence, pdf_sha256: pdfHash }, null, 2) + "\n", { mode: 0o600 });
+    } catch { return { kind: "render-failed", error: "Could not preserve C05 PDF evidence; tracker update refused." }; }
   }
 
   // A render that exits 0 can still have written advisories to stderr, and two

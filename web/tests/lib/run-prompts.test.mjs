@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildPrompt, isShellSafeCompanyName } from "../../src/lib/run-prompts.mjs";
-import { OPEN_MARK, CLOSE_MARK } from "../../src/lib/cv-envelope.mjs";
+const OPEN_MARK = "<<cv-proposal>>", CLOSE_MARK = "<</cv-proposal>>";
 import { EVALUATION_OPEN_MARK, EVALUATION_CLOSE_MARK } from "../../src/lib/evaluation-envelope.mjs";
 import { grantsWriteCapability, toolScopeFor } from "../../src/lib/claude-invocation.mjs";
 
@@ -58,8 +58,8 @@ test("buildPrompt: the pdf prompt offers both page formats", () => {
   const prompt = buildPrompt({ kind: "pdf", ...ARGS });
 
   // Then both spellings are shown, and the rule distinguishes them
-  assert.match(prompt, /format="a4"/);
-  assert.match(prompt, /format="letter"/);
+  assert.match(prompt, /letter or a4/);
+  assert.match(prompt, /payload.page_format/);
   assert.match(prompt, /letter for a US\/Canada company, otherwise a4/i);
 });
 
