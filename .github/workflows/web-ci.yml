@@ -30,6 +30,11 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # Dashboard integration tests execute the core engine, whose dependencies
+      # resolve from the repository root (separate package, no npm workspace).
+      - name: Install core runtime dependencies
+        run: npm install --ignore-scripts
+        working-directory: .
       - run: npm ci
       - run: npm test
       - run: npx tsc --noEmit
