@@ -48,7 +48,7 @@ import { randomUUID } from 'node:crypto';
 import { getCareerOpsRoot } from './path-resolver.mjs';
 import { readStyleTokens, injectThemeStyle, readCvSectionOrder } from './theme-style.mjs';
 import { validateCvExperienceOrder } from './cv-experience-order.mjs';
-import { resolvePdfIndexPath, resolveTrackerPath, resolveWorkspaceRootFor } from './tracker-utils.mjs';
+import { resolvePdfIndexPath, resolveTrackerPath, resolveWorkspaceRootFor, writeFileAtomic } from './tracker-utils.mjs';
 import { isMainModule } from './lib/is-main-module.mjs';
 import { stripEmptyRenderedSections } from './cv-sections-core.mjs';
 import { PAGE_CSS_SIZE, PAGE_FORMATS, normalizePageFormat, resolvePageFormat } from './lib/page-format.mjs';
@@ -1330,11 +1330,11 @@ export function applyManifestRow(existingLines, row) {
  * gitignored: it references gitignored output/ artifacts and is meaningless on
  * another machine.
  */
-function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind) {
-  const manifestPath = resolvePdfIndexPath(trackerPath);
-  const toRel = (p) => relative(workspaceRoot, p).split(sep).join('/');
+export function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind, root = workspaceRoot) {
+  const manifestPath = resolvePdfIndexPath(resolveTrackerPath(root));
+  const toRel = (p) => relative(root, p).split(sep).join('/');
   const relPDF = toRel(pdfPath);
-  const relHTML = workspaceRelativeManifestPath(htmlPath, workspaceRoot);
+  const relHTML = workspaceRelativeManifestPath(htmlPath, root);
   const date = new Date().toISOString().slice(0, 10);
 
   const existing = existsSync(manifestPath)
@@ -1350,7 +1350,7 @@ function updatePDFManifest(reportNum, pdfPath, htmlPath, format, kind) {
   });
 
   mkdirSync(dirname(manifestPath), { recursive: true });
-  writeFileSync(
+  writeFileAtomic(
     manifestPath,
     '# report\tpdf\thtml\tformat\tdate\tkind - written by generate-pdf.mjs, do not edit\n' +
       lines.join('\n') + '\n'
@@ -1377,10 +1377,13 @@ async function generatePDF() {
   // No flag seen yet: null, not a paper size. The default belongs to
   // lib/page-format.mjs, which ranks it below the user's config/profile.yml.
   let inputPath, outputPath, format = null, reportNum = '', allowReorder = false, allowNonChronological = false;
+  let deferManifest = false;
   let maxPages = 2, maxPagesInput = '2', strictPages = false, batchManifestPath = null;
 
   for (const arg of args) {
-    if (arg.startsWith('--format=')) {
+    if (arg === '--defer-manifest') {
+      deferManifest = true;
+    } else if (arg.startsWith('--format=')) {
       format = arg.split('=')[1].toLowerCase();
     } else if (arg.startsWith('--report=')) {
       reportSupplied = true;
@@ -1600,6 +1603,7 @@ async function generatePDF() {
   }
 
   return renderHtmlToPdf(html, outputPath, {
+    deferManifest,
     format,
     baseDir: dirname(inputPath),
     reportNum,
@@ -2046,8 +2050,8 @@ async function renderInPage(browser, html, outputPath, opts = {}) {
     console.log(`📦 Size: ${(pdfBuffer.length / 1024).toFixed(1)} KB`);
 
     try {
-      updatePDFManifest(reportNum, outputPath, inputPath, format, artifactKind);
-      console.log(`🔗 Manifest: data/pdf-index.tsv updated${reportNum ? ` (report ${reportNum})` : ' (no --report given)'}`);
+      if (!opts.deferManifest) updatePDFManifest(reportNum, outputPath, inputPath, format, artifactKind);
+      if (!opts.deferManifest) console.log(`🔗 Manifest: data/pdf-index.tsv updated${reportNum ? ` (report ${reportNum})` : ' (no --report given)'}`);
     } catch (err) {
       // The PDF itself succeeded — never fail the run over manifest bookkeeping.
       console.error(`⚠️  Manifest update failed: ${err.message}`);

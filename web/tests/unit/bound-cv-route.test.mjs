@@ -29,7 +29,7 @@ test('actual dashboard C05 route', {skip:!process.env.C05_ROUTE_ACCEPTANCE}, asy
  const url=`http://127.0.0.1:${port}/api/run`;
  for(let i=0;i<100;i++){try{await fetch(url);break;}catch{await new Promise(r=>setTimeout(r,100));}}
  const request=()=>fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({kind:'pdf',input:'001',cliId:'claude'})});
- const artifacts=()=>fs.readdirSync(path.join(f.root,'output')).filter(x=>x.endsWith('.pdf'));
+ const artifacts=()=>fs.readdirSync(path.join(f.root,'output'),{recursive:true}).filter(x=>x.endsWith('.pdf'));
  await t.test('missing authority returns 409 without artifacts',async()=>{
   const file=path.join(f.root,'data/career-profile.yml');const original=fs.readFileSync(file);fs.unlinkSync(file);
   const r=await request();assert.equal(r.status,409);fs.writeFileSync(file,original);assert.deepEqual(artifacts(),[]);

@@ -47,13 +47,7 @@ export async function prepareBoundCv(root, reportFile) {
 export async function renderDashboardBoundCv({ root, prepared, proposal, html, signal, template }, options = {}) {
   cancelled(signal);
   const api = await core(root);
-  const verify = () => {
-    cancelled(signal);
-    const current = api.loadResumeAuthority({ root, persona: { id: 'general' } });
-    if (api.digest(current.snapshot) !== prepared.snapshot || api.digest(fs.readFileSync(prepared.report, 'utf8')) !== prepared.reportDigest)
-      throw new Error('Candidate evidence or report changed; regenerate the reviewed proposal.');
-    return current;
-  };
+  const verify = () => verifyPreparedBoundCv(api, root, prepared, signal);
   const result = api.tailorBoundResume({ proposal, authority: verify(), jdText: prepared.jdText });
   // C05 can omit unsupported fields for advisory use. Dashboard generation must
   // reject the entire run before any output when proposed facts were omitted.
@@ -88,4 +82,12 @@ export async function renderDashboardBoundCv({ root, prepared, proposal, html, s
     fs.renameSync(path.join(stage, 'cv.html'), target);
     return result;
   } finally { fs.rmSync(stage, { recursive: true, force: true }); }
+}
+
+export function verifyPreparedBoundCv(api, root, prepared, signal) {
+  cancelled(signal);
+  const current = api.loadResumeAuthority({ root, persona: { id: 'general' } });
+  if (api.digest(current.snapshot) !== prepared.snapshot || api.digest(fs.readFileSync(prepared.report, 'utf8')) !== prepared.reportDigest)
+    throw new Error('Candidate evidence or report changed; regenerate the reviewed proposal.');
+  return current;
 }
