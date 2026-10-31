@@ -193,7 +193,19 @@ export function loadResumeAuthority({ root, persona }) {
       ...(binding.parent_id ? { parent_ref: parents.get(binding.parent_id) } : contextualParent ? { parent_ref: contextualParent } : {}),
       binding: structuredClone(binding) });
   }
-  for (const field of CONTACT_FIELDS) {
+  const resumeIdentity = profile.candidate?.identity;
+  if (resumeIdentity !== undefined) {
+    for (const fact of resumeIdentity) {
+      if (fact.review_status !== 'verified' || !anchored(root, fact.evidence)) continue;
+      const quote = normalize(fact.evidence.quote).replace(/^\*\*(.*?)\*\*$/, '$1');
+      const supported = fact.field === 'name' ? normalize(fact.text) === quote
+        : (quote.match(/[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []).includes(fact.text);
+      if (!supported) { excluded.push({ ref: `master_profile:${fact.id}`, reason: 'unsupported-identity' }); continue; }
+      records.push({ ref: `master_profile:${fact.id}`, text: fact.text, kind: 'identity', field: fact.field,
+        binding: { source: 'master_profile', id: fact.id, evidence: { ...fact.evidence } } });
+    }
+  }
+  for (const field of resumeIdentity === undefined ? CONTACT_FIELDS : []) {
     const value = config?.[field];
     if (typeof value === 'string' && value.trim()) records.push({ ref: `config:${field}`, text: value,
       kind: 'identity', field, binding: { source: 'config/profile.yml', key: field, source_sha256: digest(configText) } });
