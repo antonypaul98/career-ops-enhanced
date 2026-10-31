@@ -15,8 +15,8 @@
  */
 import { createProcessTreeStopper } from "./process-tree.mjs";
 import fs from "node:fs";
-import { createHash } from "node:crypto";
 import path from "node:path";
+import { renderBoundPdf } from "./bound-pdf.mjs";
 
 /**
  * @typedef {Object} PdfRunSignals
@@ -106,7 +106,7 @@ function watchCancellation(child, signal) {
   if (signal.aborted) abort();
 }
 
-export function spawnGeneratePdf({ spawnFn, execPath, root, html, finalPdf, format, reportNum, signal }) {
+export function spawnGeneratePdf({ spawnFn, execPath, root, html, finalPdf, format, reportNum, signal, deferManifest = false }) {
   if (signal?.aborted) return Promise.resolve({ ok: false, stderr: "PDF generation cancelled." });
   return new Promise((resolve) => {
     const child = spawnFn(
@@ -115,7 +115,7 @@ export function spawnGeneratePdf({ spawnFn, execPath, root, html, finalPdf, form
       // from the template's fixed markup order, so this guard would otherwise
       // hard-fail every web-triggered render — same bypass a human already
       // applies manually via the CLI when this diverges.
-      [path.join(root, "generate-pdf.mjs"), html, finalPdf, `--format=${format}`, `--report=${reportNum}`, "--allow-reorder"],
+      [path.join(root, "generate-pdf.mjs"), html, finalPdf, `--format=${format}`, `--report=${reportNum}`, "--allow-reorder", ...(deferManifest ? ["--defer-manifest"] : [])],
       { cwd: root, ...(signal ? { detached: process.platform !== "win32" } : {}) },
     );
     watchCancellation(child, signal);
@@ -202,33 +202,17 @@ export function cleanupPdfScratch(scratchDir, prefix) {
  * Call after writeCvHtml for the same pdfPaths — this reads the HTML that
  * function wrote. `format` is passed in rather than read back off disk, so the two
  * no longer share a file and the only coupling left is the HTML itself.
- * @param {{evidencePath?: string, signal?: AbortSignal, spawnFn: Function, execPath: string, root: string, pdfPaths: {html: string, finalPdf: string}, format: "letter"|"a4", reportNum: string}} args
+ * @param {{prepared?: object, evidencePath?: string, signal?: AbortSignal, spawnFn: Function, execPath: string, root: string, pdfPaths: {html: string, finalPdf: string}, format: "letter"|"a4", reportNum: string}} args
  * @returns {Promise<RenderResult>}
  */
-export async function renderAndMarkPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal, evidencePath }) {
+export async function renderAndMarkPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal, evidencePath, prepared }) {
+  if (evidencePath) return renderBoundPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal, evidencePath, prepared });
   const warnings = [];
-  let evidence;
-  if (evidencePath) {
-    try {
-      evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"));
-      const htmlHash = createHash("sha256").update(fs.readFileSync(pdfPaths.html)).digest("hex");
-      if (evidence.render?.artifact_sha256 !== htmlHash) throw new Error("C05 HTML changed");
-    }
-    catch { return { kind: "render-failed", error: "Missing C05 render evidence; PDF generation refused." }; }
-  }
-
   const render = await spawnGeneratePdf({ spawnFn, execPath, root, html: pdfPaths.html, finalPdf: pdfPaths.finalPdf, format, reportNum, signal });
   cleanupPdfScratch(path.dirname(pdfPaths.html), `cv-web-${reportNum}.`);
 
   if (!render.ok || signal?.aborted) {
     return { kind: "render-failed", error: render.stderr || "PDF rendering failed." };
-  }
-
-  if (evidence) {
-    try {
-      const pdfHash = createHash("sha256").update(fs.readFileSync(pdfPaths.finalPdf)).digest("hex");
-      fs.writeFileSync(pdfPaths.finalPdf + ".evidence.json", JSON.stringify({ ...evidence, pdf_sha256: pdfHash }, null, 2) + "\n", { mode: 0o600 });
-    } catch { return { kind: "render-failed", error: "Could not preserve C05 PDF evidence; tracker update refused." }; }
   }
 
   // A render that exits 0 can still have written advisories to stderr, and two

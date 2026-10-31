@@ -458,6 +458,7 @@ export async function POST(req: Request) {
             root: careerOpsRoot(),
             pdfPaths: paths,
             evidencePath: paths.html + ".evidence.json",
+            prepared: boundCv,
             signal: runAbort.signal,
             format,
             reportNum: input,
