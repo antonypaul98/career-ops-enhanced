@@ -21,6 +21,12 @@ test('actual dashboard C05 route', {skip:!process.env.C05_ROUTE_ACCEPTANCE}, asy
  fs.writeFileSync(bin,`#!${process.execPath}\nimport fs from 'node:fs';const mode=fs.readFileSync('behavior','utf8');if(process.argv.includes('--version')){console.log('synthetic');process.exit(0)};if(mode==='cancel'){fs.writeFileSync('worker.pid',String(process.pid));console.log(JSON.stringify({type:'system',subtype:'init'}));setInterval(()=>{},1000)}else {let proposal=JSON.parse(fs.readFileSync('proposal.json'));if(mode==='unsupported')proposal.payload.summary='Invented 900% growth';if(mode==='stale')fs.appendFileSync('cv.md','\\nchanged source');console.log(JSON.stringify({type:'stream_event',event:{type:'content_block_delta',delta:{text:'<<cv-proposal>>\\n'+JSON.stringify(proposal)+'\\n<</cv-proposal>>'}}}));if(mode==='provider-error')console.log(JSON.stringify({type:'result',is_error:true,error:'Synthetic provider failure'}));}`,{mode:0o700});
  fs.writeFileSync(path.join(f.root,'behavior'),'valid');
  const smoke=spawnSync(bin,['--version'],{cwd:f.root,encoding:'utf8'});assert.equal(smoke.status,0,smoke.stderr);
+ const cvFile=path.join(f.root,'cv.md');
+ const cvText=fs.readFileSync(cvFile,'utf8').replace('# Synthetic Candidate','**Synthetic Candidate**');
+ const emailLine=cvText.split('\n').length+1;
+ fs.writeFileSync(cvFile,cvText+'\n**Email: synthetic@example.com**');
+ f.profile.candidate.identity=[{id:'http-name',field:'name',text:'Synthetic Candidate',review_status:'verified',evidence:{source:'cv.md',line:1,quote:'**Synthetic Candidate**'}},{id:'http-email',field:'email',text:'synthetic@example.com',review_status:'verified',evidence:{source:'cv.md',line:emailLine,quote:'**Email: synthetic@example.com**'}}];f.save();
+ f.proposal.bindings['/candidate/name']='master_profile:http-name';f.proposal.bindings['/candidate/email']='master_profile:http-email';
  f.proposal.payload.page_format='letter';fs.writeFileSync(path.join(f.root,'proposal.json'),JSON.stringify(f.proposal));
  const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
  const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-p',String(port),'--hostname','127.0.0.1'],{env:{...process.env,CAREER_OPS_ROOT:f.root,BUILD_DIST:'.next-c05-check',PATH:path.join(f.root,'bin')+path.delimiter+process.env.PATH},stdio:['ignore','pipe','pipe']});
@@ -60,5 +66,13 @@ test('actual dashboard C05 route', {skip:!process.env.C05_ROUTE_ACCEPTANCE}, asy
   assert.match(events,/"type":"done"/,events+'\n'+logs);assert.equal(artifacts().length,1);
   const evidence=JSON.parse(fs.readFileSync(path.join(f.root,'output',artifacts()[0]+'.evidence.json'),'utf8'));assert.ok(evidence.snapshot.authority_sha256);assert.match(evidence.pdf_sha256,/^[a-f0-9]{64}$/);
   assert.equal(fs.readFileSync(path.join(f.root,'output',artifacts()[0])).subarray(0,4).toString(),'%PDF');
+  const pdf=path.join(f.root,'output',artifacts()[0]);
+  const {createHash}=await import('node:crypto');assert.equal(evidence.pdf_sha256,createHash('sha256').update(fs.readFileSync(pdf)).digest('hex'));
+  fs.mkdirSync(path.join(f.root,'data/private'),{recursive:true});
+  fs.writeFileSync(path.join(f.root,'data/private/synthetic-browser-approved.json'),JSON.stringify({readiness_input:{application_bundle:{application:{key:'synthetic-http',company:'Synthetic Company',role:'Synthetic Engineer',url:'https://example.com/jobs/synthetic'},content_digest:'a'.repeat(64),fields:[],artifacts:[{kind:'resume',path:pdf,sha256:evidence.pdf_sha256}]}},observation:{final_review:true}}));
+  const page=await (await fetch(`http://127.0.0.1:${port}/approvals`)).text();
+  assert.match(page,/Synthetic Company/);assert.match(page,/Synthetic Engineer/);assert.match(page,/Awaiting exact approval/);assert.ok(page.includes(evidence.pdf_sha256));
+  assert.equal(fs.existsSync(path.join(f.root,'data/applications.md')),false);
+
  });
 });

@@ -164,6 +164,19 @@ export function validateProfile(profile) {
         !Number.isInteger(fact.evidence.line) || fact.evidence.line < 1 ||
         typeof fact.evidence.quote !== 'string' || !fact.evidence.quote.trim()) errors.push(`${path}.evidence requires source, positive line, and quote`);
   };
+  // Explicit résumé-only identity disables configuration fallback in C05.
+  if (profile?.candidate && 'identity' in profile.candidate) {
+    if (!Array.isArray(profile.candidate.identity)) errors.push('candidate.identity must be a list');
+    else {
+      const fields = new Set();
+      profile.candidate.identity.forEach((fact, i) => {
+        checkFact(fact, `candidate.identity[${i}]`);
+        if (!['name', 'email'].includes(fact?.field) || fields.has(fact?.field)) errors.push('candidate.identity fields must be unique name/email');
+        fields.add(fact?.field);
+        if (fact?.evidence?.source !== 'cv.md') errors.push('candidate.identity requires cv.md evidence');
+      });
+    }
+  }
   const arrays = ['summary', 'experiences', 'projects', 'education', 'certifications', 'skills'];
   for (const key of arrays) if (!Array.isArray(profile?.[key])) errors.push(`${key} must be a list`);
   for (const key of ['summary', 'certifications', 'skills']) {
