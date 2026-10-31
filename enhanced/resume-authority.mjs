@@ -96,6 +96,38 @@ function bindCvExperienceMetadata(records, cvText) {
   }
 }
 
+// Bold CV headers with separately reviewed role/date records. Keep the full
+// organization prefix (including "Client:") rather than inferring an employer.
+function bindBoldExperienceMetadata(records, cvText) {
+  const lines = cvText.replace(/\r\n?/g, '\n').split('\n');
+  const plain = value => normalize(value).replace(/^\*\*(.*?)\*\*$/, '$1');
+  const month = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+  const dated = new RegExp(`^(.+?)\\s+(${month} \\d{4}\\s+[–—-]\\s+(?:${month} \\d{4}|Present))$`);
+  for (const heading of records.filter(r => r.heading && r.kind === 'experiences'
+      && r.binding.evidence.source === 'cv.md' && /^\*\*.+\*\*$/.test(r.binding.evidence.quote))) {
+    const start = heading.binding.evidence.line - 1;
+    if (plain(lines[start]) !== normalize(heading.text)) continue;
+    const match = heading.text.match(dated);
+    if (!match) continue;
+    // Restrict the header even when role/dates are not yet reviewed. Its
+    // individual words may not be repurposed as role or date evidence.
+    heading.field_values = { company: match[1] };
+    const children = records.filter(r => r.parent_ref === heading.ref && r.binding.evidence?.source === 'cv.md');
+    const date = children.find(r => r.text === match[2] && r.binding.evidence.line === start + 1);
+    let roleLine = start + 1;
+    while (roleLine < lines.length && !lines[roleLine].trim()) roleLine++;
+    const role = children.find(r => r.binding.evidence.line === roleLine + 1
+      && /^\*\*.+\*\*$/.test(lines[roleLine] ?? '') && plain(lines[roleLine]) === normalize(r.text)
+      && !/^(?:Responsibilities|Client|Education|Skills)\b/i.test(r.text) && !dated.test(r.text));
+    for (const [record, values] of [[role, role && { role: role.text }], [date, date && { dates: date.text, period: date.text }]]) {
+      if (!record) continue;
+      record.heading = true;
+      record.field_values = values;
+      record.context_ref = heading.ref;
+    }
+  }
+}
+
 function bindReviewedHeadingFields(records) {
   for (const record of records.filter(item => item.heading && !item.field_values)) {
     // En dashes belong to date ranges; splitting those would make a year
@@ -181,7 +213,10 @@ export function loadResumeAuthority({ root, persona }) {
   // metadata in a conventional CV block. Original profile ids/parent ids remain
   // intact in provenance; context_ref records the source-proven block relation.
   const cvText = readPrivate(root, 'cv.md', true);
-  if (cvText) bindCvExperienceMetadata(records, cvText);
+  if (cvText) {
+    bindCvExperienceMetadata(records, cvText);
+    bindBoldExperienceMetadata(records, cvText);
+  }
   bindReviewedHeadingFields(records);
   for (const record of records) {
     if (record.parent_ref && !record.context_ref) record.context_ref = records.find(parent => parent.ref === record.parent_ref)?.context_ref;
