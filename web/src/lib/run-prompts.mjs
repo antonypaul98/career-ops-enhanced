@@ -8,7 +8,7 @@
  * so a web evaluation is byte-identical to a CLI one (single source of truth, no
  * drift). kind "research" stays read-only.
  */
-import { CV_ENVELOPE_INSTRUCTION } from "./cv-envelope.mjs";
+import { BOUND_CV_INSTRUCTION } from "./bound-cv.mjs";
 import { EVALUATION_ENVELOPE_INSTRUCTION } from "./evaluation-envelope.mjs";
 
 /**
@@ -158,13 +158,7 @@ Target: ${input}`;
     // cv.md or data/applications.md. The agent now emits the CV inline and the
     // backend (a plain Node process, no CLI sandbox) writes and renders it, so
     // pdf mode runs with no write tool at all.
-    return `You are tailoring the user's ATS-optimized CV for application #${input}, headless, on their machine. Run the REAL career-ops "pdf" mode's CONTENT step: follow modes/pdf.md's TAILORING rules exactly (do not improvise your own scoring or format). Apply its CONTENT rules — keyword injection, ordering, the competency grid, project selection, and its evidence-aware never-invent-a-skill rule. Its steps that shell out (the enhanced/jd-evidence-gap.mjs check) and its build/save/render steps are NOT performed on web runs; the platform handles output itself.
-1. Read modes/pdf.md, cv.md, config/profile.yml, and the evaluation report at reports/${input}-*.md (for the JD keywords + analysis). If data/career-evidence.yml exists, read it too, but use ONLY entries whose status is user_confirmed or source_verified.
-2. Tailor the CV per modes/pdf.md: inject the JD's keywords into the summary + first bullets, reorder experience by relevance, build the competency grid, pick the top 3–4 projects. NEVER infer a skill from the JD itself. For approved evidence, skill_only authorizes only a Skills/competency mention; contextual_claim authorizes only wording within its saved context. needs_review and rejected entries are unusable.
-3. Fill ${safeCvTemplate(cvTemplate)}'s {{...}} placeholders with the tailored content. Use that exact file: the platform already resolved it from cv.template through cv-templates.mjs, so do NOT run modes/pdf.md's own template-resolution step. ${CV_ENVELOPE_INSTRUCTION}
-4. Emit the envelope EXACTLY ONCE. The platform writes the HTML, renders the PDF, and updates the tracker's PDF column itself, only after a confirmed successful render. Do not submit anything anywhere.
-
-After the envelope, end with EXACTLY one final line: VERDICT: {5 if the complete HTML envelope was emitted, else 1}/5 — {a one-line summary, ≤12 words}`;
+    return `Prepare a C05 evidence-bound résumé proposal for application #${input}. Read modes/pdf.md, the CV payload schema in lib/cv-payload-schema.mjs, and reports/${input}-*.md for job relevance. Use only the supplied C05 authority records for candidate facts. Select and reorder approved wording; never rewrite facts or infer experience from the JD. Keep experience chronological. The backend performs authority validation, HTML rendering, PDF generation and tracker updates. Do NOT save or edit any file or run build/render commands. The backend has already resolved ${safeCvTemplate(cvTemplate)} via cv-templates.mjs; do not resolve a template in-agent. Choose letter for a US/Canada company, otherwise a4. Do not submit anything anywhere or contact anyone. ${BOUND_CV_INSTRUCTION} End with VERDICT: {5 if the complete proposal was emitted, otherwise 1}/5 — a short summary.`;
   }
   if (kind === "fix-portal") {
     return `A company's job-portal ATS slug is BROKEN — career-ops can no longer scan it, so it silently disappears from every future scan. Repair it (headless, on the user's machine):

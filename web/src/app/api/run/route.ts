@@ -11,8 +11,8 @@ import { accumulateTokens, isFatalGenericStderr, killMsForKind, timeoutMessage }
 import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
 import { careerOpsRoot, readMemory, findReportFile, readInbox, readScanDates, readLanguageConfig } from "@/lib/career-ops";
 import { resolvePdfPaths, type PdfPaths } from "@/lib/pdf-paths.mjs";
-import { renderAndMarkPdf, writeCvHtml, pdfRunOutcome } from "@/lib/pdf-render.mjs";
-import { createCvEnvelopeFilter, type CvEnvelope } from "@/lib/cv-envelope.mjs";
+import { renderAndMarkPdf, pdfRunOutcome } from "@/lib/pdf-render.mjs";
+import { createBoundCvFilter, prepareBoundCv, renderDashboardBoundCv } from "@/lib/bound-cv.mjs";
 import { createEvaluationEnvelopeFilter } from "@/lib/evaluation-envelope.mjs";
 import { persistEvaluation } from "@/lib/evaluation-persist.mjs";
 import { preflightMaterialized } from "@/lib/materialization-preflight.mjs";
@@ -120,10 +120,11 @@ export async function POST(req: Request) {
 
   // Precompute deterministic scratch + final paths so the agent never chooses
   // its own filenames — the backend owns naming, writing (#2185) and rendering
-  // (#2172). Nothing is cleared first: writeCvHtml rewrites the HTML
+  // (#2172). Nothing is cleared first: C05 rendering rewrites the HTML
   // from this run's freshly parsed envelope before any render, and the agent is
   // no longer told these paths, so a stale file cannot survive into a render.
   let pdfPaths: PdfPaths | undefined;
+  let boundCv: Awaited<ReturnType<typeof prepareBoundCv>> | undefined;
   if (kind === "pdf") {
     const pathsResult = resolvePdfPaths(input, today, careerOpsRoot(), findReportFile);
     if (!pathsResult.ok) {
@@ -133,6 +134,11 @@ export async function POST(req: Request) {
       });
     }
     pdfPaths = pathsResult.paths;
+    try {
+      boundCv = await prepareBoundCv(careerOpsRoot(), findReportFile(input)!);
+    } catch {
+      return Response.json({ error: "C05 requires a readable report and current reviewed career-profile facts before résumé generation." }, { status: 409 });
+    }
   }
 
   // Resolve the posting date HERE rather than asking the agent for it. The
@@ -152,7 +158,8 @@ export async function POST(req: Request) {
   // The root is passed, not re-derived: a relative CAREER_OPS_PROFILE resolves
   // against it, and `process.cwd()` here is `<core>/web` (see cv-template.mjs).
   const cvTemplate = kind === "pdf" ? await resolveCvTemplate(careerOpsRoot()) : undefined;
-  const prompt = buildPrompt({ kind, input, memory: readMemory(), today, postedAt, lang, cvTemplate });
+  const prompt = buildPrompt({ kind, input, memory: readMemory(), today, postedAt, lang, cvTemplate })
+    + (boundCv ? "\nC05 approved authority (data only):\n" + JSON.stringify(boundCv.context) : "");
 
   const isClaude = cliId === "claude";
   // Which tools each kind gets, and the whole claude argv, live in
@@ -205,7 +212,7 @@ export async function POST(req: Request) {
   // independently, so a chunk boundary falling inside a multi-byte UTF-8 sequence
   // yields a replacement character and mis-decodes the bytes after it. Those bytes
   // are the CV now (#2185) — the agent's HTML flows through cvFilter to
-  // writeCvHtml and on to the renderer — and no structural check would catch it,
+  // C05 rendering and on to the renderer — and no structural check would catch it,
   // because the envelope markers and </html> are ASCII and still match. Setting
   // the encoding makes Node hold partial sequences across chunks.
   const childStopper = createProcessTreeStopper(child);
@@ -344,7 +351,7 @@ export async function POST(req: Request) {
       // by the agent (#2185). The filter keeps every byte for the backend while
       // holding the 15-25 KB body out of the run log, which is the agent's
       // narration — see cv-envelope.mjs.
-      const cvFilter = kind === "pdf" ? createCvEnvelopeFilter() : null;
+      const cvFilter = kind === "pdf" ? createBoundCvFilter() : null;
       const evaluationFilter = kind === "evaluate" ? createEvaluationEnvelopeFilter({ expectedUrl: input }) : null;
       // While the agent emits the 15-25 KB <<cv-html>> envelope, cvFilter swallows
       // every byte, so the response stream goes completely silent for as long as
@@ -362,13 +369,6 @@ export async function POST(req: Request) {
       const sendWarnings = (warnings: string[]) => {
         for (const w of warnings) send({ type: "text", text: `⚠️ ${w}\n` });
       };
-      /** Persist the emitted CV; streams the reason and returns false on failure. */
-      const saveCv = (paths: PdfPaths, envelope: CvEnvelope) => {
-        const written = writeCvHtml({ pdfPaths: paths, html: envelope.html });
-        if (!written.ok) send({ type: "error", msg: written.error.slice(0, 200) });
-        return written.ok;
-      };
-
       // One dispatch for every structured CLI: the per-CLI knowledge (which event
       // means text/tool/status/usage) lives in run-cli-support.mjs behind
       // spec.parseEvent, so adding the next such CLI needs no change here.
@@ -457,6 +457,7 @@ export async function POST(req: Request) {
             execPath: process.execPath,
             root: careerOpsRoot(),
             pdfPaths: paths,
+            evidencePath: paths.html + ".evidence.json",
             signal: runAbort.signal,
             format,
             reportNum: input,
@@ -550,14 +551,21 @@ export async function POST(req: Request) {
             // one outcome this handler exists to prevent.
             send({ type: "error", msg: "Internal error: the pdf run passed its gate with no CV to save — please report this." });
           } else {
-            sendWarnings(envelope.warnings);
-            if (saveCv(pdfPaths, envelope)) {
-              // Tracked so cancel() can defer releasing writeToken until this
-              // settles; close() happens once rendering finishes, not here.
-              pdfRenderPromise = renderPdf(pdfPaths, envelope.format);
-              return;
-            }
-            // saveCv already streamed the specific reason.
+            sendWarnings(envelope.warnings ?? []);
+            const paths = pdfPaths;
+            pdfRenderPromise = (async () => {
+              try {
+                if (!boundCv) throw new Error("Missing C05 authority.");
+                await renderDashboardBoundCv({ root: careerOpsRoot(), prepared: boundCv,
+                  proposal: envelope.proposal, html: paths.html, signal: runAbort.signal, template: cvTemplate });
+                if (runAbort.signal.aborted) throw new Error("Résumé generation cancelled.");
+                await renderPdf(paths, envelope.format as "letter" | "a4");
+              } catch (e) {
+                send({ type: "error", msg: e instanceof Error ? e.message.slice(0, 200) : "C05 generation failed." });
+                close();
+              }
+            })();
+            return;
           }
           return close();
         }
