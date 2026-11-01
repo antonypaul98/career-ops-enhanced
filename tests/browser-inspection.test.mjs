@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 import { fixture, resumeBytes, resumeHash } from './helpers/submission-browser-fixture.mjs';
 import { runBrowserSubmission } from '../submit-application-browser.mjs';
@@ -146,16 +146,28 @@ browserTest('a consumed exact approval cannot submit twice across runner invocat
     confirmed: true, statement: SUBMIT_CONFIRMATION_STATEMENT,
     challenge_digest: review.challenge_digest, approved_at: new Date().toISOString(),
   } });
-  const used = new Set();
+  const { reserveSubmissionAttempt } = await import('../submit-application-browser.mjs');
+  const claims = mkdtempSync(join(tmpdir(), 'synthetic-uncertain-attempt-'));
+  t.after(() => rmSync(claims, {recursive:true,force:true}));
   const options = { mode: 'submit',
     launchPersistentContext: async () => ({ pages: () => [f.page], close: async () => {} }),
-    reserveSubmission: async digest => { if (used.has(digest)) return false; used.add(digest); return true; },
+    reserveSubmission: (digest, url) => reserveSubmissionAttempt(claims, digest, url),
   };
-  await runBrowserSubmission(f.input, options);
+  const uncertain = await runBrowserSubmission(f.input, options);
+  assert.equal(uncertain.reason, 'verified_receipt_not_observed');
+  assert.equal(uncertain.applied_status_authorized, false);
   const retry = await runBrowserSubmission(f.input, options);
   assert.equal(f.clicks(), 1);
   assert.equal(retry.reason, 'submission_already_attempted');
   assert.equal(retry.applied_status_authorized, false);
+  const priorDigest = f.input.submit_approval.approval_digest;
+  await new Promise(resolve => setTimeout(resolve, 5));
+  f.input.submit_approval = createExactSubmissionApproval({...f.input,confirmation:{
+    confirmed:true,statement:SUBMIT_CONFIRMATION_STATEMENT,
+    challenge_digest:review.challenge_digest,approved_at:new Date().toISOString()}});
+  assert.notEqual(f.input.submit_approval.approval_digest, priorDigest);
+  assert.equal((await runBrowserSubmission(f.input,options)).reason,'submission_already_attempted');
+  assert.equal(f.clicks(),1);
 });
 
 test('durable approval claims survive separate processes and reject replay', t => {
@@ -236,4 +248,33 @@ browserTest('synthetic browser receipt reaches canonical tracker once, never bef
   const recorded=readFileSync(tracker,'utf8');
   const retry=run(confirmed);assert.equal(retry.status,0,retry.stdout+retry.stderr);
   assert.equal(JSON.parse(retry.stdout).changed,false);assert.equal(readFileSync(tracker,'utf8'),recorded);
+});
+
+
+test('concurrent processes with different approvals reserve a posting only once', async t => {
+  const root=mkdtempSync(join(tmpdir(),'synthetic-concurrent-claims-'));
+  t.after(()=>rmSync(root,{recursive:true,force:true}));
+  const moduleUrl=new URL('../submit-application-browser.mjs',import.meta.url).href;
+  const results=await Promise.all(Array.from({length:6},(_,i)=>new Promise((resolve,reject)=>{
+    const script=`import {reserveSubmissionAttempt} from ${JSON.stringify(moduleUrl)};
+      console.log(reserveSubmissionAttempt(${JSON.stringify(root)}, '${String(i).repeat(64)}', 'https://jobs.synthetic-acme.example/apply/42?utm_source=${i}'));`;
+    const child=spawn(process.execPath,['--input-type=module','-e',script]);let out='',err='';
+    child.stdout.on('data',b=>out+=b);child.stderr.on('data',b=>err+=b);child.on('error',reject);
+    child.on('close',code=>code===0?resolve(out.trim()):reject(Error(err)));
+  })));
+  assert.equal(results.filter(x=>x==='true').length,1);
+  assert.equal(results.filter(x=>x==='false').length,5);
+});
+
+test('interrupted reservations remain blocking and canonical URL variants preserve identity', async t=>{
+  const {reserveSubmissionAttempt}=await import('../submit-application-browser.mjs');
+  const {readdirSync}=await import('node:fs');
+  const root=mkdtempSync(join(tmpdir(),'synthetic-interrupted-claims-'));
+  t.after(()=>rmSync(root,{recursive:true,force:true}));
+  assert.equal(reserveSubmissionAttempt(root,'a'.repeat(64),'https://JOBS.SYNTHETIC-ACME.EXAMPLE/apply/42/?b=2&a=1#section'),true);
+  const file=join(root,readdirSync(root)[0]);writeFileSync(file,'');
+  assert.equal(reserveSubmissionAttempt(root,'b'.repeat(64),'https://jobs.synthetic-acme.example/apply/42?a=1&b=2'),false);
+  assert.equal(readFileSync(file,'utf8'),'');
+  assert.equal(reserveSubmissionAttempt(root,'c'.repeat(64),'https://jobs.synthetic-acme.example/apply?gh_jid=42'),true);
+  assert.equal(reserveSubmissionAttempt(root,'d'.repeat(64),'https://jobs.synthetic-acme.example/apply?gh_jid=43'),true);
 });

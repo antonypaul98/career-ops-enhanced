@@ -13,14 +13,14 @@ const KEY = 'synthetic-042';
 const WHEN = '2026-10-20T20:00:00.000Z';
 const NOW = Date.parse('2026-10-20T21:00:00.000Z');
 
-export function fixture({ url = 'https://jobs.synthetic-acme.example/apply/42' } = {}) {
+export function fixture({ url = 'https://jobs.synthetic-acme.example/apply/42', artifactBytes = resumeBytes } = {}) {
   const bundle = createApplicationBundle({
     application: { key: KEY, company: 'Synthetic Acme', role: 'Data Engineer',
       url },
     fields: [{ key: 'first_name', label: 'First name', value: 'Synthetic',
       source: { type: 'candidate_statement', status: 'user_confirmed', ref: 'synthetic-review',
         quote: 'My name is Synthetic.' } }],
-    artifacts: [{ kind: 'resume', path: 'output/synthetic-resume.pdf', sha256: resumeHash }],
+    artifacts: [{ kind: 'resume', path: 'output/synthetic-resume.pdf', sha256: createHash('sha256').update(artifactBytes).digest('hex') }],
   });
   const readiness_input = {
     application_key: KEY,
