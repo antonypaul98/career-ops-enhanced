@@ -51,6 +51,10 @@ export default function ApprovalsPage() {
                 </span>
               </div>
 
+              {item.demoWarning && <div className="mt-4 text-sm text-amber-200">
+                <p>{item.demoWarning}</p><p>{item.sponsorship}</p>
+                <ul>{item.matchLimitations.map((line: string) => <li key={line}>{line}</li>)}</ul>
+              </div>}
               <a href={item.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm text-brand hover:underline">
                 {item.hostname}<ExternalLink className="size-3.5" />
               </a>

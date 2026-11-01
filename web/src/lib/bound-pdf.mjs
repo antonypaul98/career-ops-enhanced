@@ -7,7 +7,7 @@ import { verifyPreparedBoundCv } from './bound-cv.mjs';
 import { spawnGeneratePdf, markTrackerReady } from './pdf-render.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
-export async function renderBoundPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal, evidencePath, prepared }) {
+export async function renderBoundPdf({ spawnFn, execPath, root, pdfPaths, format, reportNum, signal, evidencePath, prepared, demoOnly = false }) {
   let stage;
   let published;
   let indexed = false;
@@ -45,6 +45,7 @@ export async function renderBoundPdf({ spawnFn, execPath, root, pdfPaths, format
     stage = undefined;
     published = bundle;
     const finalPdf = path.join(bundle, path.basename(pdf));
+    if (demoOnly) { indexed = true; return { kind: 'rendered', warnings: [], finalPdf }; }
     updatePDFManifest(reportNum, finalPdf, path.join(bundle, 'source.html'), format, 'cv', root);
     indexed = true;
     const mark = await markTrackerReady({ spawnFn, execPath, root, reportNum, signal });
