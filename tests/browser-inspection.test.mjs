@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { fixture, resumeBytes, resumeHash } from './helpers/submission-browser-fixture.mjs';
@@ -162,9 +163,77 @@ test('durable approval claims survive separate processes and reject replay', t =
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const moduleUrl = new URL('../submit-application-browser.mjs', import.meta.url).href;
   const code = `import {reserveSubmissionAttempt} from ${JSON.stringify(moduleUrl)};
-    console.log(reserveSubmissionAttempt(${JSON.stringify(root)}, 'a'.repeat(64)));`;
+    console.log(reserveSubmissionAttempt(${JSON.stringify(root)}, 'a'.repeat(64), 'https://jobs.synthetic-acme.example/apply/42'));`;
   const run = () => spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' });
   const first = run(); const retry = run();
   assert.equal(first.status, 0); assert.equal(retry.status, 0);
   assert.equal(first.stdout.trim(), 'true'); assert.equal(retry.stdout.trim(), 'false');
+});
+
+
+test('new approval cannot retry the same posting after an uncertain attempt', async t => {
+  const { reserveSubmissionAttempt } = await import('../submit-application-browser.mjs');
+  const root = mkdtempSync(join(tmpdir(), 'synthetic-submit-reapproval-'));
+  t.after(() => rmSync(root, {recursive:true,force:true}));
+  const url = 'https://jobs.synthetic-acme.example/apply/42';
+  assert.equal(reserveSubmissionAttempt(root, 'a'.repeat(64), url), true);
+  assert.equal(reserveSubmissionAttempt(root, 'b'.repeat(64), url+'?utm_source=other'), false);
+  assert.equal(reserveSubmissionAttempt(root, 'c'.repeat(64), url.replace('/42','/43')), true);
+});
+
+
+test('legacy claims and missing posting identity fail closed without deleting history', async t => {
+  const { reserveSubmissionAttempt } = await import('../submit-application-browser.mjs');
+  const root = mkdtempSync(join(tmpdir(), 'synthetic-legacy-claims-'));
+  t.after(() => rmSync(root, {recursive:true,force:true}));
+  assert.throws(() => reserveSubmissionAttempt(root, 'b'.repeat(64)), /posting URL/);
+  const legacy = join(root,'a'.repeat(64)+'.json');
+  writeFileSync(legacy,'original');
+  assert.throws(() => reserveSubmissionAttempt(root, 'b'.repeat(64), 'https://jobs.synthetic-acme.example/42'), /reconciliation/);
+  assert.equal(readFileSync(legacy,'utf8'),'original');
+});
+
+
+browserTest('synthetic browser receipt reaches canonical tracker once, never before receipt review', async t => {
+  const f = await setup(t);
+  const root = mkdtempSync(join(tmpdir(), 'synthetic-browser-lifecycle-'));
+  t.after(() => rmSync(root,{recursive:true,force:true}));
+  const { canonicalJson } = await import('../enhanced/application-approval.mjs');
+  const { reserveSubmissionAttempt } = await import('../submit-application-browser.mjs');
+  const { createExactSubmissionReview, createExactSubmissionApproval, SUBMIT_CONFIRMATION_STATEMENT,
+    createAppliedLifecycleDraftFromReceipt } = await import('../enhanced/approved-application-submission.mjs');
+  const { confirmLifecycleEvent, LIFECYCLE_CONFIRMATION_STATEMENT } = await import('../enhanced/application-lifecycle.mjs');
+  f.input.observation = (await f.run()).observation;
+  const review = createExactSubmissionReview(f.input);
+  f.input.submit_approval = createExactSubmissionApproval({...f.input, confirmation:{confirmed:true,
+    statement:SUBMIT_CONFIRMATION_STATEMENT,challenge_digest:review.challenge_digest,approved_at:new Date().toISOString()}});
+  await f.page.locator('#submit').evaluate(node => node.onclick = () => {
+    window.clicked(); history.replaceState({},'', '/confirmation/SYN-42');
+    document.body.innerHTML='<main id="receipt">Application received. Reference SYN-42.</main>';
+  });
+  const result = await runBrowserSubmission(f.input,{mode:'submit', receiptSource:'data/receipt.json',
+    reserveSubmission:(digest,url)=>reserveSubmissionAttempt(join(root,'claims'),digest,url),
+    launchPersistentContext:async()=>({pages:()=>[f.page],close:async()=>{}})});
+  assert.equal(result.verified?.decision,'verified_receipt'); assert.equal(f.clicks(),1);
+  assert.equal(result.applied_written,false); assert.equal(result.tracker_mutation,false);
+  mkdirSync(join(root,'data')); mkdirSync(join(root,'output'));
+  writeFileSync(join(root,'output/synthetic-resume.pdf'),resumeBytes);
+  writeFileSync(join(root,'data/receipt.json'),canonicalJson(result.receipt.evidence));
+  const tracker=join(root,'data/applications.md');
+  const original='# Synthetic tracker\n\n| # | Date | Company | Role | Score | Status | PDF | Report | Notes | URL |\n|---|---|---|---|---|---|---|---|---|---|\n| 42 | 2026-01-01 | Synthetic Acme | Data Engineer | 4/5 | Evaluated | — | — | — | https://jobs.synthetic-acme.example/apply/42 |\n';
+  writeFileSync(tracker,original);
+  const draft=createAppliedLifecycleDraftFromReceipt({verified:result.verified,bundle:f.input.bundle,tracker_row:42});
+  const run=event=>{
+    writeFileSync(join(root,'data/event.json'),JSON.stringify(event));
+    return spawnSync(process.execPath,[fileURLToPath(new URL('../set-status.mjs',import.meta.url)),'--row','42','Applied','--lifecycle-event','data/event.json','--json'],{
+      encoding:'utf8',env:{...process.env,CAREER_OPS_ROOT:root,CAREER_OPS_TRACKER:tracker}});
+  };
+  assert.notEqual(run(draft).status,0); assert.equal(readFileSync(tracker,'utf8'),original);
+  const confirmed=confirmLifecycleEvent(draft,{confirmed:true,event_digest:draft.event_digest,
+    statement:LIFECYCLE_CONFIRMATION_STATEMENT,confirmed_at:new Date().toISOString()});
+  const first=run(confirmed);assert.equal(first.status,0,first.stdout+first.stderr);
+  assert.match(readFileSync(tracker,'utf8'),/Applied/);
+  const recorded=readFileSync(tracker,'utf8');
+  const retry=run(confirmed);assert.equal(retry.status,0,retry.stdout+retry.stderr);
+  assert.equal(JSON.parse(retry.stdout).changed,false);assert.equal(readFileSync(tracker,'utf8'),recorded);
 });

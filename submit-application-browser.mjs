@@ -6,7 +6,10 @@
  * credentials, solves challenges, approves content, or writes Applied.
  */
 
-import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { normalizeUrl } from './url-key.mjs';
+import { validateApplicationLaunchUrl } from './enhanced/application-launch.mjs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { getCareerOpsRoot } from './path-resolver.mjs';
@@ -76,18 +79,25 @@ function atomicText(path, value) {
 }
 
 /** Durable one-attempt claim. Never remove it after an uncertain browser outcome. */
-export function reserveSubmissionAttempt(directory, approvalDigest) {
+export function reserveSubmissionAttempt(directory, approvalDigest, postingUrl) {
   if (!/^[a-f0-9]{64}$/.test(approvalDigest ?? '')) throw new Error('invalid submit approval digest');
+  if (!validateApplicationLaunchUrl(postingUrl).valid) throw new Error('valid posting URL required for attempt reservation');
   mkdirSync(directory, { recursive: true, mode: 0o700 });
+  // Older approval-only claims cannot establish which posting was attempted.
+  // Preserve them and require reconciliation rather than silently permitting replay.
+  if (readdirSync(directory).some(name => /^[a-f0-9]{64}\.json$/.test(name))) {
+    throw new Error('legacy submission attempts require human reconciliation');
+  }
+  const postingDigest = createHash('sha256').update(normalizeUrl(postingUrl)).digest('hex');
   let fd;
   try {
-    fd = openSync(resolve(directory, `${approvalDigest}.json`), 'wx', 0o600);
+    fd = openSync(resolve(directory, `application-${postingDigest}.json`), 'wx', 0o600);
   } catch (error) {
     if (error.code === 'EEXIST') return false;
     throw error;
   }
   try {
-    writeFileSync(fd, JSON.stringify({ approval_digest: approvalDigest, status: 'attempt_reserved',
+    writeFileSync(fd, JSON.stringify({ posting_digest: postingDigest, approval_digest: approvalDigest, status: 'attempt_reserved',
       reserved_at: new Date().toISOString() }) + '\n');
     fsyncSync(fd);
   } finally {
@@ -127,7 +137,7 @@ export async function runBrowserSubmission(input, { mode, profileDir, receiptSou
     }
     const plan = prepareApprovedSubmission({ ...input, observation });
     if (plan.decision !== 'ready_to_submit_once') return plan;
-    if (typeof reserveSubmission !== 'function' || !await reserveSubmission(plan.submit_approval_digest)) {
+    if (typeof reserveSubmission !== 'function' || !await reserveSubmission(plan.submit_approval_digest, start.launch_url)) {
       return { schema_version: 1, decision: 'blocked',
         reason: typeof reserveSubmission === 'function' ? 'submission_already_attempted' : 'submission_attempt_store_required',
         resume_token: start.resume.token, consequential_actions: 0,
@@ -168,7 +178,7 @@ export async function main(argv = process.argv.slice(2)) {
     const input = JSON.parse(readFileSync(inputPath, 'utf8'));
     const receiptSource = receiptPath ? relative(root.canonical, receiptPath) : null;
     const result = await runBrowserSubmission(input, { mode: args.mode, profileDir, receiptSource,
-      reserveSubmission: digest => reserveSubmissionAttempt(privatePath(root, 'data/private/submission-attempts'), digest) });
+      reserveSubmission: (digest, url) => reserveSubmissionAttempt(privatePath(root, 'data/private/submission-attempts'), digest, url) });
     if (result.receipt?.evidence && receiptPath) atomicText(receiptPath, canonicalJson(result.receipt.evidence));
     atomicJson(outputPath, result);
     console.log(JSON.stringify({ decision: result.decision ?? result.verified?.decision,

@@ -151,3 +151,15 @@ browserTest('executor rehashes file bytes after approval and refuses replacement
   await page.locator('#resume').setInputFiles({ name: 'synthetic-resume.pdf', mimeType: 'application/pdf', buffer: Buffer.from('replacement') });
   await assert.rejects(() => executor({ action: 'submit_exact_approved_form', execution_digest: 'b'.repeat(64) }), /changed/);
 }));
+
+
+browserTest('post-submit authentication challenges cannot be accepted as a receipt', () => withPage(async page => {
+  const observed = await observeFinalReview(page, contract, {observedAt:WHEN});
+  const execution={decision:'submitted_awaiting_verified_receipt',application_key:'synthetic-042',
+    content_digest:'c'.repeat(64),execution_digest:'d'.repeat(64),browser_contract_digest:observed.browser_contract_digest};
+  await page.goto('https://jobs.synthetic-acme.example/confirmation/SYN-42');
+  for (const challenge of ['Sign in','Verification code','CAPTCHA']) {
+    await page.locator('body').evaluate((node, challenge) => {node.innerHTML='<main id="receipt">Application received.</main><p>'+challenge+'</p>';},challenge);
+    assert.equal(await capturePlaywrightReceipt(page,contract,execution,{observedAt:WHEN}),null);
+  }
+}));

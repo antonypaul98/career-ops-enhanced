@@ -220,7 +220,9 @@ export async function capturePlaywrightReceipt(page, rawContract, execution,
   const contract = validateContract(structuredClone(rawContract));
   if (execution?.decision !== 'submitted_awaiting_verified_receipt') throw new Error('completed submission execution is required');
   if (execution.browser_contract_digest !== hash(contract)) throw new Error('browser contract changed after approval');
-  const currentUrl = String(page.url());
+  const challenge = await challengeState(page);
+  if (challenge.login_required || challenge.mfa_required || challenge.captcha_required) return null;
+  const currentUrl = challenge.url;
   const urlAllowed = contract.receipt.success_url_prefixes.some(prefix => matchesSuccessUrl(currentUrl, prefix));
   if (!urlAllowed) return null;
   for (const entry of contract.receipt.selectors) {
