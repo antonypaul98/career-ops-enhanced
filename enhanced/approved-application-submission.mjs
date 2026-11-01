@@ -100,6 +100,7 @@ function checkObservation(start, observation) {
 
 /** Shared fail-closed comparison for inspection and the approval gate. */
 export function inspectApplicationObservation(input = {}) {
+  if (input.demo_only === true || input.submission_allowed === false) return blocked('demo_submission_disabled');
   const start = prepareCandidateApplicationStart(input);
   if (start.decision !== 'ready_to_open') return blocked(`start:${start.reason ?? start.decision}`);
   const checked = checkObservation(start, input.observation);
@@ -137,7 +138,8 @@ function submissionReviewFromChecked(start, checked) {
 }
 
 /** Build the exact human-review challenge without authorizing or performing Submit. */
-export function createExactSubmissionReview({ readiness_input, approval, start_confirmation, observation } = {}) {
+export function createExactSubmissionReview({ readiness_input, approval, start_confirmation, observation, demo_only, submission_allowed } = {}) {
+  if (demo_only === true || submission_allowed === false) throw new Error('demo_submission_disabled');
   const start = prepareCandidateApplicationStart({ readiness_input, approval, start_confirmation });
   if (start.decision !== 'ready_to_open') throw new Error(`application start is not ready: ${start.reason ?? start.decision}`);
   const checked = checkObservation(start, observation);
@@ -146,8 +148,9 @@ export function createExactSubmissionReview({ readiness_input, approval, start_c
 }
 
 /** Create the final consequential-action approval, bound to the exact observed form. */
-export function createExactSubmissionApproval({ readiness_input, approval, start_confirmation, observation, confirmation } = {},
+export function createExactSubmissionApproval({ readiness_input, approval, start_confirmation, observation, confirmation, demo_only, submission_allowed } = {},
   { now = Date.now() } = {}) {
+  if (demo_only === true || submission_allowed === false) throw new Error('demo_submission_disabled');
   const start = prepareCandidateApplicationStart({ readiness_input, approval, start_confirmation });
   if (start.decision !== 'ready_to_open') throw new Error(`application start is not ready: ${start.reason ?? start.decision}`);
   const checked = checkObservation(start, observation);
@@ -202,7 +205,8 @@ function validSubmissionApproval(submitApproval, checked, reviewDigest) {
 
 /** Re-check every gate and the current browser observation immediately before submit. */
 export function prepareApprovedSubmission({ readiness_input, approval, start_confirmation,
-  submit_approval: submitApproval, observation } = {}) {
+  submit_approval: submitApproval, observation, demo_only, submission_allowed } = {}) {
+  if (demo_only === true || submission_allowed === false) return blocked('demo_submission_disabled');
   const start = prepareCandidateApplicationStart({ readiness_input, approval, start_confirmation });
   if (start.decision !== 'ready_to_open') return blocked(`start:${start.reason ?? start.decision}`);
   const checked = checkObservation(start, observation);

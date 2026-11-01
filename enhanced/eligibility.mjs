@@ -5,6 +5,7 @@
  * a status label is not independent verification of the underlying statement.
  */
 import { createHash } from 'node:crypto';
+import { evaluateDemoEligibility } from '../lib/demo-eligibility.mjs';
 import { ENTRY_STATUSES, usableEvidenceEntries } from './evidence-vault.mjs';
 
 const FIELDS = new Set(['work_authorized', 'needs_sponsorship']);
@@ -78,6 +79,8 @@ function inspectRequirement(requirement, index, facts, candidateId) {
  * Results are private advisory eligibility data, never application permission.
  */
 export function evaluateEligibility(input = {}) {
+  // Explicit demo purpose is advisory only; never returns the real gate's eligible status.
+  if (input?.purpose === 'non_submitting_demo') return evaluateDemoEligibility(input);
   const { requirements, candidate } = input && typeof input === 'object' ? input : {};
   const envelopeValid = Array.isArray(requirements) && Array.isArray(candidate?.facts);
   const checks = Array.isArray(requirements) ? requirements.map((requirement, index) =>
