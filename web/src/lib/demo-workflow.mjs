@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { prepareBoundCv, renderDashboardBoundCv, verifyPreparedBoundCv } from './bound-cv.mjs';
 import { renderBoundPdf } from './bound-pdf.mjs';
+import { sealDemoPackage, verifyDemoPackage } from './demo-package.mjs';
 const hash = value => createHash('sha256').update(value).digest('hex');
 export async function runDemoWorkflow(root, signal) {
   root = fs.realpathSync(root);
@@ -73,12 +74,13 @@ export async function runDemoWorkflow(root, signal) {
     if (read('demo-input.json') !== inputText) throw Error('Demo input changed.');
     // Different schema/suffix from executable browser approvals. No readiness_input,
     // submit_approval or application_bundle can be passed to the submission runner.
-    const result = {demo_only:true,submission_allowed:false,application_action:'none',
+    const result = sealDemoPackage({demo_only:true,submission_allowed:false,application_action:'none',
       application:{key,company:input.offer.company,role:input.offer.title,url:input.offer.url},
-      discovery, eligibility:decision, candidate_match:{method:'reviewed-proposal-selection',limitations:input.match_limitations ?? [],bound_claims:Object.keys(bound.bindings).length},
+      discovery, eligibility:decision, candidate_match:{method:'reviewed-proposal-selection',limitations:input.match_limitations ?? [],bound_claims:Object.keys(bound.bindings).length,gaps:bound.gaps},
       artifacts:[{kind:'resume',path:pdf.finalPdf,sha256:hash(bytes)}],source_snapshot:evidence.snapshot,
       content_digest:hash(JSON.stringify({decision,pdf:hash(bytes),snapshot:evidence.snapshot})),
-      warning:'DEMO ONLY — role sponsorship unconfirmed; human eligibility confirmation required; submission disabled'};
+      warning:'DEMO ONLY — role sponsorship unconfirmed; human eligibility confirmation required; submission disabled'});
+    verifyDemoPackage(root,result);
     const pending = path.join(stage,'package.json');
     fs.writeFileSync(pending,JSON.stringify(result,null,2),{mode:0o600});
     verifyPreparedBoundCv(api,root,prepared,signal);
