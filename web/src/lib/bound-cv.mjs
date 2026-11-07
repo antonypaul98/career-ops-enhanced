@@ -58,9 +58,9 @@ export async function renderDashboardBoundCv({ root, prepared, proposal, html, s
   const input = path.join(stage, 'bound.json');
   try {
     fs.writeFileSync(input, JSON.stringify(result), { mode: 0o600 });
-    const script = `import fs from 'node:fs'; import {pathToFileURL} from 'node:url'; const [module,root,input,output,template]=process.argv.slice(1); process.argv[1]="dashboard-c05-worker"; const {renderBoundResume}=await import(pathToFileURL(module).href); renderBoundResume({root,result:JSON.parse(fs.readFileSync(input,'utf8')),output,template:template || undefined});`;
+    const script = `import fs from 'node:fs'; import {pathToFileURL} from 'node:url'; const [module,root,input,output,template]=process.argv.slice(2); const {renderBoundResume}=await import(pathToFileURL(module).href); renderBoundResume({root,result:JSON.parse(fs.readFileSync(input,'utf8')),output,template:template || undefined});`;
     const child = (options.spawnFn ?? spawn)(process.execPath, ['--input-type=module', '-e', script,
-      path.join(root, 'enhanced/tailor-resume.mjs'), root, input, path.join(stage, 'cv'), template ? api.privatePath(root, template) : ''],
+      'dashboard-c05-worker', path.join(root, 'enhanced/tailor-resume.mjs'), root, input, path.join(stage, 'cv'), template ? api.privatePath(root, template) : ''],
     { cwd: root, stdio: ['ignore', 'ignore', 'pipe'], detached: process.platform !== 'win32' });
     const stopper = createProcessTreeStopper(child);
     const abort = () => stopper.stop();
