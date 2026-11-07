@@ -284,6 +284,7 @@ const SYSTEM_PATHS = [
   // drop it once a release has shipped past that move.
   'lib/context-budget.test.mjs',
   'lib/golden-budget-analysis.mjs',
+  'lib/demo-eligibility.mjs',
   'img-to-pdf.mjs',
   'archive-posting.mjs',
   'jd-capture.mjs',
