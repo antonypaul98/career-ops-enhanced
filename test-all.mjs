@@ -4,6 +4,7 @@
  * test-all.mjs — Comprehensive test suite for career-ops
  *
  * Run before merging any PR or pushing changes.
+ * PR #49 integrated-stack checkpoint: approval-attempt dedup and challenge receipt gates.
  * Integration contracts such as tracker-columns-tests.mjs and structured
  * worker-failure handling must pass here, not only in a narrower component suite.
  * Tests: syntax, scripts, dashboard, data contract, personal data, paths.
