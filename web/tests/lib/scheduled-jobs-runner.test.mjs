@@ -5,7 +5,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
+import { syncBuiltinESMExports } from "node:module";
 import * as yaml from "js-yaml";
+import { lockRecoveryVerdict } from "../../../pipeline-lock.mjs";
 
 import {
   emptyScheduledStore,
@@ -233,6 +235,100 @@ test("lock creation cleans directories when owner metadata writes fail", async (
     assert.equal(fs.existsSync(`${resource}.recovery.lock`), false);
   } finally {
     fs.writeFileSync = originalWrite;
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("a vanished recovery guard never authorizes removing its fresh replacement", async () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-scheduled-vanished-"));
+  const resource = path.join(temp, "resource");
+  const guard = `${resource}.recovery.lock`;
+  const originalStat = fs.statSync;
+  let replaced = false;
+  let entered = false;
+  fs.mkdirSync(guard);
+  try {
+    fs.statSync = (file, ...args) => {
+      if (String(file) === guard && !replaced) {
+        // A waiter observed the old guard, which was released before stat.
+        // Another process has now mkdir'd its guard but not written owner.json.
+        fs.rmdirSync(guard);
+        fs.mkdirSync(guard);
+        replaced = true;
+        throw Object.assign(new Error("old guard vanished"), { code: "ENOENT" });
+      }
+      return originalStat(file, ...args);
+    };
+    syncBuiltinESMExports();
+    await assert.rejects(withResourceLock(resource, async () => { entered = true; }, { timeoutMs: 30, retryMs: 1 }), /lock timeout/);
+    assert.equal(replaced, true);
+    assert.equal(entered, false);
+    // The other owner can still finish publishing its metadata (the CI ENOENT).
+    fs.writeFileSync(path.join(guard, "owner.json"), JSON.stringify({ pid: process.pid, token: "replacement" }));
+    assert.equal(readLockStatus(`${resource}.recovery`).active, true);
+  } finally {
+    fs.statSync = originalStat;
+    syncBuiltinESMExports();
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("unreadable lock metadata or stat never proves a live lock stale", () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-scheduled-unreadable-"));
+  const resource = path.join(temp, "resource");
+  const lock = `${resource}.lock`;
+  const owner = path.join(lock, "owner.json");
+  const originalRead = fs.readFileSync;
+  const originalStat = fs.statSync;
+  fs.mkdirSync(lock);
+  fs.writeFileSync(owner, JSON.stringify({ pid: process.pid, token: "live" }));
+  fs.utimesSync(lock, new Date(0), new Date(0));
+  try {
+    fs.readFileSync = (file, ...args) => {
+      if (String(file) === owner) throw Object.assign(new Error("temporarily unreadable"), { code: "EACCES" });
+      return originalRead(file, ...args);
+    };
+    syncBuiltinESMExports();
+    assert.equal(readLockStatus(resource, { staleMs: 1 }).stale, false);
+    assert.equal(lockRecoveryVerdict(lock, 1), "live");
+    fs.readFileSync = originalRead;
+    fs.unlinkSync(owner);
+    fs.statSync = (file, ...args) => {
+      if (String(file) === lock) throw Object.assign(new Error("temporarily busy"), { code: "EBUSY" });
+      return originalStat(file, ...args);
+    };
+    syncBuiltinESMExports();
+    assert.equal(readLockStatus(resource, { staleMs: 1 }).stale, false);
+    assert.equal(lockRecoveryVerdict(lock, 1), "live");
+  } finally {
+    fs.readFileSync = originalRead;
+    fs.statSync = originalStat;
+    syncBuiltinESMExports();
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("scheduled recovery judgments match the core lock protocol", () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-scheduled-lock-parity-"));
+  const resource = path.join(temp, "resource");
+  const lock = `${resource}.lock`;
+  const compare = () => {
+    const status = readLockStatus(resource);
+    assert.equal(status.stale ? "stale" : status.exists ? "live" : "vanished", lockRecoveryVerdict(lock, 30_000));
+  };
+  try {
+    compare(); // absent
+    fs.mkdirSync(lock);
+    compare(); // fresh ownerless acquisition
+    fs.utimesSync(lock, new Date(0), new Date(0));
+    compare(); // abandoned ownerless lock
+    fs.writeFileSync(path.join(lock, "owner.json"), "{invalid");
+    fs.utimesSync(lock, new Date(0), new Date(0));
+    compare(); // old torn stamp
+    fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: process.pid }));
+    fs.utimesSync(lock, new Date(0), new Date(0));
+    compare(); // an old lock with a live owner must not age out
+  } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }
 });
