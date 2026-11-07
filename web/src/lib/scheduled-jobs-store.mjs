@@ -86,12 +86,22 @@ export function writeScheduledStoreAtomic(storePath, store) {
   }
 }
 
-function readOwner(lockDir) {
+function inspectOwner(lockDir) {
+  let raw;
   try {
-    return JSON.parse(fs.readFileSync(path.join(lockDir, "owner.json"), "utf8"));
-  } catch {
-    return null;
+    raw = fs.readFileSync(path.join(lockDir, "owner.json"), "utf8");
+  } catch (error) {
+    return { inspected: error?.code === "ENOENT", owner: null };
   }
+  try {
+    return { inspected: true, owner: JSON.parse(raw) };
+  } catch {
+    return { inspected: true, owner: null };
+  }
+}
+
+function readOwner(lockDir) {
+  return inspectOwner(lockDir).owner;
 }
 
 function processIsAlive(pid) {
@@ -107,8 +117,10 @@ function processIsAlive(pid) {
 export function readLockStatus(resourcePath, options = {}) {
   const staleMs = options.staleMs ?? DEFAULT_STALE_MS;
   const lockDir = `${resourcePath}.lock`;
-  if (!fs.existsSync(lockDir)) return { exists: false, active: false, stale: false, owner: null };
-  const owner = readOwner(lockDir);
+  // Mirrors core pipeline-lock's recovery verdict (covered by parity tests).
+  // The web bundler cannot statically import outside its pinned package root.
+  const { inspected, owner } = inspectOwner(lockDir);
+  if (!inspected) return { exists: true, active: false, stale: false, owner: null };
   if (owner?.pid) {
     const active = processIsAlive(owner.pid);
     return { exists: true, active, stale: !active, owner };
@@ -116,8 +128,10 @@ export function readLockStatus(resourcePath, options = {}) {
   try {
     const stale = Date.now() - fs.statSync(lockDir).mtimeMs > Math.max(staleMs, OWNERLESS_GRACE_MS);
     return { exists: true, active: false, stale, owner: null };
-  } catch {
-    return { exists: true, active: false, stale: true, owner: null };
+  } catch (error) {
+    // Vanished is free to retry, not permission to delete a newly created guard.
+    // Any other stat failure is unknown, so it cannot authorize recovery either.
+    return { exists: error?.code !== "ENOENT", active: false, stale: false, owner: null };
   }
 }
 
