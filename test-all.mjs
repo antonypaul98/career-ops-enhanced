@@ -16813,7 +16813,7 @@ try {
         fail(`web pdf write-scope unit suites failed${killed ? ` (killed: ${killed})` : ''} (run: node --experimental-strip-types --test ${webUnits.join(' ')})${formatRunFailure()}`);
       }
 
-      // Parity: everything web/package.json would run must be something we DO run.
+      // Parity: at this exact head, everything web/package.json would run must be something we DO run.
       // Both sides are discovered independently: the required gate uses Node's
       // recursive listing above, while this walk mirrors the web test glob. If
       // either discovery changes or silently narrows, the two sets diverge and
