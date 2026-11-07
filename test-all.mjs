@@ -16805,25 +16805,19 @@ try {
         // Surface the child's own output, for the same reason the per-file
         // node:test path does (see runDiscovered): a bare "failed" is not
         // actionable. It matters MORE here, because this is one child running
-        // every suite under web/tests/lib — so the rerun command this prints is
-        // a ~100-file line, and without the excerpt there is nothing to say
-        // which of the hundred broke. A flake that only reproduces on a slow
-        // runner is then undiagnosable by construction, which is the half of
-        // #4017 that outlived its own test.
+        // every suite under web/tests — so the rerun command this prints is a
+        // large line, and without the excerpt there is nothing to say which one
+        // broke. A flake that only reproduces on a slow runner is then
+        // undiagnosable by construction, which is the half of #4017 that
+        // outlived its own test.
         fail(`web pdf write-scope unit suites failed${killed ? ` (killed: ${killed})` : ''} (run: node --experimental-strip-types --test ${webUnits.join(' ')})${formatRunFailure()}`);
       }
 
       // Parity: everything web/package.json would run must be something we DO run.
-      // The block above only reads web/tests/lib, while web's own script is
-      // `node --test "tests/**/*.test.mjs"` — recursive. Today those agree (39 of
-      // 39 live in lib/), and nothing anywhere asserts that they keep agreeing.
-      // The day a suite lands in web/tests/routes/, web-ci.yml still runs it (its
-      // glob is recursive), so the failure this prevents is not "nobody runs it".
-      // It is narrower and worse: the instrument we MERGE by stops looking. A
-      // co-preview lot comes back green having skipped a suite that exists, while
-      // the PR's own informative CI is the only thing still watching it. Two
-      // measurements of the same fact, diverging in silence. Discovered on both
-      // sides, so this cannot rot into a stale list of its own.
+      // Both sides are discovered independently: the required gate uses Node's
+      // recursive listing above, while this walk mirrors the web test glob. If
+      // either discovery changes or silently narrows, the two sets diverge and
+      // fail here instead of leaving informative web CI as the only watcher.
       try {
         const webTestsRoot = join(ROOT, 'web', 'tests');
         const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -16842,7 +16836,7 @@ try {
             fail(
               `${ungated.length} web suite(s) run in web's own CI but NOT in this required check: ` +
               `${ungated.map((f) => f.slice(ROOT.length + 1)).join(', ')} — ` +
-              `this section only reads web/tests/lib, so anything outside it gates nothing`,
+              `required web test discovery omitted these files`,
             );
           }
         }
