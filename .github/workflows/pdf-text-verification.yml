@@ -1,0 +1,29 @@
+name: Optional PDF text verification tests
+
+on:
+  pull_request:
+    paths:
+      - 'tools/verify_pdf.py'
+      - 'tests/test_verify_pdf.py'
+      - 'tools/third_party/ai-job-search/LICENSE'
+      - 'docs/optional-pdf-text-verifier.md'
+      - '.github/workflows/pdf-text-verification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/verify_pdf.py'
+      - 'tests/test_verify_pdf.py'
+      - '.github/workflows/pdf-text-verification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verifier-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run standalone PDF verifier tests
+        run: python3 -m unittest discover -s tests -p test_verify_pdf.py -v
