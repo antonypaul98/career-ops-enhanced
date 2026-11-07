@@ -6,6 +6,7 @@ import path from 'node:path';
 import net from 'node:net';
 import { spawn, spawnSync } from 'node:child_process';
 import { fixture } from '../helpers/bound-cv-fixture.mjs';
+import { isNestedCheckout } from '../../../lib/mjs-files.mjs';
 
 test('actual dashboard C05 route', {skip:!process.env.C05_ROUTE_ACCEPTANCE}, async t=>{
  const f=fixture(); f.root=fs.realpathSync(f.root); const code=path.resolve('..'); fs.mkdirSync(path.join(f.root,'reports')); 
@@ -38,14 +39,16 @@ test('actual dashboard C05 route', {skip:!process.env.C05_ROUTE_ACCEPTANCE}, asy
  // PDF publication is atomic at output/c05-<id>/, not output/*.pdf.
  // Walk only this fixture's output tree and never follow symlinks into code.
  const artifacts=()=>{
-  const walk=(relative='',depth=0)=>{
+  const output=path.join(f.root,'output');
+  const walk=(dir,depth=0)=>{
+   if(isNestedCheckout(dir))return [];
    assert.ok(depth<8,'unexpectedly deep output fixture');
-   return fs.readdirSync(path.join(f.root,'output',relative),{withFileTypes:true}).flatMap(entry=>{
-    const name=path.join(relative,entry.name);
-    return entry.isDirectory()?walk(name,depth+1):entry.isFile()&&name.endsWith('.pdf')?[name]:[];
+   return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
+    const file=path.join(dir,entry.name);
+    return entry.isDirectory()?walk(file,depth+1):entry.isFile()&&file.endsWith('.pdf')?[path.relative(output,file)]:[];
    });
   };
-  return walk();
+  return walk(output);
  };
  await t.test('missing authority returns 409 without artifacts',async()=>{
   const file=path.join(f.root,'data/career-profile.yml');const original=fs.readFileSync(file);fs.unlinkSync(file);
