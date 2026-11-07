@@ -4,6 +4,9 @@
  * test-all.mjs — Comprehensive test suite for career-ops
  *
  * Run before merging any PR or pushing changes.
+ * PR #49 integrated-stack checkpoint: approval-attempt dedup and challenge receipt gates.
+ * Integration contracts such as tracker-columns-tests.mjs and structured
+ * worker-failure handling must pass here, not only in a narrower component suite.
  * Tests: syntax, scripts, dashboard, data contract, personal data, paths.
  *
  * Usage:
@@ -16772,28 +16775,29 @@ try {
       // next, and this section previously covered 4 of the 6 files present.
       let webUnits = [];
       try {
-        const webLibRoot = join(ROOT, 'web', 'tests', 'lib');
-        webUnits = readdirSync(webLibRoot, { recursive: true })
+        const webTestsRoot = join(ROOT, 'web', 'tests');
+        webUnits = readdirSync(webTestsRoot, { recursive: true })
           .filter((f) => f.endsWith('.test.mjs'))
-          // A checkout under web/tests/lib holds another tree's suites; the
-          // parity walk below skips those the same way (#3762), so the gate
-          // must not run them.
-          .filter((f) => !isUnderNestedCheckout(webLibRoot, f))
+          // A checkout under web/tests holds another tree's suites; the parity
+          // walk below skips those the same way (#3762), so the gate must not
+          // run them.
+          .filter((f) => !isUnderNestedCheckout(webTestsRoot, f))
           .sort()
-          .map((f) => join('web', 'tests', 'lib', f));
+          .map((f) => join('web', 'tests', f));
       } catch (err) {
         // Fail rather than throw to the outer catch, which would skip every value
         // assertion below while reporting only "freeze section crashed".
-        fail(`web/tests/lib is unreadable (${err.message}) — the #2185 unit suites cannot be gated`);
+        fail(`web/tests is unreadable (${err.message}) — the required web unit suites cannot be gated`);
       }
       // Three distinct states, so the message never misdescribes the failure: the
       // unreadable case already called fail() above, an empty directory is its own
       // fault, and only a non-empty list is actually run.
       if (webUnits.length === 0) {
-        if (existsSync(join(ROOT, 'web', 'tests', 'lib'))) {
-          fail('web/tests/lib contains no *.test.mjs — the #2185 unit suites are not being gated');
+        if (existsSync(join(ROOT, 'web', 'tests'))) {
+          fail('web/tests contains no *.test.mjs — the required web unit suites are not being gated');
         }
-      } else if (run(NODE, ['--experimental-strip-types', '--test', ...webUnits], { timeout: 180000 }) !== null) {
+      } else if (run(NODE, ['--experimental-strip-types', '--test', ...webUnits.map((f) => join(ROOT, f))],
+        { cwd: join(ROOT, 'web'), timeout: 180000 }) !== null) {
         pass('web pdf write-scope unit suites pass (#2185)');
       } else {
         // The signal distinguishes a timeout/kill from an assertion failure —
@@ -16802,25 +16806,19 @@ try {
         // Surface the child's own output, for the same reason the per-file
         // node:test path does (see runDiscovered): a bare "failed" is not
         // actionable. It matters MORE here, because this is one child running
-        // every suite under web/tests/lib — so the rerun command this prints is
-        // a ~100-file line, and without the excerpt there is nothing to say
-        // which of the hundred broke. A flake that only reproduces on a slow
-        // runner is then undiagnosable by construction, which is the half of
-        // #4017 that outlived its own test.
+        // every suite under web/tests — so the rerun command this prints is a
+        // large line, and without the excerpt there is nothing to say which one
+        // broke. A flake that only reproduces on a slow runner is then
+        // undiagnosable by construction, which is the half of #4017 that
+        // outlived its own test.
         fail(`web pdf write-scope unit suites failed${killed ? ` (killed: ${killed})` : ''} (run: node --experimental-strip-types --test ${webUnits.join(' ')})${formatRunFailure()}`);
       }
 
-      // Parity: everything web/package.json would run must be something we DO run.
-      // The block above only reads web/tests/lib, while web's own script is
-      // `node --test "tests/**/*.test.mjs"` — recursive. Today those agree (39 of
-      // 39 live in lib/), and nothing anywhere asserts that they keep agreeing.
-      // The day a suite lands in web/tests/routes/, web-ci.yml still runs it (its
-      // glob is recursive), so the failure this prevents is not "nobody runs it".
-      // It is narrower and worse: the instrument we MERGE by stops looking. A
-      // co-preview lot comes back green having skipped a suite that exists, while
-      // the PR's own informative CI is the only thing still watching it. Two
-      // measurements of the same fact, diverging in silence. Discovered on both
-      // sides, so this cannot rot into a stale list of its own.
+      // Parity: at this exact head, everything web/package.json would run must be something we DO run.
+      // Both sides are discovered independently: the required gate uses Node's
+      // recursive listing above, while this walk mirrors the web test glob. If
+      // either discovery changes or silently narrows, the two sets diverge and
+      // fail here instead of leaving informative web CI as the only watcher.
       try {
         const webTestsRoot = join(ROOT, 'web', 'tests');
         const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -16839,7 +16837,7 @@ try {
             fail(
               `${ungated.length} web suite(s) run in web's own CI but NOT in this required check: ` +
               `${ungated.map((f) => f.slice(ROOT.length + 1)).join(', ')} — ` +
-              `this section only reads web/tests/lib, so anything outside it gates nothing`,
+              `required web test discovery omitted these files`,
             );
           }
         }

@@ -9,7 +9,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCliJson, trackerRowArg, clientErrorMessage } from "../../src/lib/status-cli.mjs";
+import { parseCliJson, trackerRowArg, clientErrorMessage, statusEvidenceError } from "../../src/lib/status-cli.mjs";
 
 test("the JSON document is read even when a warning printed a brace first", () => {
   // --json puts one JSON object on stdout, but the CLI may print diagnostics
@@ -129,4 +129,11 @@ test("a crash that printed no JSON never puts stderr in the response body", () =
 test("a non-string error field is not passed through as one", () => {
   assert.equal(clientErrorMessage({ error: { nested: true } }), "status update failed");
   assert.equal(clientErrorMessage({}), "status update failed");
+});
+
+
+test("Applied cannot be recorded by an unevidenced dashboard shortcut", () => {
+  assert.match(statusEvidenceError("Applied"), /verified submission receipt/);
+  assert.equal(statusEvidenceError("Evaluated"), null);
+  assert.equal(statusEvidenceError("Discarded"), null);
 });

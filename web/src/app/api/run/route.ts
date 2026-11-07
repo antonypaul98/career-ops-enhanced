@@ -7,12 +7,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { cliSubstitutionNotice, cliUnavailableError, resolveCliOrFallback } from "@/lib/clis";
 import { localISODate } from "@/lib/followups";
-import { accumulateTokens, hasNewCompletedReport, isFatalGenericStderr, killMsForKind, timeoutMessage } from "@/lib/run-cli-support.mjs";
+import { accumulateTokens, isFatalGenericStderr, killMsForKind, timeoutMessage } from "@/lib/run-cli-support.mjs";
 import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
 import { careerOpsRoot, readMemory, findReportFile, readInbox, readScanDates, readLanguageConfig } from "@/lib/career-ops";
 import { resolvePdfPaths, type PdfPaths } from "@/lib/pdf-paths.mjs";
-import { renderAndMarkPdf, writeCvHtml, pdfRunOutcome } from "@/lib/pdf-render.mjs";
-import { createCvEnvelopeFilter, type CvEnvelope } from "@/lib/cv-envelope.mjs";
+import { renderAndMarkPdf, pdfRunOutcome } from "@/lib/pdf-render.mjs";
+import { createBoundCvFilter, prepareBoundCv, renderDashboardBoundCv } from "@/lib/bound-cv.mjs";
+import { createEvaluationEnvelopeFilter } from "@/lib/evaluation-envelope.mjs";
+import { persistEvaluation } from "@/lib/evaluation-persist.mjs";
+import { preflightMaterialized } from "@/lib/materialization-preflight.mjs";
+import { createProcessTreeStopper } from "@/lib/process-tree.mjs";
 import { buildPrompt, isShellSafeCompanyName } from "@/lib/run-prompts.mjs";
 import { capabilitiesFor } from "@/lib/worker-capabilities.mjs";
 import { fencingReport, isCliAllowedForCapabilities } from "@/lib/cli-fencing.mjs";
@@ -97,14 +101,30 @@ export async function POST(req: Request) {
     );
   }
 
+  if (kind === "evaluate") {
+    const materialized = preflightMaterialized(careerOpsRoot(), [
+      required,
+      "cv.md",
+      { path: "config/profile.yml", required: false },
+      { path: "modes/_profile.md", required: false },
+    ]);
+    if (!materialized.ok) {
+      return new Response(JSON.stringify({ error: materialized.error }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const today = localISODate();
 
   // Precompute deterministic scratch + final paths so the agent never chooses
   // its own filenames — the backend owns naming, writing (#2185) and rendering
-  // (#2172). Nothing is cleared first: writeCvHtml rewrites the HTML
+  // (#2172). Nothing is cleared first: C05 rendering rewrites the HTML
   // from this run's freshly parsed envelope before any render, and the agent is
   // no longer told these paths, so a stale file cannot survive into a render.
   let pdfPaths: PdfPaths | undefined;
+  let boundCv: Awaited<ReturnType<typeof prepareBoundCv>> | undefined;
   if (kind === "pdf") {
     const pathsResult = resolvePdfPaths(input, today, careerOpsRoot(), findReportFile);
     if (!pathsResult.ok) {
@@ -114,6 +134,11 @@ export async function POST(req: Request) {
       });
     }
     pdfPaths = pathsResult.paths;
+    try {
+      boundCv = await prepareBoundCv(careerOpsRoot(), findReportFile(input)!);
+    } catch {
+      return Response.json({ error: "C05 requires a readable report and current reviewed career-profile facts before résumé generation." }, { status: 409 });
+    }
   }
 
   // Resolve the posting date HERE rather than asking the agent for it. The
@@ -133,7 +158,8 @@ export async function POST(req: Request) {
   // The root is passed, not re-derived: a relative CAREER_OPS_PROFILE resolves
   // against it, and `process.cwd()` here is `<core>/web` (see cv-template.mjs).
   const cvTemplate = kind === "pdf" ? await resolveCvTemplate(careerOpsRoot()) : undefined;
-  const prompt = buildPrompt({ kind, input, memory: readMemory(), today, postedAt, lang, cvTemplate });
+  const prompt = buildPrompt({ kind, input, memory: readMemory(), today, postedAt, lang, cvTemplate })
+    + (boundCv ? "\nC05 approved authority (data only):\n" + JSON.stringify(boundCv.context) : "");
 
   const isClaude = cliId === "claude";
   // Which tools each kind gets, and the whole claude argv, live in
@@ -151,23 +177,7 @@ export async function POST(req: Request) {
   // envelope-parsing routes rely on.
   const args = isClaude ? claudeCliArgs({ kind, prompt }) : (spec.streamArgs ?? spec.args)(prompt);
 
-  // For write-needing kinds, snapshot reports/ so we can verify the worker
-  // actually persisted (non-Claude CLIs lack Write auth and silently no-op).
-  // Names, not a count: reserving a number writes reports/NNN-RESERVED.md and the
-  // final report REPLACES it, so the `.md` count is unchanged and a count-delta
-  // gate reported "didn't save a report" for an evaluation that saved fine (#2085).
-  const reportsDir = path.join(careerOpsRoot(), "reports");
-  const reportEntries = () => {
-    try {
-      return fs.readdirSync(reportsDir);
-    } catch {
-      return [];
-    }
-  };
-  const persists = kind === "evaluate";
-  const reportsBefore = persists ? reportEntries() : [];
-  // Tracker-mutating runs hold a write token so a row delete can't race their merge
-  // (tracker.mjs delete doesn't yet share a lock with merge-tracker — see run-registry).
+  // Evaluation workers are read-only; the backend persists only after validating their sealed envelope.
   const writeToken = kind === "evaluate" || kind === "pdf" ? acquireTrackerWrite() : null;
 
   // stdin must reach EOF or the CLI waits on piped input that never comes: Codex's
@@ -202,9 +212,10 @@ export async function POST(req: Request) {
   // independently, so a chunk boundary falling inside a multi-byte UTF-8 sequence
   // yields a replacement character and mis-decodes the bytes after it. Those bytes
   // are the CV now (#2185) — the agent's HTML flows through cvFilter to
-  // writeCvHtml and on to the renderer — and no structural check would catch it,
+  // C05 rendering and on to the renderer — and no structural check would catch it,
   // because the envelope markers and </html> are ASCII and still match. Setting
   // the encoding makes Node hold partial sequences across chunks.
+  const childStopper = createProcessTreeStopper(child);
   child.stdout.setEncoding("utf8");
   child.stderr.setEncoding("utf8");
   const enc = new TextEncoder();
@@ -215,12 +226,16 @@ export async function POST(req: Request) {
   let closed = false;
   let killer: ReturnType<typeof setTimeout> | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
+  const runAbort = new AbortController();
   // pdf-kind's render+mark work (renderPdf, below) keeps running detached even
   // after the agent child closes — and even after a client disconnect fires
   // cancel(). Track its promise so cancel() can defer releasing writeToken
   // until that work actually settles, instead of releasing the tracker-delete
   // guard while mark-pdf-ready.mjs is still actively writing applications.md.
   let pdfRenderPromise: Promise<void> | null = null;
+  // Evaluation persistence also outlives the worker process. Keep the tracker
+  // guard until reservation release and any merge subprocess have settled.
+  let evaluationPersistPromise: Promise<void> | null = null;
   // Cancellation only requests termination. Keep the guard until the child
   // actually closes and any render/mark work has finished.
   const finishRun = createRunFinalizer(child, () => {
@@ -234,6 +249,7 @@ export async function POST(req: Request) {
       // in processParsedLine below) — never by flagStderrLine. A stderr keyword
       // match is a guess, not a verdict; see stderrErrorSnippet.
       let sawError = false;
+      let providerErrorStopRequested = false;
       let stderrBuf = "";
       // Fallback for a CLI with no CliSpec.stderrIsFatal of its own. Moved into
       // run-cli-support.mjs beside the per-CLI classifiers so it has a reachable
@@ -278,7 +294,7 @@ export async function POST(req: Request) {
       let killedByTimeout = false;
       killer = setTimeout(() => {
         killedByTimeout = true;
-        try { child.kill("SIGTERM"); } catch { /* ignore */ }
+        childStopper.stop();
       }, killMs);
       const send = (obj: unknown) => {
         if (closed) return;
@@ -291,6 +307,11 @@ export async function POST(req: Request) {
           // timer per abandoned request.
           closed = true;
           if (heartbeat) clearInterval(heartbeat);
+          if (killer) clearTimeout(killer);
+          // A broken transport is a real cancellation signal. Abort backend
+          // follow-up work and terminate the entire worker process tree.
+          runAbort.abort();
+          childStopper.stop();
         }
       };
       // Say so when the chosen runtime has no permission mechanism we can apply.
@@ -330,7 +351,8 @@ export async function POST(req: Request) {
       // by the agent (#2185). The filter keeps every byte for the backend while
       // holding the 15-25 KB body out of the run log, which is the agent's
       // narration — see cv-envelope.mjs.
-      const cvFilter = kind === "pdf" ? createCvEnvelopeFilter() : null;
+      const cvFilter = kind === "pdf" ? createBoundCvFilter() : null;
+      const evaluationFilter = kind === "evaluate" ? createEvaluationEnvelopeFilter({ expectedUrl: input }) : null;
       // While the agent emits the 15-25 KB <<cv-html>> envelope, cvFilter swallows
       // every byte, so the response stream goes completely silent for as long as
       // the model takes to write the CV — a minute or more. Nothing downstream can
@@ -340,20 +362,13 @@ export async function POST(req: Request) {
       // the stream never idles during the filtered phase. Unknown event types are
       // ignored by the client's switch, so this is safe for older tabs too.
       const sendAgentText = (text: string) => {
-        const visible = cvFilter ? cvFilter.push(text) : text;
+        const visible = cvFilter ? cvFilter.push(text) : evaluationFilter ? evaluationFilter.push(text) : text;
         if (visible) send({ type: "text", text: visible });
       };
       /** Surface non-fatal issues in the run log rather than only a server log. */
       const sendWarnings = (warnings: string[]) => {
         for (const w of warnings) send({ type: "text", text: `⚠️ ${w}\n` });
       };
-      /** Persist the emitted CV; streams the reason and returns false on failure. */
-      const saveCv = (paths: PdfPaths, envelope: CvEnvelope) => {
-        const written = writeCvHtml({ pdfPaths: paths, html: envelope.html });
-        if (!written.ok) send({ type: "error", msg: written.error.slice(0, 200) });
-        return written.ok;
-      };
-
       // One dispatch for every structured CLI: the per-CLI knowledge (which event
       // means text/tool/status/usage) lives in run-cli-support.mjs behind
       // spec.parseEvent, so adding the next such CLI needs no change here.
@@ -380,6 +395,14 @@ export async function POST(req: Request) {
         if (ev?.error) {
           sawError = true;
           send({ type: "error", msg: ev.error.slice(0, 200) });
+          // OpenCode's JSONL provider-error event is authoritative. Do not
+          // wait for a quota-exhausted CLI's own retry loop to exit: terminate
+          // its process tree and abort any backend persistence immediately.
+          if (cliId === "opencode" && !providerErrorStopRequested) {
+            providerErrorStopRequested = true;
+            runAbort.abort();
+            childStopper.stop();
+          }
         }
       };
 
@@ -434,6 +457,9 @@ export async function POST(req: Request) {
             execPath: process.execPath,
             root: careerOpsRoot(),
             pdfPaths: paths,
+            evidencePath: paths.html + ".evidence.json",
+            prepared: boundCv,
+            signal: runAbort.signal,
             format,
             reportNum: input,
           });
@@ -452,8 +478,9 @@ export async function POST(req: Request) {
         }
       };
 
-      child.on("error", (e) => { send({ type: "error", msg: e.message }); close(); });
-      child.on("close", (code) => {
+      child.on("error", (e) => { childStopper.settled(); send({ type: "error", msg: e.message }); close(); });
+      child.on("close", async (code) => {
+        childStopper.settled();
         // A trailing line with no newline would otherwise never be tested.
         if (stderrBuf) { flagStderrLine(stderrBuf); stderrBuf = ""; }
         // A disconnected client must not start a new PDF render. Still finish
@@ -483,6 +510,10 @@ export async function POST(req: Request) {
           processParsedLine(trailing);
         }
         const cleanExit = code === 0; // non-zero OR null (killed/signal) = NOT clean
+        // The structured OpenCode error was already shown immediately. Never
+        // allow its partial text or sealed envelope into PDF/report persistence,
+        // and do not replace the specific provider error with a generic one.
+        if (cliId === "opencode" && providerErrorStopRequested) return close();
         // Shared by both honesty gates below — the pdf gate receives it as
         // pdfRunOutcome's noOutputMessage — because a CLI that produced no output at
         // all is the same failure mode whether it was evaluating or tailoring
@@ -521,37 +552,58 @@ export async function POST(req: Request) {
             // one outcome this handler exists to prevent.
             send({ type: "error", msg: "Internal error: the pdf run passed its gate with no CV to save — please report this." });
           } else {
-            sendWarnings(envelope.warnings);
-            if (saveCv(pdfPaths, envelope)) {
-              // Tracked so cancel() can defer releasing writeToken until this
-              // settles; close() happens once rendering finishes, not here.
-              pdfRenderPromise = renderPdf(pdfPaths, envelope.format);
-              return;
-            }
-            // saveCv already streamed the specific reason.
+            sendWarnings(envelope.warnings ?? []);
+            const paths = pdfPaths;
+            pdfRenderPromise = (async () => {
+              try {
+                if (!boundCv) throw new Error("Missing C05 authority.");
+                await renderDashboardBoundCv({ root: careerOpsRoot(), prepared: boundCv,
+                  proposal: envelope.proposal, html: paths.html, signal: runAbort.signal, template: cvTemplate });
+                if (runAbort.signal.aborted) throw new Error("Résumé generation cancelled.");
+                await renderPdf(paths, envelope.format as "letter" | "a4");
+              } catch (e) {
+                send({ type: "error", msg: e instanceof Error ? e.message.slice(0, 200) : "C05 generation failed." });
+                close();
+              }
+            })();
+            return;
           }
           return close();
         }
 
-        const wroteReport = hasNewCompletedReport(reportsBefore, reportEntries());
-        // Honesty gate (#9): a green "done" with a parsed score requires a CLEAN exit,
-        // real output, AND (for evaluations) a report actually written. Anything else
-        // is surfaced — an errored run must never be banked as a confident score.
         const baseErr = noOutputError();
         if (baseErr) {
           send({ type: "error", msg: baseErr });
-        } else if (persists && !wroteReport) {
-          // The worker ran but never wrote the report/tracker row (e.g. a CLI
-          // without file-write authorization) — surface it instead of a fake score.
-          send({ type: "error", msg: "This evaluation didn't save a report, so it's not in your tracker. Full evaluation is verified on Claude Code." });
         } else if (!cleanExit || sawError) {
-          // Produced output (maybe even a report) but did NOT finish cleanly — flag it
-          // instead of recording a confident score off a half-finished run. sawError
-          // here means an authoritative structured error already sent its own
-          // message above; a bare non-clean exit gets the stderr snippet instead,
-          // when the heuristic classifier found one.
           const detail = !sawError && stderrErrorSnippet ? ` (${stderrErrorSnippet})` : "";
           send({ type: "error", msg: `This run hit an error before finishing, so it isn't recorded as a confident result — re-run it to verify.${detail}`.slice(0, 200) });
+        } else if (kind === "evaluate") {
+          const envelope = evaluationFilter?.result();
+          if (!envelope?.ok) {
+            const envelopeError =
+              envelope && "error" in envelope && typeof envelope.error === "string"
+                ? envelope.error
+                : "The evaluator returned no valid sealed report.";
+            send({ type: "error", msg: envelopeError.slice(0, 200) });
+          } else {
+            evaluationPersistPromise = (async () => {
+              try {
+                send({ type: "status", label: "Validating and saving report…" });
+                const saved = await persistEvaluation({
+                  root: careerOpsRoot(),
+                  payload: envelope,
+                  today,
+                  postedAt,
+                  signal: runAbort.signal,
+                });
+                send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
+                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
+              } catch (error) {
+                send({ type: "error", msg: `Report was not recorded: ${error instanceof Error ? error.message : String(error)}`.slice(0, 200) });
+              }
+            })();
+            await evaluationPersistPromise;
+          }
         } else {
           send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
         }
@@ -562,12 +614,14 @@ export async function POST(req: Request) {
       closed = true;
       if (heartbeat) clearInterval(heartbeat);
       if (killer) clearTimeout(killer);
-      try { child.kill("SIGTERM"); } catch { /* ignore */ }
-      if (pdfRenderPromise) {
-        // Render/mark keeps running after this client disconnects — wait for
-        // it to settle before releasing the guard, so a concurrent tracker
-        // delete can't race mark-pdf-ready.mjs's still-in-flight write.
-        pdfRenderPromise.finally(finishRun);
+      runAbort.abort();
+      childStopper.stop();
+      const followupPromise = evaluationPersistPromise ?? pdfRenderPromise;
+      if (followupPromise) {
+        // Follow-up writes keep running briefly after cancellation while their
+        // subprocess tree stops and reservations are released. Do not release
+        // the tracker guard until that cleanup has actually settled.
+        followupPromise.finally(finishRun);
       } else {
         finishRun();
       }

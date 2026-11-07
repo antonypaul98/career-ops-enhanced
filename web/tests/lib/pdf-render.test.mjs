@@ -530,3 +530,22 @@ test("writeCvHtml: a shorter re-render leaves no trailing bytes", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('cancel during render stops the child and cannot mark tracker even on zero exit', async () => {
+  const controller = new AbortController();
+  const dir = mkdtempSync(join(tmpdir(), 'pdf-abort-'));
+  const child = new EventEmitter(); child.stderr = new EventEmitter();
+  let killed = 0, calls = 0;
+  child.kill = () => { killed++; queueMicrotask(()=>child.emit('close',0)); return true; };
+  const pending = renderAndMarkPdf({ spawnFn:()=>{calls++;return child;},execPath:process.execPath,root:dir,
+    pdfPaths:{html:join(dir,'cv-web-001.html'),finalPdf:join(dir,'final.pdf')},format:'letter',reportNum:'001',signal:controller.signal });
+  controller.abort();
+  assert.equal((await pending).kind,'render-failed');
+  assert.equal(killed,1); assert.equal(calls,1);
+  rmSync(dir,{recursive:true,force:true});
+});
+test('already cancelled PDF marking starts no subprocess', async () => {
+  const controller = new AbortController(); controller.abort();
+  const result=await markTrackerReady({spawnFn:()=>{throw new Error('must not spawn');},execPath:process.execPath,root:'/unused',reportNum:'001',signal:controller.signal});
+  assert.equal(result.ok,false);
+});

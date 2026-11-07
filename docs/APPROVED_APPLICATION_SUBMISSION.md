@@ -118,3 +118,51 @@ application the candidate has independently chosen to submit.
 Record browser/OS, application key, commit SHA, observation time, receipt
 reference and private evidence SHA-256. Do not commit candidate content,
 credentials, screenshots, resume bytes, answers, or receipts.
+
+## Attachment bytes and interrupted sessions
+
+Inspection uses the same exact package comparison as final approval: URL,
+application key, answers, field set and artifact digests must all match.
+Field labels must also match their live associated label or ARIA label.
+A visible filename is not attachment evidence. The adapter reads the single
+selected browser `File`, hashes its actual bytes with SHA-256, and compares
+that digest with the approved package. Missing, empty, multiple, unreadable,
+or over-25-MiB files pause as unverifiable. Server-side attachment links or
+filename-only summaries are unsupported and must not be substituted for bytes.
+The file is read again immediately before an approved action.
+The CLI also reserves the approval digest in a durable, exclusive private
+`data/private/submission-attempts/` record before the click. Reopening a browser
+or changing profiles cannot replay that approval. Failed/uncertain attempts
+remain consumed: inspect the actual ATS result before explicitly approving
+another attempt. Never delete the reservation to retry automatically.
+
+A persistent browser profile does not promise persistent authentication.
+Expired sessions, login, MFA and CAPTCHA pause with the same package resume
+token and no action. The candidate completes authentication; rerun inspect
+and the exact review/approval flow afterward. Lost file selections must be
+reattached and reverified. Browser/observation failures also produce a
+serializable pause; receipt failures after a click retain the submission
+state and never authorize Applied or retry the click automatically.
+
+## Native Safari device validation
+
+Prefer native Safari for additional macOS validation where supported. Safari's
+native `safaridriver` requires Safari Settings → Developer → Allow remote
+automation. Playwright WebKit is not native Safari and is not a substitute
+for this evidence. The packaged persistent-browser runner currently supports
+Chromium; it cannot attach to an ordinary Safari login profile. Preserve the
+Chromium regression suite and record Safari failures or unsupported operations
+explicitly, rather than claiming Safari application acceptance from engine-only
+checks. No real job submission is necessary for device validation.
+
+To run the synthetic native Safari observer check (no Submit method is exposed):
+
+```bash
+/usr/bin/safaridriver -p 48157
+# In another terminal:
+node scripts/native-safari-acceptance.mjs --synthetic --output /tmp/safari-evidence.json
+```
+
+This replaces the contents of a dedicated automation tab on Example Domain
+with a synthetic form and in-memory files. It does not test a real ATS, native
+file-picker selection, server uploads, or the candidate's authenticated profile.

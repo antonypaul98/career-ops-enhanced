@@ -55,7 +55,7 @@ export const CAPS = Object.freeze({
   webSearchOnly: Object.freeze({ writes: false, network: "search" }),
   /** Reads and fetches urls it is given, but must not write. */
   networkReadOnly: Object.freeze({ writes: false, network: "fetch" }),
-  /** Writes canonical artifacts and fetches — the evaluation/repair workers. */
+  /** Writes canonical artifacts and fetches — the portal-repair worker. */
   workspaceWrite: Object.freeze({ writes: true, network: "fetch" }),
 });
 
@@ -77,8 +77,7 @@ export const KNOWN_KINDS = Object.freeze(["pdf", "research", "evaluate", "fix-po
  * - pdf       reads cv.md/profile/report/template and returns the CV inline in an
  *             envelope the backend persists — no write, and no fetch.
  * - research  "use WebFetch for URLs" — fetches, reports, never writes.
- * - evaluate  "Use WebFetch to read the posting", then writes the report and merges
- *             the tracker.
+ * - evaluate  fetches the posting and emits a sealed envelope; the trusted backend\n *             validates and persists it, so the worker itself remains read-only.
  * - fix-portal rewrites one portals.yml entry after finding a working ATS URL.
  *
  * No kind here is search-only: every web-using kind is pointed at a url (the
@@ -88,7 +87,7 @@ export const KNOWN_KINDS = Object.freeze(["pdf", "research", "evaluate", "fix-po
 const KIND_CAPABILITIES = Object.freeze({
   pdf: CAPS.localReadOnly,
   research: CAPS.networkReadOnly,
-  evaluate: CAPS.workspaceWrite,
+  evaluate: CAPS.networkReadOnly,
   "fix-portal": CAPS.workspaceWrite,
 });
 

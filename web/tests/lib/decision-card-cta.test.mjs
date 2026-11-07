@@ -13,7 +13,7 @@ test("Today primary action opens the report, not Mark applied", () => {
   const primary = src.indexOf('href={`/pipeline/${app.n}`}');
   const mark = src.indexOf('setStatus("Applied")');
   assert.notEqual(primary, -1);
-  assert.notEqual(mark, -1);
-  assert.ok(primary < mark, "report link must come before the Applied writer");
+  assert.equal(mark, -1);
+  assert.match(src, /href="\/approvals"/);
   assert.match(src, /> Review\s*</);
 });

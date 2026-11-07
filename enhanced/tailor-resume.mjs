@@ -68,7 +68,7 @@ export function latexPayload(payload) {
   return result;
 }
 
-export function renderBoundResume({ root, result, format = 'html', output = `output/tailored-${result.persona_id}` }) {
+export function renderBoundResume({ root, result, format = 'html', output = `output/tailored-${result.persona_id}`, template }) {
   if (!['html', 'text', 'latex'].includes(format)) throw new Error('Format must be html, text, or latex');
   if (digest(result.payload) !== result.snapshot.payload_sha256) throw new Error('Bound payload was modified before rendering');
   const extension = { html: '.html', text: '.md', latex: '.tex' }[format];
@@ -83,7 +83,7 @@ export function renderBoundResume({ root, result, format = 'html', output = `out
     if (format === 'text') writeFileSync(artifact, textPayload(renderPayload), { mode: 0o600 });
     else {
       const builder = join(CODE_ROOT, format === 'html' ? 'build-cv-html.mjs' : 'build-cv-latex.mjs');
-      const rendered = spawnSync(process.execPath, [builder, input, artifact], {
+      const rendered = spawnSync(process.execPath, [builder, input, artifact, ...(format === 'html' && template ? [privatePath(root, template)] : [])], {
         cwd: CODE_ROOT, env: { ...process.env, CAREER_OPS_ROOT: root, CAREER_OPS_PROFILE: privatePath(root, 'config/profile.yml') }, encoding: 'utf8', timeout: 30000,
       });
       if (rendered.status !== 0) throw new Error('Upstream CV renderer failed: ' + (rendered.stderr || rendered.error?.message || rendered.stdout));

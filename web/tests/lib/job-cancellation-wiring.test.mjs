@@ -22,5 +22,15 @@ test("the worker affordance cancels running jobs and only dismisses settled jobs
 test("request-stream cancellation terminates the spawned CLI", () => {
   const cancel = route.slice(route.indexOf("cancel() {"));
   assert.notEqual(cancel.indexOf("cancel() {"), -1);
-  assert.match(cancel, /child\.kill\("SIGTERM"\)/);
+  assert.match(cancel, /runAbort\.abort\(\)/);
+  assert.match(cancel, /childStopper\.stop\(\)/);
+  assert.match(cancel, /evaluationPersistPromise \?\? pdfRenderPromise/);
+  assert.match(cancel, /followupPromise\.finally\(finishRun\)/);
+});
+
+test("broken stream transport aborts both worker and backend follow-up", () => {
+  const sendCatch = route.slice(route.indexOf("const send ="), route.indexOf("// Say so when"));
+  assert.match(sendCatch, /runAbort\.abort\(\)/);
+  assert.match(sendCatch, /childStopper\.stop\(\)/);
+  assert.match(sendCatch, /clearTimeout\(killer\)/);
 });

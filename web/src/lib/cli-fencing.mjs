@@ -34,6 +34,7 @@
  */
 
 import { verifyClaudeArgs } from "./claude-invocation.mjs";
+import { fenceOpenCodeArgs } from "./opencode-fencing.mjs";
 
 /** Codex sandbox policies, in the spelling `sandbox_mode` accepts. */
 const CODEX_READ_ONLY = "read-only";
@@ -53,6 +54,8 @@ const CODEX_WORKSPACE_WRITE = "workspace-write";
  * @returns {boolean}
  */
 export function isCliAllowedForCapabilities(cliId, { writes }) {
+  // OpenCode is verified only for read-only workers; canonical persistence stays in the backend.
+  if (cliId === "opencode" && writes) return false;
   return !writes || Object.hasOwn(FENCERS, cliId);
 }
 
@@ -338,6 +341,7 @@ export const CODEX_REQUIRED_EXEC_FLAGS = Object.freeze([
 const FENCERS = Object.freeze({
   claude: verifyClaudeArgs,
   codex: fenceCodexArgs,
+  opencode: fenceOpenCodeArgs,
 });
 
 /**
@@ -369,7 +373,8 @@ export function fencingReport({ cliId, cliName, capabilities }) {
       notice: `${cliName} ${UNFENCED_MARKER} — this agent runs with its default access`,
     };
   }
-  // Codex only. Claude expresses both axes as tool flags, so it is never partial:
+  // Codex only. Claude and the verified OpenCode adapter express both axes
+  // explicitly, so they are never partial:
   // verifyClaudeArgs refuses any argv that does not deny what the record forbids.
   //
   // "fetch", not any web access: a search-only worker reaches the web through the

@@ -262,6 +262,7 @@ const SYSTEM_PATHS = [
   'lib/placeholder-cell.mjs',
   'lib/tracker-addition.mjs',
   'lib/scan-summary-marker.mjs',
+  'lib/explore-qualifier.mjs',
   'lib/is-main-module.mjs',
   'lib/mjs-files.mjs',
   'lib/scratch-dirs.mjs',
@@ -273,6 +274,7 @@ const SYSTEM_PATHS = [
   'scan-hn.mjs',
   'scripts/check-syntax.mjs',
   'scripts/export-ats-text.mjs',
+  'scripts/native-safari-acceptance.mjs',
   'scripts/followup-sweep.sh',
   'story-provenance-check.mjs',
   'lib/latex-content.mjs',
@@ -282,6 +284,7 @@ const SYSTEM_PATHS = [
   // drop it once a release has shipped past that move.
   'lib/context-budget.test.mjs',
   'lib/golden-budget-analysis.mjs',
+  'lib/demo-eligibility.mjs',
   'img-to-pdf.mjs',
   'archive-posting.mjs',
   'jd-capture.mjs',

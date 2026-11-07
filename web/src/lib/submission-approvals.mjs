@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { verifyDemoPackage } from "./demo-package.mjs";
 
 const INPUT_SUFFIX = "-browser-approved.json";
 const MAX_BYTES = 1024 * 1024;
@@ -84,13 +85,20 @@ export function readSubmissionApprovals(root) {
   }
 
   return entries
-    .filter((entry) => entry.isFile() && !entry.isSymbolicLink() && entry.name.endsWith(INPUT_SUFFIX))
+    .filter((entry) => entry.isFile() && !entry.isSymbolicLink() && (entry.name.endsWith(INPUT_SUFFIX) || entry.name.endsWith("-demo-package.json")))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((entry) => {
       try {
         const file = path.join(privateDir, entry.name);
         if (fs.statSync(file).size > MAX_BYTES) throw new Error("approval package exceeds 1 MiB");
-        return summarize(JSON.parse(fs.readFileSync(file, "utf8")), entry.name);
+        const input = JSON.parse(fs.readFileSync(file, "utf8"));
+        if (entry.name.endsWith("-demo-package.json")) {
+          verifyDemoPackage(root,input);
+          const view = summarize({readiness_input:{application_bundle:{application:input.application,fields:[],artifacts:input.artifacts,content_digest:input.content_digest}}},entry.name);
+          return {...view,status:{kind:"paused",label:"Demo only — submission disabled"},demoWarning:input.warning,
+            sponsorship:input.eligibility?.status,matchLimitations:input.candidate_match?.limitations ?? []};
+        }
+        return summarize(input, entry.name);
       } catch (error) {
         return { source: entry.name, error: error instanceof Error ? error.message : "invalid approval package" };
       }

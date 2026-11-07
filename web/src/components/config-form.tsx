@@ -104,7 +104,7 @@ export function ConfigForm() {
     <div className="mx-auto max-w-2xl px-6 py-10">
       <h1 className="font-display text-2xl tracking-tight text-landing">Config</h1>
       <p className="mt-1 text-sm text-muted">
-        Run career-ops on your own AI, right on your computer. Your CV and data never leave your machine.
+        Career Ops stores files on your computer. Your selected AI tool may send the CV and job content to its model provider.
       </p>
 
       {/* Engine mode */}
