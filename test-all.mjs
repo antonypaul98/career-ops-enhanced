@@ -16775,26 +16775,26 @@ try {
       // next, and this section previously covered 4 of the 6 files present.
       let webUnits = [];
       try {
-        const webLibRoot = join(ROOT, 'web', 'tests', 'lib');
-        webUnits = readdirSync(webLibRoot, { recursive: true })
+        const webTestsRoot = join(ROOT, 'web', 'tests');
+        webUnits = readdirSync(webTestsRoot, { recursive: true })
           .filter((f) => f.endsWith('.test.mjs'))
-          // A checkout under web/tests/lib holds another tree's suites; the
-          // parity walk below skips those the same way (#3762), so the gate
-          // must not run them.
-          .filter((f) => !isUnderNestedCheckout(webLibRoot, f))
+          // A checkout under web/tests holds another tree's suites; the parity
+          // walk below skips those the same way (#3762), so the gate must not
+          // run them.
+          .filter((f) => !isUnderNestedCheckout(webTestsRoot, f))
           .sort()
-          .map((f) => join('web', 'tests', 'lib', f));
+          .map((f) => join('web', 'tests', f));
       } catch (err) {
         // Fail rather than throw to the outer catch, which would skip every value
         // assertion below while reporting only "freeze section crashed".
-        fail(`web/tests/lib is unreadable (${err.message}) — the #2185 unit suites cannot be gated`);
+        fail(`web/tests is unreadable (${err.message}) — the required web unit suites cannot be gated`);
       }
       // Three distinct states, so the message never misdescribes the failure: the
       // unreadable case already called fail() above, an empty directory is its own
       // fault, and only a non-empty list is actually run.
       if (webUnits.length === 0) {
-        if (existsSync(join(ROOT, 'web', 'tests', 'lib'))) {
-          fail('web/tests/lib contains no *.test.mjs — the #2185 unit suites are not being gated');
+        if (existsSync(join(ROOT, 'web', 'tests'))) {
+          fail('web/tests contains no *.test.mjs — the required web unit suites are not being gated');
         }
       } else if (run(NODE, ['--experimental-strip-types', '--test', ...webUnits], { timeout: 180000 }) !== null) {
         pass('web pdf write-scope unit suites pass (#2185)');
