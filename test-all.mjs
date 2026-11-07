@@ -16796,7 +16796,8 @@ try {
         if (existsSync(join(ROOT, 'web', 'tests'))) {
           fail('web/tests contains no *.test.mjs — the required web unit suites are not being gated');
         }
-      } else if (run(NODE, ['--experimental-strip-types', '--test', ...webUnits], { timeout: 180000 }) !== null) {
+      } else if (run(NODE, ['--experimental-strip-types', '--test', ...webUnits.map((f) => join(ROOT, f))],
+        { cwd: join(ROOT, 'web'), timeout: 180000 }) !== null) {
         pass('web pdf write-scope unit suites pass (#2185)');
       } else {
         // The signal distinguishes a timeout/kill from an assertion failure —
