@@ -29,7 +29,7 @@ function block(key, items) {
  * @returns {string}
  */
 export function serializePortals(f) {
-  let out = "# Ephemeral Explorer filters — generated per-search, safe to delete.\n";
+  let out = "";
   if (f.positive.length || f.negative.length) {
     out += "title_filter:\n";
     out += block("positive", f.positive);
@@ -42,5 +42,5 @@ export function serializePortals(f) {
     out += block("allow", f.allow);
     out += block("block", f.block);
   }
-  return out;
+  return "# Ephemeral Explorer filters — generated per-search, safe to delete.\n" + (out || "{}\n");
 }

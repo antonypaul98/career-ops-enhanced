@@ -14,6 +14,12 @@ import { serializePortals } from "../../src/lib/core/portals-serialize.mjs";
 
 const empty = { positive: [], negative: [], allow: [], block: [], alwaysAllow: [], blockHard: [] };
 
+test("an unfiltered search emits an empty mapping, not a comment-only document", () => {
+  // js-yaml 5 rejects comment-only input before the scanner can discover jobs.
+  // No filters means an empty config, not missing or malformed YAML.
+  assert.deepEqual(yaml.load(serializePortals(empty)), {});
+});
+
 test("block_hard is written under location_filter", () => {
   const doc = yaml.load(serializePortals({ ...empty, blockHard: ["usa", "brazil"] }));
   assert.deepEqual(doc.location_filter.block_hard, ["usa", "brazil"]);
