@@ -72,7 +72,7 @@ test("preview loads the evaluator from code root while keeping candidate files i
   const fakeCwd = "/isolated/repo/web";
   const privateDataRoot = "/private/candidate-copy";
   const codeRoot = resolveCodeRoot(fakeCwd, { CAREER_OPS_ROOT: privateDataRoot });
-  assert.equal(codeRoot, "/isolated/repo");
+  assert.equal(codeRoot, path.resolve(fakeCwd, ".."));
   assert.notEqual(codeRoot, privateDataRoot);
   assert.match(routeText, /resolveCodeRoot\(process\.cwd\(\), process\.env\)/);
   assert.match(routeText, /pathToFileURL\(path\.join\(codeRoot, "enhanced", "resume-authority\.mjs"\)\)/);
