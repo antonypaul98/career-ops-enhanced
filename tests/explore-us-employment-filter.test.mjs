@@ -36,6 +36,32 @@ test("full-time detected from positive evidence, not from full-time contract hou
   assert.equal(employmentVerdict({title:"Data Engineer",description:"We are hiring engineers"}), "unknown");
 });
 
+test("explicit ATS FULL_TIME overrides generic part-time salary boilerplate, not role contradictions", () => {
+  const capitalOneBoilerplate =
+    "The minimum and maximum full-time annual salaries for this role are listed below. " +
+    "Salaries for part-time roles will be prorated based upon the agreed number of hours. " +
+    "Eligibility varies based on full or part-time status.";
+  for (const employmentType of ["FULL_TIME", "full_time", "Full time", "full-time"]) {
+    assert.equal(employmentVerdict({ title: "Data Engineer 5", employmentType,
+      description: capitalOneBoilerplate }), "full_time", employmentType);
+  }
+  // Salary boilerplate is NOT role-specific employment confirmation.
+  assert.equal(employmentVerdict({ title: "Data Engineer 5", description: capitalOneBoilerplate }), "unknown");
+  assert.equal(employmentVerdict({ employmentType: "unknown", description: capitalOneBoilerplate }), "unknown");
+  for (const description of [
+    "This role is part-time. The job offers full-time benefits.",
+    "Part-time position with full-time benefits.",
+    "This position is not a full-time position.",
+    "Full-time employment is unavailable.",
+    "Full-time contract consultant.",
+  ]) {
+    assert.equal(employmentVerdict({ employmentType: "FULL_TIME",
+      description }), "unknown", description);
+  }
+  assert.equal(employmentVerdict({ employmentType: "CONTRACT",
+    description: "Permanent employee position" }), "unknown");
+});
+
 test("selected C2C plus full-time rejects unknown and foreign posts", { skip: !hasWeb }, () => {
   const f = {usOnly:true,employmentTypes:["c2c","full_time"]};
   assert.equal(matchesExploreQualifications({location:"Austin, TX",employmentType:"c2c"},f),true);
