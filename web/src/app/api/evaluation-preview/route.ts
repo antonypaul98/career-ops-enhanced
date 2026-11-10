@@ -9,6 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { careerOpsRoot } from "@/lib/career-ops";
+import { resolveCodeRoot } from "@/lib/core/code-root.mjs";
 import { resolveCli } from "@/lib/clis";
 import { createProcessTreeStopper } from "@/lib/process-tree.mjs";
 import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
@@ -59,8 +60,9 @@ export async function POST(req: Request) {
   let approvedRecords: unknown[];
   let mode: string;
   try {
+    const codeRoot = resolveCodeRoot(process.cwd(), process.env);
     const authorityModule = await import(/* turbopackIgnore: true */
-      pathToFileURL(path.join(root, "enhanced", "resume-authority.mjs")).href);
+      pathToFileURL(path.join(codeRoot, "enhanced", "resume-authority.mjs")).href);
     const authority = authorityModule.loadResumeAuthority({ root, persona: { id: "general" } });
     if (authority.contradictions.length || authority.excluded.length) {
       return jsonError("Candidate authority has exclusions or contradictions; review required.", 409);
