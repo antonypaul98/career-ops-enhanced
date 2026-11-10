@@ -41,7 +41,7 @@ const count = fs.existsSync(countPath) ? Number(fs.readFileSync(countPath, "utf8
 fs.writeFileSync(countPath, String(count + 1));
 const input = fs.readFileSync(0, "utf8");
 const url = input.match(/^Posting URL: (.+)$/m)?.[1];
-const jd = input.split("=== SUPPLIED JOB DESCRIPTION ===\\n")[1]?.split("\\n=== END JOB DESCRIPTION ===")[0];
+const jd = input.split("=== SUPPLIED JOB DESCRIPTION ===\n")[1]?.split("\n=== END JOB DESCRIPTION ===")[0];
 if (!url || !jd || !input.includes("SOURCE-VERIFIED CANDIDATE FACTS")) process.exit(3);
 const fence = String.fromCharCode(96).repeat(3);
 const report = [
@@ -62,10 +62,10 @@ const report = [
   "## Keywords extracted", "SQL",
   "## Keyword Coverage", "Synthetic.",
   "## Job Description", jd, ""
-].join("\\n");
+].join("\n");
 const payload = { company: "Fictional Co", role: "Data Engineer", score: 3.5,
   note: "Offline synthetic test only", postingUrl: url, reportMarkdown: report };
-const envelope = "<<evaluation-json>>\\n" + JSON.stringify(payload) + "\\n<</evaluation-json>>\\n";
+const envelope = "<<evaluation-json>>\n" + JSON.stringify(payload) + "\n<</evaluation-json>>\n";
 console.log(JSON.stringify({ type: "text", part: { type: "text", text: envelope } }));
 console.log(JSON.stringify({ type: "step_finish", part: { type: "step-finish",
   tokens: { input: 1, output: 1, cache: { write: 0 } }, cost: 0 } }));
