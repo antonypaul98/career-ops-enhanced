@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveCodeRoot } from "../../src/lib/core/code-root.mjs";
 import {
   FREE_PREVIEW_MODEL,
   reportOnlyResult,
@@ -65,4 +66,15 @@ test("preview route never imports canonical writers or submission paths", () => 
   ]) {
     assert.ok(!routeText.includes(forbidden), `preview route unexpectedly refers to ${forbidden}`);
   }
+});
+
+test("preview loads the evaluator from code root while keeping candidate files in the data root", () => {
+  const fakeCwd = "/isolated/repo/web";
+  const privateDataRoot = "/private/candidate-copy";
+  const codeRoot = resolveCodeRoot(fakeCwd, { CAREER_OPS_ROOT: privateDataRoot });
+  assert.equal(codeRoot, "/isolated/repo");
+  assert.notEqual(codeRoot, privateDataRoot);
+  assert.match(routeText, /resolveCodeRoot\(process\.cwd\(\), process\.env\)/);
+  assert.match(routeText, /pathToFileURL\(path\.join\(codeRoot, "enhanced", "resume-authority\.mjs"\)\)/);
+  assert.doesNotMatch(routeText, /pathToFileURL\(path\.join\(root, "enhanced", "resume-authority\.mjs"\)\)/);
 });
