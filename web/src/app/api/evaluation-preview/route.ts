@@ -226,7 +226,8 @@ export async function POST(req: Request) {
         }
         const validated = parseEvaluationEnvelope(output, { expectedUrl: input.postingUrl });
         if (!validated.ok) {
-          send({ type: "error", error: validated.error || "The report envelope was invalid." });
+          send({ type: "error", error: "error" in validated && typeof validated.error === "string"
+            ? validated.error : "The report envelope was invalid." });
           return done();
         }
         send({ ...reportOnlyResult(validated, input), modelTokens: tokens,
