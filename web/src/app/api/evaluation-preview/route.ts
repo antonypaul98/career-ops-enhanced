@@ -15,6 +15,7 @@ import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
 import { CAPS } from "@/lib/worker-capabilities.mjs";
 import { parseOpenCodeEvent } from "@/lib/run-cli-support.mjs";
 import { parseEvaluationEnvelope } from "@/lib/evaluation-envelope.mjs";
+import { checkPreviewAccess, previewCompletion, reservePreviewAttempt } from "@/lib/evaluation-preview-security.mjs";
 import {
   FREE_PREVIEW_MODEL, reportOnlyResult, validatePreviewRequest,
 } from "@/lib/evaluation-preview-guard.mjs";
@@ -30,13 +31,17 @@ function jsonError(error: string, status: number) {
 export async function POST(req: Request) {
   // Disabled in the normal installation. Work may explicitly enable this only
   // in a separate local test server and must disable it when acceptance ends.
-  if (process.env.CAREER_OPS_ENABLE_REPORT_PREVIEW !== "1") {
-    return jsonError("Evaluation-only preview is disabled.", 404);
-  }
-  const host = req.headers.get("host")?.split(":")[0];
-  if (host !== "localhost" && host !== "127.0.0.1" && host !== "[::1]") {
-    return jsonError("The preview endpoint accepts only local requests.", 403);
-  }
+  const access = checkPreviewAccess({
+    enabled: process.env.CAREER_OPS_ENABLE_REPORT_PREVIEW,
+    configuredToken: process.env.CAREER_OPS_PREVIEW_TOKEN,
+    providedToken: req.headers.get("x-career-ops-preview-token"),
+    host: req.headers.get("host"),
+    origin: req.headers.get("origin"),
+  });
+  if (!access.ok) return jsonError(
+    "error" in access ? access.error : "Preview access denied.",
+    "status" in access ? access.status : 403,
+  );
 
   let body: unknown;
   try { body = await req.json(); } catch { return jsonError("Invalid JSON.", 400); }
@@ -119,6 +124,24 @@ export async function POST(req: Request) {
   const cleanup = () => {
     try { fs.rmSync(scratch, { recursive: true, force: true }); } catch { /* best effort */ }
   };
+
+  // Reserve the single permitted launch atomically across server workers and
+  // restarts. Even a spawn failure consumes this session; use a new session
+  // token for a separately authorized retry. This is a local model-call budget,
+  // not a guarantee about internal provider retries.
+  try {
+    reservePreviewAttempt({
+      configuredToken: process.env.CAREER_OPS_PREVIEW_TOKEN,
+      root,
+      model: FREE_PREVIEW_MODEL,
+    });
+  } catch (error) {
+    cleanup();
+    if (error instanceof Error && "code" in error && error.code === "EEXIST") {
+      return jsonError("This preview session has already used its single model attempt.", 409);
+    }
+    return jsonError("Unable to reserve a safe one-attempt preview session.", 503);
+  }
 
   let child;
   try {
@@ -219,15 +242,18 @@ export async function POST(req: Request) {
       child.once("close", (code) => {
         if (closed) return;
         if (buffer && !failed) readLine(buffer);
+        // The fatal provider event was already reported. A disconnected or
+        // cancelled response must neither report success nor leak a report.
         if (aborted || failed) return done();
-        if (timedOut || code !== 0) {
-          send({ type: "error", error: "The free-model worker exited without a valid completed report." });
-          return done();
-        }
-        const validated = parseEvaluationEnvelope(output, { expectedUrl: input.postingUrl });
-        if (!validated.ok) {
-          send({ type: "error", error: "error" in validated && typeof validated.error === "string"
-            ? validated.error : "The report envelope was invalid." });
+        const validated = timedOut || code !== 0 ? null
+          : parseEvaluationEnvelope(output, { expectedUrl: input.postingUrl });
+        const completion = previewCompletion({
+          aborted, timedOut, failed, exitCode: code, envelope: validated,
+        });
+        if (!completion.ok || !validated?.ok) {
+          const detail = validated && "error" in validated && typeof validated.error === "string"
+            ? validated.error : "The free-model worker exited without a complete validated report.";
+          send({ type: "error", error: validated?.ok === false ? detail : completion.error });
           return done();
         }
         send({ ...reportOnlyResult(validated, input), modelTokens: tokens,
