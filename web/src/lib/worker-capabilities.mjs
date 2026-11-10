@@ -38,6 +38,7 @@
  *
  * @typedef {Object} Capabilities
  * @property {boolean} writes - May the worker modify files?
+ * @property {boolean} [tools] - false selects the verified tool-free acceptance worker.
  * @property {WebAccess} network - How does the worker need to reach the web?
  */
 

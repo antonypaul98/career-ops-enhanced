@@ -43,7 +43,7 @@ import { prepareCliLaunch } from "./cli-launch.mjs";
  * @param {string} binPath
  * @param {string[]} args
  * @param {import("node:child_process").SpawnOptionsWithoutStdio} options
- * @param {{cliId: string, capabilities: import("./worker-capabilities.mjs").Capabilities}} fencing
+ * @param {{cliId: string, capabilities: import("./worker-capabilities.mjs").Capabilities, stdin?: string}} fencing
  */
 export function spawnHeadlessCli(binPath, args, options, fencing) {
   // Fail fast rather than spawn unfenced. Omitting `fencing` used to spread
@@ -58,6 +58,12 @@ export function spawnHeadlessCli(binPath, args, options, fencing) {
         "Declare what the worker needs (worker-capabilities.mjs) so its permissions can be applied.",
     );
   }
+  if (fencing.capabilities.tools === false) {
+    const expected = ["run", "--format", "json", "--model", "opencode/glm-5.3-flash-free", "--title", "Career Ops evaluation-only"];
+    if (fencing.cliId !== "opencode" || JSON.stringify(args) !== JSON.stringify(expected)
+        || typeof fencing.stdin !== "string" || !fencing.stdin.length || fencing.stdin.length > 500_000)
+      throw new Error("Tool-free preview requires the fixed free-model invocation and an in-memory prompt.");
+  }
   const { args: fencedArgs } = fenceArgs({ ...fencing, args });
   // On Windows an npm-installed CLI is a script shim spawn() cannot run without a
   // shell, so launch the .js/.exe it wraps (a no-op elsewhere; cli-launch.mjs).
@@ -68,12 +74,14 @@ export function spawnHeadlessCli(binPath, args, options, fencing) {
     : null;
   const child = spawn(launch.command, launch.args, {
     ...options,
+    ...(openCode?.cwd ? { cwd: openCode.cwd } : {}),
     env: openCode?.env ?? options.env,
     // A dedicated process group lets cancellation stop grandchildren as well.
     detached: options.detached ?? process.platform !== "win32",
   });
   child.once("close", () => openCode?.cleanup());
   child.once("error", () => openCode?.cleanup());
-  child.stdin?.end();
+  child.stdin?.on("error", () => {}); // The provider can exit before consuming stdin.
+  child.stdin?.end(fencing.stdin);
   return child;
 }

@@ -3,6 +3,7 @@ import { validatePayload, KNOWN_ROOT_KEYS, ENTRY_FIELD_SPECS } from '../lib/cv-p
 import { extractStructuredRequirements } from './jd-requirements.mjs';
 import { extractSkillMentions } from '../skill-extract.mjs';
 import { digest, normalize } from './resume-authority.mjs';
+import { assertNotEvaluationOnly } from '../lib/evaluation-only-boundary.mjs';
 
 const PRESENTATION = { '/lang': /^(?:en|[a-z]{2,3}(?:-[A-Za-z]{2,4})?)$/, '/page_format': /^(?:letter|a4)$/,
   '/candidate/photo_style': /^(?:rounded|circle|square)$/ };
@@ -49,6 +50,8 @@ function supportedValue(record, value, path) {
 }
 
 export function tailorBoundResume({ proposal, authority, jdText = '' }) {
+  assertNotEvaluationOnly(jdText);
+  assertNotEvaluationOnly(proposal);
   if (!proposal || typeof proposal !== 'object' || Array.isArray(proposal)) throw new Error('A structured tailoring proposal is required');
   if (proposal.persona_id !== authority.persona.id) throw new Error('Proposal persona does not match the selected persona');
   const original = proposal.payload;

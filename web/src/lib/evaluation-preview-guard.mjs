@@ -3,6 +3,7 @@
  * No file I/O or canonical persistence is permitted in this module.
  */
 import { createHash } from "node:crypto";
+import { EVALUATION_ONLY_MARKER } from './evaluation-only-boundary.mjs';
 
 export const FREE_PREVIEW_MODEL = "opencode/glm-5.3-flash-free";
 export const PREVIEW_KIND = "evaluation-only";
@@ -55,10 +56,14 @@ export function reportOnlyResult(validated, input) {
     },
     submissionAllowed: false,
     applicationPackageAllowed: false,
+    evaluation_only: true,
+    submission_allowed: false,
+    application_action: "none",
     persisted: false,
     company: validated.company,
     role: validated.role,
     score: validated.score,
-    reportMarkdown: validated.reportMarkdown,
+    reportMarkdown: EVALUATION_ONLY_MARKER + '\n# EVALUATION ONLY — NOT ELIGIBLE FOR SUBMISSION\n\n' +
+      'Unreviewed AI analysis. Not candidate authority, a tailored resume, application or approval.\n\n' + validated.reportMarkdown,
   };
 }

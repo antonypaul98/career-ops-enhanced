@@ -8,6 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
 import { careerOpsRoot } from "@/lib/career-ops";
 import { resolveCodeRoot } from "@/lib/core/code-root.mjs";
 import { resolveCli } from "@/lib/clis";
@@ -59,12 +60,19 @@ export async function POST(req: Request) {
   const root = careerOpsRoot();
   let approvedRecords: unknown[];
   let mode: string;
+  let verifyAuthority: () => boolean;
+  let authoritySnapshot: unknown;
   try {
     const codeRoot = resolveCodeRoot(process.cwd(), process.env);
     const authorityModule = await import(/* turbopackIgnore: true */
       pathToFileURL(path.join(codeRoot, "enhanced", "resume-authority.mjs")).href);
     const authority = authorityModule.loadResumeAuthority({ root, persona: { id: "general" } });
-    if (authority.contradictions.length || authority.excluded.length) {
+    authoritySnapshot = authority.snapshot;
+    const originalSnapshot = JSON.stringify(authoritySnapshot);
+    verifyAuthority = () => JSON.stringify(authorityModule.loadResumeAuthority({ root, persona: { id: "general" } }).snapshot) === originalSnapshot;
+    if (authority.contradictions.length || authority.excluded.length || authority.records.some(
+      (record: { ref: string; binding?: { evidence?: { source?: string } } }) =>
+        !record.ref.startsWith("master_profile:") || record.binding?.evidence?.source !== "cv.md")) {
       return jsonError("Candidate authority has exclusions or contradictions; review required.", 409);
     }
     approvedRecords = authorityModule.proposalAuthority(authority).records
@@ -132,6 +140,7 @@ export async function POST(req: Request) {
   // token for a separately authorized retry. This is a local model-call budget,
   // not a guarantee about internal provider retries.
   try {
+    if (req.signal.aborted) { cleanup(); return jsonError("Preview cancelled before model launch.", 409); }
     reservePreviewAttempt({
       configuredToken: process.env.CAREER_OPS_PREVIEW_TOKEN,
       root,
@@ -149,9 +158,9 @@ export async function POST(req: Request) {
   try {
     child = spawnHeadlessCli(
       cli.binPath,
-      ["run", "--format", "json", "--model", FREE_PREVIEW_MODEL, prompt],
+      ["run", "--format", "json", "--model", FREE_PREVIEW_MODEL, "--title", "Career Ops evaluation-only"],
       { cwd: scratch, env: process.env },
-      { cliId: "opencode", capabilities: CAPS.localReadOnly },
+      { cliId: "opencode", capabilities: { ...CAPS.localReadOnly, tools: false }, stdin: prompt },
     );
   } catch {
     cleanup();
@@ -176,13 +185,17 @@ export async function POST(req: Request) {
         try { controller.enqueue(encoder.encode(JSON.stringify(value) + "\n")); }
         catch { aborted = true; void stopper.stop(); }
       };
-      const done = () => {
+      const done = async () => {
         if (closed) return;
         closed = true;
         clearTimeout(deadline);
         clearInterval(heartbeat);
         req.signal.removeEventListener("abort", onAbort);
         stopper.settled();
+        try { await stopper.waitForStop(); }
+        catch {
+          try { controller.enqueue(encoder.encode(JSON.stringify({ type: "error", error: "Worker termination could not be verified." }) + "\n")); } catch { /* disconnected */ }
+        }
         cleanup();
         try { controller.close(); } catch { /* disconnected */ }
       };
@@ -203,9 +216,9 @@ export async function POST(req: Request) {
       const readLine = (line: string) => {
         if (!line.trim() || failed) return;
         const event = parseOpenCodeEvent(line);
-        if (event?.error) {
+        if (event?.error || event?.tool || (typeof event?.costUsd === "number" && event.costUsd > 0)) {
           failed = true;
-          send({ type: "error", error: event.error });
+          send({ type: "error", error: event.error ?? "Preview violated the tool-free or free-model boundary." });
           void stopper.stop();
         }
         if (event?.text) {
@@ -258,7 +271,17 @@ export async function POST(req: Request) {
           send({ type: "error", error: validated?.ok === false ? detail : completion.error });
           return done();
         }
-        send({ ...reportOnlyResult(validated, input), modelTokens: tokens,
+        try {
+          if (!verifyAuthority()) throw new Error("source changed");
+          if (!("reportMarkdown" in validated) || typeof validated.reportMarkdown !== "string"
+              || !validated.reportMarkdown.includes(input.jobDescription)) throw new Error("JD archive changed");
+        } catch {
+          send({ type: "error", error: "Source evidence changed or the complete supplied JD was not archived; preview rejected." });
+          return done();
+        }
+        const result = reportOnlyResult(validated, input);
+        send({ ...result, modelTokens: tokens, authoritySnapshot,
+          reportSha256: createHash("sha256").update(result.reportMarkdown).digest("hex"),
           reportReviewStatus: "unreviewed-model-output" });
         done();
       });

@@ -2,6 +2,7 @@ import { link, mkdir, open, unlink } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { createProcessTreeStopper } from "./process-tree.mjs";
+import { assertNotEvaluationOnly } from './evaluation-only-boundary.mjs';
 
 const HEADER = "num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport\tnotes\turl";
 
@@ -110,6 +111,7 @@ async function reserve(root, options) {
  * path; no model-supplied path or report number crosses this boundary.
  */
 export async function persistEvaluation({ root, payload, today, postedAt, signal }, options = {}) {
+  assertNotEvaluationOnly(payload);
   if (signal?.aborted) throw abortError("Evaluation persistence cancelled before validation.");
 
   // Validate every model-derived value before reserving a globally serialized
