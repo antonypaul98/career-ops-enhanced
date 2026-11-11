@@ -81,11 +81,15 @@ export default function EvaluationPreviewPage() {
         return;
       }
       const parsed = parseReportOnlyReply(response.status, raw, requestedUrl);
-      if (!parsed.ok) {
+      if ("error" in parsed) {
         setMessage(parsed.error || "The preview did not return a valid report.");
         return;
       }
-      setReport(parsed.report);
+      if (!("report" in parsed)) {
+        setMessage("The preview did not return a valid report.");
+        return;
+      }
+      setReport(parsed.report as ReviewReport);
       setMessage("Report generated for inspection only. Eligibility and job-posting liveness are not independently verified.");
     } catch (error) {
       setMessage(abort.signal.aborted
