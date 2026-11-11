@@ -10,6 +10,11 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
+import { fileURLToPath } from "node:url";
+import { prepareBoundCv } from "../../web/src/lib/bound-cv.mjs";
+import { renderBoundPdf } from "../../web/src/lib/bound-pdf.mjs";
 import * as yaml from "js-yaml";
 import { loadResumeAuthority } from "../../enhanced/resume-authority.mjs";
 import { tailorBoundResume } from "../../enhanced/evidence-tailor.mjs";
@@ -191,5 +196,178 @@ test("source-bound fictional CV becomes a real, extractable PDF and non-submitta
     expect(readSubmissionApprovals(root)[0].error).toMatch(/Demo source changed/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true, maxRetries: 5 });
+  }
+});
+
+
+/**
+ * Dashboard C05 publication boundary, not merely the PDF renderer.
+ * The renderer subprocess is injected; the success case invokes real Chromium
+ * and all failures use deterministic synthetic subprocess exits.
+ */
+const CODE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+async function publicationFixture() {
+  const { root, proposal } = fixture();
+  // Dashboard C05 deliberately rejects a proposal with unsupported fields.
+  // Use only source-backed facts for this synthetic, general-persona proposal.
+  proposal.persona_id = "general";
+  proposal.payload.skills[0].items = ["Python"];
+  delete proposal.bindings["/skills/0/items/1"];
+  fs.symlinkSync(path.join(CODE_ROOT, "enhanced"), path.join(root, "enhanced"), "junction");
+  fs.symlinkSync(path.join(CODE_ROOT, "generate-pdf.mjs"), path.join(root, "generate-pdf.mjs"));
+  const prepared = await prepareBoundCv(root, path.join(root, "jds", "job.md"));
+  const bound = tailorBoundResume({ proposal, authority: prepared.authority, jdText: prepared.jdText });
+  const saved = renderBoundResume({
+    root, result: bound, format: "html", output: "output/cv-dashboard-fixture",
+  });
+  expect(verifyResumeArtifact({
+    root, evidence: saved.evidence, artifact: saved.artifact,
+    jdText: JD, persona: "general",
+  }).faithfulness.verdict).toBe("pass");
+  return {
+    root, prepared, saved,
+    pdfPaths: {
+      html: saved.artifact, finalPdf: path.join(root, "output", "cv-dashboard.pdf"),
+    },
+  };
+}
+
+function publisherStages(root) {
+  return fs.readdirSync(path.join(root, "output")).filter(name => name.startsWith(".pdf-stage-"));
+}
+function bundles(root) {
+  return fs.readdirSync(path.join(root, "output")).filter(name => name.startsWith("c05-"));
+}
+function createPdfWorker(onRun) {
+  let launches = 0;
+  const spawnFn = (_bin, args, options) => {
+    launches++;
+    expect(args[0]).toMatch(/generate-pdf\.mjs$/);
+    expect(args).toContain("--defer-manifest");
+    expect(args).toContain("--format=letter");
+    expect(options.cwd).toBeTruthy();
+    const child = new EventEmitter();
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    queueMicrotask(async () => {
+      try {
+        await onRun(args);
+        child.emit("close", 0);
+      } catch {
+        child.stderr.write("Synthetic PDF worker failure");
+        child.emit("close", 1);
+      }
+    });
+    return child;
+  };
+  return { spawnFn, get launches() { return launches; } };
+}
+
+test("dashboard C05 publication seals real PDF and sidecar without changing tracker", async () => {
+  const f = await publicationFixture();
+  try {
+    const worker = createPdfWorker(async args => {
+      const html = fs.readFileSync(args[1], "utf8");
+      await renderHtmlToPdf(html, args[2], {
+        format: "letter", workspaceRoot: f.root, baseDir: f.root,
+        maxPages: 2, strictPages: true, deferManifest: true,
+      });
+    });
+    const result = await renderBoundPdf({
+      spawnFn: worker.spawnFn, execPath: process.execPath, root: f.root,
+      pdfPaths: f.pdfPaths, format: "letter", reportNum: "0",
+      prepared: f.prepared, evidencePath: f.saved.evidence, demoOnly: true,
+    });
+    expect(result.kind).toBe("rendered");
+    expect(worker.launches).toBe(1);
+    expect(publisherStages(f.root)).toEqual([]);
+    expect(bundles(f.root)).toHaveLength(1);
+    const pdf = fs.readFileSync(result.finalPdf);
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    const sidecar = JSON.parse(fs.readFileSync(result.finalPdf + ".evidence.json", "utf8"));
+    expect(sidecar.pdf_sha256).toBe(sha(pdf));
+    expect(sidecar.render.artifact_sha256).toBe(sha(fs.readFileSync(f.saved.artifact)));
+    const text = execFileSync("pdftotext", ["-layout", result.finalPdf, "-"], {
+      encoding: "utf8", timeout: 10_000,
+    });
+    expect(text).toContain("Fictional Candidate");
+    expect(text).toContain("Built Python ETL pipelines.");
+    expect(text).not.toContain("Kubernetes");
+    expect(fs.existsSync(path.join(f.root, "data/applications.md"))).toBe(false);
+    expect(fs.existsSync(path.join(f.root, "data/pdf-index.tsv"))).toBe(false);
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true, maxRetries: 5 });
+  }
+});
+
+test("dashboard C05 rejects a changed source or HTML evidence before starting renderer", async () => {
+  for (const alter of ["source", "html"]) {
+    const f = await publicationFixture();
+    try {
+      if (alter === "source") fs.appendFileSync(path.join(f.root, "cv.md"), "\nRevoked source\n");
+      else fs.appendFileSync(f.saved.artifact, "\n<!-- changed HTML -->");
+      const worker = createPdfWorker(async () => { throw Error("should not run"); });
+      const result = await renderBoundPdf({
+        spawnFn: worker.spawnFn, execPath: process.execPath, root: f.root,
+        pdfPaths: f.pdfPaths, format: "letter", reportNum: "0",
+        prepared: f.prepared, evidencePath: f.saved.evidence, demoOnly: true,
+      });
+      expect(result.kind).toBe("render-failed");
+      expect(worker.launches).toBe(0);
+      expect(bundles(f.root)).toEqual([]);
+      expect(publisherStages(f.root)).toEqual([]);
+      expect(fs.existsSync(path.join(f.root, "data/pdf-index.tsv"))).toBe(false);
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true, maxRetries: 5 });
+    }
+  }
+});
+
+test("dashboard C05 rejects bad PDF output and removes uncommitted staging", async () => {
+  for (const bad of ["missing", "not-pdf", "worker-failed"]) {
+    const f = await publicationFixture();
+    try {
+      const worker = createPdfWorker(async args => {
+        if (bad === "worker-failed") throw Error("synthetic failure");
+        if (bad === "not-pdf") fs.writeFileSync(args[2], "not a PDF");
+      });
+      const result = await renderBoundPdf({
+        spawnFn: worker.spawnFn, execPath: process.execPath, root: f.root,
+        pdfPaths: f.pdfPaths, format: "letter", reportNum: "0",
+        prepared: f.prepared, evidencePath: f.saved.evidence, demoOnly: true,
+      });
+      expect(result.kind).toBe("render-failed");
+      expect(worker.launches).toBe(1);
+      expect(bundles(f.root)).toEqual([]);
+      expect(publisherStages(f.root)).toEqual([]);
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true, maxRetries: 5 });
+    }
+  }
+});
+
+test("dashboard C05 rejects source changed during rendering before publishing a bundle", async () => {
+  const f = await publicationFixture();
+  try {
+    const worker = createPdfWorker(async args => {
+      await renderHtmlToPdf(fs.readFileSync(args[1], "utf8"), args[2], {
+        format: "letter", workspaceRoot: f.root, baseDir: f.root,
+        maxPages: 2, strictPages: true, deferManifest: true,
+      });
+      fs.appendFileSync(path.join(f.root, "cv.md"), "\nChanged while rendering\n");
+    });
+    const result = await renderBoundPdf({
+      spawnFn: worker.spawnFn, execPath: process.execPath, root: f.root,
+      pdfPaths: f.pdfPaths, format: "letter", reportNum: "0",
+      prepared: f.prepared, evidencePath: f.saved.evidence, demoOnly: true,
+    });
+    expect(result.kind).toBe("render-failed");
+    expect(worker.launches).toBe(1);
+    expect(bundles(f.root)).toEqual([]);
+    expect(publisherStages(f.root)).toEqual([]);
+    expect(fs.existsSync(path.join(f.root, "data/pdf-index.tsv"))).toBe(false);
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true, maxRetries: 5 });
   }
 });
