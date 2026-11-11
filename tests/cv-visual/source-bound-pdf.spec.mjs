@@ -53,7 +53,9 @@ function write(root, relative, data) {
 }
 
 function fixture() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-bound-pdf-"));
+  // macOS exposes the same temp directory through /var and /private/var.
+  // Match the canonical paths returned by the publication boundary.
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-bound-pdf-")));
   const lines = [
     "# Fictional Candidate",
     "## Experience",
@@ -267,8 +269,8 @@ function createPdfWorker(onRun) {
       try {
         await onRun(args);
         child.emit("close", 0);
-      } catch {
-        child.stderr.write("Synthetic PDF worker failure");
+      } catch (error) {
+        child.stderr.write(error.message || "Synthetic PDF worker failure");
         child.emit("close", 1);
       }
     });
@@ -363,19 +365,23 @@ test("dashboard C05 rejects bad PDF output and removes uncommitted staging", asy
 test("dashboard C05 rejects source changed during rendering before publishing a bundle", async () => {
   const f = await publicationFixture();
   try {
+    let sourceChangedAfterRender = false;
     const worker = createPdfWorker(async args => {
       await renderHtmlToPdf(fs.readFileSync(args[1], "utf8"), args[2], {
         format: "letter", workspaceRoot: f.root, baseDir: f.root,
         maxPages: 2, strictPages: true, deferManifest: true,
       });
       fs.appendFileSync(path.join(f.root, "cv.md"), "\nChanged while rendering\n");
+      sourceChangedAfterRender = true;
     });
     const result = await renderBoundPdf({
       spawnFn: worker.spawnFn, execPath: process.execPath, root: f.root,
       pdfPaths: f.pdfPaths, format: "letter", reportNum: "0",
       prepared: f.prepared, evidencePath: f.saved.evidence, demoOnly: true,
     });
+    expect(sourceChangedAfterRender, result.error).toBe(true);
     expect(result.kind).toBe("render-failed");
+    expect(result.error).toMatch(/Candidate evidence or report changed/);
     expect(worker.launches).toBe(1);
     expect(bundles(f.root)).toEqual([]);
     expect(publisherStages(f.root)).toEqual([]);
