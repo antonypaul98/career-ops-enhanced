@@ -12,17 +12,13 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { fileURLToPath } from "node:url";
-import { prepareBoundCv } from "../../web/src/lib/bound-cv.mjs";
-import { renderBoundPdf } from "../../web/src/lib/bound-pdf.mjs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import * as yaml from "js-yaml";
 import { loadResumeAuthority } from "../../enhanced/resume-authority.mjs";
 import { tailorBoundResume } from "../../enhanced/evidence-tailor.mjs";
 import { renderBoundResume } from "../../enhanced/tailor-resume.mjs";
 import { verifyResumeArtifact } from "../../enhanced/verify-resume.mjs";
 import { renderHtmlToPdf } from "../../generate-pdf.mjs";
-import { sealDemoPackage, verifyDemoPackage } from "../../web/src/lib/demo-package.mjs";
-import { readSubmissionApprovals } from "../../web/src/lib/submission-approvals.mjs";
 import {
   prepareApprovedSubmission,
   executeApprovedSubmission,
@@ -31,6 +27,23 @@ import {
 const sha = value => createHash("sha256").update(value).digest("hex");
 const JD = "## Requirements\n- Python\n- Kubernetes\n";
 const PERSONA = "data-engineer";
+const CODE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const WEB_SOURCE = path.join(CODE_ROOT, "web", "src");
+const HAS_WEB = fs.existsSync(WEB_SOURCE);
+// Core-only installations omit web/; never statically import optional modules.
+const webModules = HAS_WEB ? await Promise.all([
+  "demo-package.mjs",
+  "submission-approvals.mjs",
+  "bound-cv.mjs",
+  "bound-pdf.mjs",
+].map(name => import(pathToFileURL(path.join(WEB_SOURCE, "lib", name)).href))) : [];
+const [
+  { sealDemoPackage, verifyDemoPackage } = {},
+  { readSubmissionApprovals } = {},
+  { prepareBoundCv } = {},
+  { renderBoundPdf } = {},
+] = webModules;
+test.skip(!HAS_WEB, "web/ is optional in core-only installs");
 
 function write(root, relative, data) {
   const file = path.join(root, relative);
@@ -205,7 +218,7 @@ test("source-bound fictional CV becomes a real, extractable PDF and non-submitta
  * The renderer subprocess is injected; the success case invokes real Chromium
  * and all failures use deterministic synthetic subprocess exits.
  */
-const CODE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
 
 async function publicationFixture() {
   const { root, proposal } = fixture();
