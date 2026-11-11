@@ -90,20 +90,16 @@ function writeFixture(root) {
 }
 
 function fileSnapshot(root) {
-  const rows = [];
-  function visit(dir) {
-    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-      const absolute = path.join(dir, ent.name);
-      if (ent.isDirectory()) visit(absolute);
-      else {
-        assert.ok(ent.isFile(), "No symlinks permitted in synthetic root");
-        rows.push([path.relative(root, absolute),
-          createHash("sha256").update(fs.readFileSync(absolute)).digest("hex")]);
-      }
-    }
-  }
-  visit(root);
-  return rows.sort((a, b) => a[0].localeCompare(b[0]));
+  // The built-in listing avoids a competing handwritten recursive walker.
+  // This root contains only synthetic fixtures and must not include symlinks.
+  return fs.readdirSync(root, { recursive: true }).map(rel => {
+    const full = path.join(root, rel);
+    const stat = fs.lstatSync(full);
+    assert.ok(!stat.isSymbolicLink(), "No symlinks permitted in synthetic root");
+    if (stat.isDirectory()) return [rel, "directory"];
+    assert.ok(stat.isFile(), "Unexpected fixture entry type");
+    return [rel, createHash("sha256").update(fs.readFileSync(full)).digest("hex")];
+  }).sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 async function freePort() {
