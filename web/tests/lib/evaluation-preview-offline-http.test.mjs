@@ -90,16 +90,25 @@ function writeFixture(root) {
 }
 
 function fileSnapshot(root) {
-  // The built-in listing avoids a competing handwritten recursive walker.
-  // This root contains only synthetic fixtures and must not include symlinks.
-  return fs.readdirSync(root, { recursive: true }).map(rel => {
-    const full = path.join(root, rel);
-    const stat = fs.lstatSync(full);
-    assert.ok(!stat.isSymbolicLink(), "No symlinks permitted in synthetic root");
-    if (stat.isDirectory()) return [rel, "directory"];
-    assert.ok(stat.isFile(), "Unexpected fixture entry type");
-    return [rel, createHash("sha256").update(fs.readFileSync(full)).digest("hex")];
-  }).sort((a, b) => a[0].localeCompare(b[0]));
+  // This fixture has exactly three known directories (root, data, modes).
+  // Comparing each directory's immediate entries detects added or removed
+  // files and folders without walking arbitrary subtrees or nested checkouts.
+  const rows = [];
+  for (const relativeDir of ["", "data", "modes"]) {
+    const directory = path.join(root, relativeDir);
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const relative = path.join(relativeDir, entry.name).split(path.sep).join("/");
+      assert.ok(!entry.isSymbolicLink(), "No symlinks permitted in synthetic root");
+      if (entry.isDirectory()) {
+        rows.push([relative, "directory"]);
+      } else {
+        assert.ok(entry.isFile(), "Unexpected fixture entry type");
+        rows.push([relative, createHash("sha256")
+          .update(fs.readFileSync(path.join(directory, entry.name))).digest("hex")]);
+      }
+    }
+  }
+  return rows.sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 async function freePort() {
