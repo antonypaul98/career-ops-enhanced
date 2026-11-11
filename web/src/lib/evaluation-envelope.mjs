@@ -97,7 +97,12 @@ export function validateEvaluationPayload(value, options = {}) {
     return { ok: false, error: "Report Markdown is empty or exceeds the 1 MB safety limit." };
   }
   if (!/^# Evaluation:/m.test(reportMarkdown)) return { ok: false, error: "Report is missing the canonical Evaluation header." };
-  if (!reportMarkdown.includes("**URL:** " + postingUrl)) return { ok: false, error: "Report header URL does not match the sealed posting URL." };
+  // Only the canonical header can bind the report to this posting. A prefix
+  // match accepts another requisition, and a citation in the archived JD must
+  // not repair a missing or conflicting header.
+  const header = reportMarkdown.split(/^##[ \t]/m, 1)[0];
+  const urls = [...header.matchAll(/^\*\*URL:\*\*[ \t]+([^\r\n]+?)[ \t]*\r?$/gm)];
+  if (urls.length !== 1 || urls[0][1] !== postingUrl) return { ok: false, error: "Report header URL does not match the sealed posting URL." };
 
   const letters = reportLetters(reportMarkdown);
   const missingLetters = REQUIRED_LETTERS.filter((letter) => (letter !== "H" || score >= 4.5) && !letters.has(letter));

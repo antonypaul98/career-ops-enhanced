@@ -18,6 +18,21 @@ test("changed URL and incomplete reports fail closed", () => {
   assert.equal(parseEvaluationEnvelope(incomplete, { expectedUrl: payload.postingUrl }).ok, false);
 });
 
+test("report header must contain exactly one exact posting URL, not a prefix or body citation", () => {
+  const wrap = reportMarkdown => `<<evaluation-json>>\n${JSON.stringify({ ...payload, reportMarkdown })}\n<</evaluation-json>>`;
+  const urlLine = "**URL:** " + payload.postingUrl;
+  for (const changed of [
+    report.replace(urlLine, urlLine + "0"),
+    report.replace(urlLine, urlLine + "?different=1"),
+    report.replace(urlLine, "**URL:** https://wrong.example/job") + "\n" + urlLine,
+    report.replace(urlLine, urlLine + "\n**URL:** https://wrong.example/job"),
+  ]) {
+    assert.equal(parseEvaluationEnvelope(wrap(changed), { expectedUrl: payload.postingUrl }).ok, false);
+  }
+  assert.equal(parseEvaluationEnvelope(wrap(report.replace(urlLine, urlLine + "  "))).ok, true);
+  assert.equal(parseEvaluationEnvelope(wrap(report).replaceAll("\n", "\r\n")).ok, true);
+});
+
 test("stream filter withholds private report body while retaining it for validation", () => {
   const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
   const visible = [filter.push(envelope.slice(0, 80)), filter.push(envelope.slice(80)), filter.flush()].join("");

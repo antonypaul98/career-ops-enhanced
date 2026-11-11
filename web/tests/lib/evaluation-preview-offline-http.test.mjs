@@ -11,7 +11,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import net from "node:net";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
@@ -40,11 +40,12 @@ const countPath = path.join(__dirname, "calls");
 const count = fs.existsSync(countPath) ? Number(fs.readFileSync(countPath, "utf8")) : 0;
 fs.writeFileSync(countPath, String(count + 1));
 const input = fs.readFileSync(0, "utf8");
+const scenario = fs.readFileSync(path.join(__dirname, "scenario"), "utf8");
 const url = input.match(/^Posting URL: (.+)$/m)?.[1];
 const jd = input.split("=== SUPPLIED JOB DESCRIPTION ===\n")[1]?.split("\n=== END JOB DESCRIPTION ===")[0];
 if (!url || !jd || !input.includes("SOURCE-VERIFIED CANDIDATE FACTS")) process.exit(3);
 const fence = String.fromCharCode(96).repeat(3);
-const report = [
+let report = [
   "# Evaluation: Fictional Co — Data Engineer", "", "**URL:** " + url, "",
   "## Machine Summary", "", fence + "yaml",
   "company: Fictional Co", "role: Data Engineer", "score: 3.5",
@@ -63,12 +64,34 @@ const report = [
   "## Keyword Coverage", "Synthetic.",
   "## Job Description", jd, ""
 ].join("\n");
+if (scenario === "wrong-header") report = report.replace("**URL:** " + url, "**URL:** " + url + "-other");
 const payload = { company: "Fictional Co", role: "Data Engineer", score: 3.5,
   note: "Offline synthetic test only", postingUrl: url, reportMarkdown: report };
 const envelope = "<<evaluation-json>>\n" + JSON.stringify(payload) + "\n<</evaluation-json>>\n";
-console.log(JSON.stringify({ type: "text", part: { type: "text", text: envelope } }));
-console.log(JSON.stringify({ type: "step_finish", part: { type: "step-finish",
-  tokens: { input: 1, output: 1, cache: { write: 0 } }, cost: 0 } }));
+function emit() {
+  console.log(JSON.stringify({ type: "text", part: { type: "text", text: envelope } }));
+  console.log(JSON.stringify({ type: "step_finish", part: { type: "step-finish",
+    tokens: { input: 1, output: 1, cache: { write: 0 } }, cost: 0 } }));
+}
+if (scenario === "quota") {
+  console.log(JSON.stringify({ type: "error", error: { data: { statusCode: 429, message: "Free usage limit reached" } } }));
+  // Even a valid envelope and exit zero after an error must never be accepted.
+  emit();
+} else if (scenario === "cancel") {
+  const { spawn } = require("node:child_process");
+  const descendant = spawn(process.execPath, ["-e",
+    'process.on("SIGTERM",()=>{});process.send("ready");process.disconnect();setInterval(()=>{},1000)'],
+    { stdio: ["ignore", "ignore", "ignore", "ipc"] });
+  process.on("SIGTERM", () => { emit(); process.exit(0); });
+  descendant.once("message", () => fs.writeFileSync(path.join(__dirname, "ready"),
+    JSON.stringify({ worker: process.pid, descendant: descendant.pid })));
+  setInterval(() => {}, 1000);
+} else if (scenario.startsWith("source-")) {
+  fs.writeFileSync(path.join(__dirname, "ready"), "ready");
+  const wait = setInterval(() => {
+    if (fs.existsSync(path.join(__dirname, "release"))) { clearInterval(wait); emit(); }
+  }, 20);
+} else emit();
 `;
 
 function writeFixture(root) {
@@ -145,7 +168,27 @@ async function stopServer(child) {
   }
 }
 
-test("built HTTP returns synthetic evaluation-only report without canonical writes",
+async function waitUntil(check, message) {
+  for (let attempt = 0; attempt < 160; attempt++) {
+    if (check()) return;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  assert.fail(message);
+}
+
+function processRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    const state = execFileSync("ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" }).trim();
+    return Boolean(state && !state.startsWith("Z"));
+  } catch (error) {
+    if (error.code === "ESRCH" || error.status === 1) return false;
+    throw error;
+  }
+}
+
+for (const scenario of ["success", "wrong-header", "quota", "source-changed", "source-deleted", "source-unreviewed", "cancel"])
+test("built HTTP report-only boundary: " + scenario,
   { skip: !enabled ? "Set CAREER_OPS_OFFLINE_PREVIEW_E2E=1 to run built HTTP acceptance" : false,
     timeout: 45000 }, async t => {
     assert.notEqual(process.platform, "win32", "This fixture uses POSIX process groups");
@@ -157,6 +200,7 @@ test("built HTTP returns synthetic evaluation-only report without canonical writ
     const before = fileSnapshot(candidate);
     const binDir = path.join(tmp, "bin");
     fs.mkdirSync(binDir);
+    fs.writeFileSync(path.join(binDir, "scenario"), scenario);
     fs.writeFileSync(path.join(binDir, "opencode"), fakeOpenCode, { mode: 0o700 });
     const port = await freePort();
     const base = "http://127.0.0.1:" + port;
@@ -177,24 +221,59 @@ test("built HTTP returns synthetic evaluation-only report without canonical writ
     const url = base + "/api/evaluation-preview";
     const headers = { "content-type": "application/json", "x-career-ops-preview-token": token };
     const body = JSON.stringify({ evaluationOnly: true, postingUrl, jobDescription });
-    const response = await fetch(url, { method: "POST", headers, body,
-      signal: AbortSignal.timeout(22000) });
-    assert.equal(response.status, 200, serverLog);
-    const events = (await response.text()).split("\n").filter(Boolean).map(line => JSON.parse(line));
-    assert.equal(events.some(event => event.type === "error"), false, JSON.stringify(events));
-    const result = events.find(event => event.type === "preview-report");
-    assert.ok(result, "Missing validated preview-report: " + JSON.stringify(events));
-    assert.equal(result.status, "evaluation-only");
-    assert.equal(result.model, "opencode/glm-5.3-flash-free");
-    assert.equal(result.persisted, false);
-    assert.equal(result.submissionAllowed, false);
-    assert.equal(result.applicationPackageAllowed, false);
-    assert.equal(result.sourceVerification, "caller-supplied-JD-not-independently-verified");
-    assert.ok(result.reportMarkdown.includes(jobDescription));
-    assert.match(result.reportMarkdown, /career-ops:evaluation-only:v1/);
-    assert.equal(result.reportSha256,
-      createHash("sha256").update(result.reportMarkdown).digest("hex"));
-    assert.deepEqual(fileSnapshot(candidate), before,
+    const abort = new AbortController();
+    const pending = fetch(url, { method: "POST", headers, body,
+      signal: AbortSignal.any([abort.signal, AbortSignal.timeout(22000)]) });
+    // Attach a rejection observer before deliberately disconnecting the client.
+    pending.catch(() => {});
+    let expectedFiles = before;
+    if (scenario.startsWith("source-")) {
+      await waitUntil(() => fs.existsSync(path.join(binDir, "ready")), "Fake worker did not receive the original source snapshot");
+      if (scenario === "source-deleted") fs.unlinkSync(path.join(candidate, "cv.md"));
+      else if (scenario === "source-changed") fs.appendFileSync(path.join(candidate, "cv.md"), "Source changed during generation.\n");
+      else {
+        const authority = path.join(candidate, "data/career-profile.yml");
+        fs.writeFileSync(authority, fs.readFileSync(authority, "utf8").replace("review_status: verified", "review_status: needs_review"));
+      }
+      expectedFiles = fileSnapshot(candidate);
+      fs.writeFileSync(path.join(binDir, "release"), "release");
+    }
+    if (scenario === "cancel") {
+      await waitUntil(() => fs.existsSync(path.join(binDir, "ready")), "Fake process tree did not start");
+      const pids = JSON.parse(fs.readFileSync(path.join(binDir, "ready"), "utf8"));
+      t.after(() => { try { process.kill(-pids.worker, "SIGKILL"); } catch { /* already terminated */ } });
+      const response = await pending;
+      const text = response.text();
+      abort.abort();
+      await assert.rejects(text, /abort/i);
+      await waitUntil(() => !processRunning(pids.worker) && !processRunning(pids.descendant),
+        "Cancellation left a fake model process or resistant descendant running");
+    } else {
+      const response = await pending;
+      assert.equal(response.status, 200, serverLog);
+      const events = (await response.text()).split("\n").filter(Boolean).map(line => JSON.parse(line));
+      const result = events.find(event => event.type === "preview-report");
+      if (scenario === "success") {
+        assert.equal(events.some(event => event.type === "error"), false, JSON.stringify(events));
+        assert.ok(result, "Missing validated preview-report: " + JSON.stringify(events));
+        assert.equal(result.status, "evaluation-only");
+        assert.equal(result.model, "opencode/glm-5.3-flash-free");
+        assert.equal(result.persisted, false);
+        assert.equal(result.submissionAllowed, false);
+        assert.equal(result.applicationPackageAllowed, false);
+        assert.equal(result.sourceVerification, "caller-supplied-JD-not-independently-verified");
+        assert.ok(result.reportMarkdown.includes(jobDescription));
+        assert.match(result.reportMarkdown, /career-ops:evaluation-only:v1/);
+        assert.equal(result.reportSha256,
+          createHash("sha256").update(result.reportMarkdown).digest("hex"));
+      } else {
+        assert.equal(result, undefined, "Invalid or failed output escaped as a preview report");
+        const error = events.find(event => event.type === "error");
+        assert.ok(error, JSON.stringify(events));
+        assert.match(error.error, scenario === "quota" ? /usage limit/i : scenario === "wrong-header" ? /header URL/ : /Source evidence changed/);
+      }
+    }
+    assert.deepEqual(fileSnapshot(candidate), expectedFiles,
       "Candidate inputs and application state must not change");
     assert.equal(fs.existsSync(path.join(candidate, "data/applications.md")), false);
     assert.equal(fs.existsSync(path.join(candidate, "reports")), false);
@@ -204,5 +283,5 @@ test("built HTTP returns synthetic evaluation-only report without canonical writ
     assert.equal(replay.status, 409, "Replay must not launch another worker");
     assert.equal(fs.readFileSync(path.join(binDir, "calls"), "utf8"), "1",
       "Fake model must run exactly once");
-    assert.deepEqual(fileSnapshot(candidate), before);
+    assert.deepEqual(fileSnapshot(candidate), expectedFiles);
   });
