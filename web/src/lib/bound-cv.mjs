@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { createProcessTreeStopper } from './process-tree.mjs';
+import { assertNotEvaluationOnly } from './evaluation-only-boundary.mjs';
 
 export const BOUND_CV_INSTRUCTION = 'Return exactly one <<cv-proposal>> line, then a JSON object with persona_id, payload and bindings, then <</cv-proposal>> on its own line. Use the existing C05 CV payload schema. Bind every factual JSON-pointer field to a supplied authority ref; copy approved wording exactly. Never emit HTML, invent facts or approve evidence. Set payload.page_format to letter or a4. If reviewed facts are insufficient, explain the pause and emit no proposal.';
 
@@ -38,6 +39,7 @@ export async function prepareBoundCv(root, reportFile) {
   const api = await core(root);
   const report = api.privatePath(root, reportFile);
   const jdText = fs.readFileSync(report, 'utf8');
+  assertNotEvaluationOnly(jdText);
   const authority = api.loadResumeAuthority({ root, persona: { id: 'general' } });
   if (authority.contradictions.length) throw new Error('Conflicting candidate evidence requires review.');
   if (!authority.records.some(r => r.kind !== 'identity')) throw new Error('Reviewed career facts are required before résumé generation.');

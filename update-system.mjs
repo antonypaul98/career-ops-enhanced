@@ -255,6 +255,7 @@ const SYSTEM_PATHS = [
   'generate-latex.mjs',
   'extract-latex-content.mjs',
   'patch-latex-content.mjs',
+  'lib/evaluation-only-boundary.mjs',
   'lib/ascii-fold.mjs',
   'lib/cli-flags.mjs',
   'lib/gemini-node-floor.mjs',
