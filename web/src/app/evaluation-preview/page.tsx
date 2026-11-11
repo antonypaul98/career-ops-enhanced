@@ -22,12 +22,52 @@ export default function EvaluationPreviewPage() {
   const [token, setToken] = useState("");
   const [attempted, setAttempted] = useState(false);
   const [running, setRunning] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState("");
   const [report, setReport] = useState<ReviewReport | null>(null);
   const controller = useRef<AbortController | null>(null);
 
   // Leaving the page disconnects the one allowed local worker.
   useEffect(() => () => controller.current?.abort(), []);
+
+
+  async function checkLocalReadiness() {
+    if (attempted || running || checking) return;
+    if (!LOCAL_HOSTS.has(window.location.hostname)) {
+      setMessage("Preflight is available only on the local computer.");
+      return;
+    }
+    if (!TOKEN_PATTERN.test(token)) {
+      setMessage("Enter the configured local session token before preflight.");
+      return;
+    }
+    setChecking(true);
+    setMessage("Checking local inputs only. No model call or attempt reservation.");
+    try {
+      const response = await fetch("/api/evaluation-preview/preflight", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-career-ops-preview-token": token,
+        },
+        body: JSON.stringify({ evaluationOnly: true, postingUrl, jobDescription }),
+        cache: "no-store",
+        credentials: "omit",
+      });
+      const data = await response.json();
+      if (response.ok && data?.localInputsReady === true &&
+          data?.noModelCall === true && data?.attemptReserved === false) {
+        setMessage("Local preflight passed without using a model attempt. This does NOT verify posting liveness, work authorization, provider login, or free-model quota.");
+      } else {
+        const detail = typeof data?.error === "string" ? data.error.slice(0, 400) : "Preflight unavailable.";
+        setMessage("Local preflight blocked: " + detail);
+      }
+    } catch {
+      setMessage("Local preflight unavailable. Check the local server, without starting a model.");
+    } finally {
+      setChecking(false);
+    }
+  }
 
   async function runPreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,7 +162,7 @@ export default function EvaluationPreviewPage() {
         <p className="mt-1 text-muted">
           Disabled by default. A separately authorized local server and strong session token
           are required. A failed or cancelled request may still consume that attempt.
-          Do not run while the free-model quota is exhausted. The job description is
+          Check readiness first without spending a model attempt. Do not run while the free-model quota is exhausted. The job description is
           supplied by you and is not independently verified.
         </p>
       </section>
@@ -154,7 +194,13 @@ export default function EvaluationPreviewPage() {
           <p className="mt-1 text-xs text-muted">Used only for this request; cleared from the form on launch.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" disabled={attempted || running}
+          <button type="button" onClick={checkLocalReadiness}
+            disabled={attempted || running || checking}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-50">
+            {checking && <Loader2 className="size-4 animate-spin" aria-hidden />}
+            {checking ? "Checking locally..." : "Check readiness (no model call)"}
+          </button>
+          <button type="submit" disabled={attempted || running || checking}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-brand-foreground disabled:cursor-not-allowed disabled:opacity-50">
             {running && <Loader2 className="size-4 animate-spin" aria-hidden />}
             {attempted ? "Attempt used" : "Start one report-only preview"}
