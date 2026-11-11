@@ -35,13 +35,13 @@ export async function POST(req: Request) {
   try { body = await req.json(); }
   catch { return errorReply("Invalid JSON.", 400); }
   const checked = validatePreviewRequest(body);
-  if ("error" in checked) return errorReply(checked.error, 400);
+  if ("error" in checked) return errorReply(checked.error || "Invalid evaluation-only input.", 400);
 
   const candidate = await loadPreviewCandidate({
     root: careerOpsRoot(),
     codeRoot: resolveCodeRoot(process.cwd(), process.env),
   });
-  if ("error" in candidate) return errorReply(candidate.error, 409);
+  if ("error" in candidate) return errorReply(candidate.error || "Candidate authority requires review.", 409);
 
   // Lookup only; deliberately no provider credential or quota probes.
   const cli = resolveCli("opencode");
