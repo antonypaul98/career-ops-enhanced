@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ExternalLink, FileCheck2, ShieldCheck } from "lucide-react";
 import { careerOpsRoot } from "@/lib/career-ops";
 import { readSubmissionApprovals } from "@/lib/submission-approvals.mjs";
@@ -30,6 +31,9 @@ export default function ApprovalsPage() {
           <FileCheck2 className="mx-auto size-8 text-muted" />
           <h2 className="mt-3 font-medium text-landing">No approval packages yet</h2>
           <p className="mt-1 text-sm text-muted">Prepare and inspect an application to make its exact review package appear here.</p>
+          <Link href="/evaluation-preview" className="mt-4 inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm text-brand hover:underline">
+            Local evaluation-only preview (no application package)
+          </Link>
         </section>
       ) : (
         <div className="mt-8 space-y-5">
