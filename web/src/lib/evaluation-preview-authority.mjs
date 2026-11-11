@@ -18,7 +18,11 @@ export async function loadPreviewCandidate({ root, codeRoot }) {
       JSON.stringify(authorityModule.loadResumeAuthority({ root, persona: { id: "general" } }).snapshot)
       === originalSnapshot;
 
-    if (authority.contradictions.length || authority.excluded.length || authority.records.some(
+    // Identity records come from local candidate configuration and must never be
+    // sent to the model. They are not candidate skill/experience evidence and
+    // must not wrongly block otherwise verified CV facts.
+    const factualRecords = authority.records.filter(record => record.kind !== "identity");
+    if (authority.contradictions.length || authority.excluded.length || factualRecords.some(
       record => !record.ref.startsWith("master_profile:") ||
         record.binding?.evidence?.source !== "cv.md")) {
       return { ok: false, error: "Candidate authority has exclusions or contradictions; review required." };
