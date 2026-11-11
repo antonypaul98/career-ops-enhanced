@@ -371,3 +371,27 @@ test("dashboard C05 rejects source changed during rendering before publishing a 
     fs.rmSync(f.root, { recursive: true, force: true, maxRetries: 5 });
   }
 });
+
+
+test("dashboard C05 pre-cancelled runs launch no PDF worker and publish nothing", async () => {
+  const f = await publicationFixture();
+  try {
+    const controller = new AbortController();
+    controller.abort();
+    const worker = createPdfWorker(async () => { throw Error("cancelled run launched worker"); });
+    const result = await renderBoundPdf({
+      spawnFn: worker.spawnFn, execPath: process.execPath, root: f.root,
+      pdfPaths: f.pdfPaths, format: "letter", reportNum: "0",
+      prepared: f.prepared, evidencePath: f.saved.evidence, demoOnly: true,
+      signal: controller.signal,
+    });
+    expect(result.kind).toBe("render-failed");
+    expect(result.error).toMatch(/cancelled/i);
+    expect(worker.launches).toBe(0);
+    expect(publisherStages(f.root)).toEqual([]);
+    expect(bundles(f.root)).toEqual([]);
+    expect(fs.existsSync(path.join(f.root, "data/pdf-index.tsv"))).toBe(false);
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true, maxRetries: 5 });
+  }
+});
