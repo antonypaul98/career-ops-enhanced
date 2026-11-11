@@ -97,12 +97,27 @@ export function validateEvaluationPayload(value, options = {}) {
     return { ok: false, error: "Report Markdown is empty or exceeds the 1 MB safety limit." };
   }
   if (!/^# Evaluation:/m.test(reportMarkdown)) return { ok: false, error: "Report is missing the canonical Evaluation header." };
-  // Only the canonical header can bind the report to this posting. A prefix
-  // match accepts another requisition, and a citation in the archived JD must
-  // not repair a missing or conflicting header.
+  // Inspect only the canonical report header, not URL citations in the JD.
+  // Older report formats place Score/PDF (and sometimes Date) on the same line.
+  // Count markers BEFORE splitting fields: two compact URL fields must never
+  // be mistaken for a single valid URL.
   const header = reportMarkdown.split(/^##[ \t]/m, 1)[0];
-  const urls = [...header.matchAll(/^\*\*URL:\*\*[ \t]+([^\r\n]+?)[ \t]*\r?$/gm)];
-  if (urls.length !== 1 || urls[0][1] !== postingUrl) return { ok: false, error: "Report header URL does not match the sealed posting URL." };
+  const urlFields = [...header.matchAll(/\*\*URL:\*\*/g)];
+  if (urlFields.length !== 1) {
+    return { ok: false, error: "Report header must contain exactly one posting URL field." };
+  }
+  const field = urlFields[0];
+  const linePrefix = header.slice(0, field.index).split(/\r?\n/).at(-1).trim();
+  if (linePrefix && !/^\*\*(?:Date|Via|Archetype|Score|Legitimacy|Work Auth|PDF):\*\*/.test(linePrefix)) {
+    return { ok: false, error: "Report URL field must appear in the canonical metadata header." };
+  }
+  const lineRemainder = header.slice(field.index + field[0].length).split(/\r?\n/, 1)[0];
+  const adjacentField = /[ \t]+(?:\|[ \t]*)?\*\*(?:Date|Via|Archetype|Score|Legitimacy|Work Auth|PDF):\*\*/.exec(lineRemainder);
+  const urlCell = (adjacentField ? lineRemainder.slice(0, adjacentField.index) : lineRemainder)
+    .replace(/[ \t]*\|[ \t]*$/, "").trim();
+  if (urlCell !== postingUrl) {
+    return { ok: false, error: "Report header URL does not match the sealed posting URL." };
+  }
 
   const letters = reportLetters(reportMarkdown);
   const missingLetters = REQUIRED_LETTERS.filter((letter) => (letter !== "H" || score >= 4.5) && !letters.has(letter));
