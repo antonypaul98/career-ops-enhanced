@@ -33,6 +33,31 @@ test("report header must contain exactly one exact posting URL, not a prefix or 
   assert.equal(parseEvaluationEnvelope(wrap(report).replaceAll("\n", "\r\n")).ok, true);
 });
 
+test("canonical URL accepts compact Score/PDF header fields without accepting impostors", () => {
+  const urlLine = "**URL:** " + payload.postingUrl;
+  const wrap = reportMarkdown => `<<evaluation-json>>\n${JSON.stringify({ ...payload, reportMarkdown })}\n<</evaluation-json>>`;
+  const check = (replacement, accepted) => {
+    const changed = report.replace(urlLine, replacement);
+    const parsed = parseEvaluationEnvelope(wrap(changed), { expectedUrl: payload.postingUrl });
+    assert.equal(parsed.ok, accepted, replacement);
+  };
+
+  for (const valid of [
+    urlLine + " | **Score:** 4/5 | **PDF:** pending",
+    "**Date:** 2026-11-10 | " + urlLine + " | **Score:** 4/5 | **PDF:** pending",
+    "**Score:** 4/5 | " + urlLine + " | **PDF:** pending",
+    urlLine + " **Score:** 4/5 **PDF:** pending",
+  ]) check(valid, true);
+
+  for (const invalid of [
+    urlLine + "0 | **Score:** 4/5 | **PDF:** pending",
+    urlLine + "?different=1 | **PDF:** pending",
+    urlLine + " | **URL:** " + payload.postingUrl + " | **PDF:** pending",
+    urlLine + " **URL:** " + payload.postingUrl,
+    urlLine + " | **Score:** 4/5 | **PDF:** pending | **URL:** " + payload.postingUrl,
+  ]) check(invalid, false);
+});
+
 test("stream filter withholds private report body while retaining it for validation", () => {
   const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
   const visible = [filter.push(envelope.slice(0, 80)), filter.push(envelope.slice(80)), filter.flush()].join("");
