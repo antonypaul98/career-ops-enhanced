@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   const candidate = await loadPreviewCandidate({
     root, codeRoot: resolveCodeRoot(process.cwd(), process.env),
   });
-  if (!candidate.ok) return jsonError(candidate.error, 409);
+  if ("error" in candidate) return jsonError(candidate.error, 409);
   const { approvedRecords, mode, authoritySnapshot, verifyAuthority } = candidate;
 
   const input = checked as {
