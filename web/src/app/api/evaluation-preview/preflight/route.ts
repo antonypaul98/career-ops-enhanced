@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   try { body = await req.json(); }
   catch { return errorReply("Invalid JSON.", 400); }
   const checked = validatePreviewRequest(body);
-  if (!checked.ok) return errorReply(checked.error, 400);
+  if ("error" in checked) return errorReply(checked.error, 400);
 
   const candidate = await loadPreviewCandidate({
     root: careerOpsRoot(),
