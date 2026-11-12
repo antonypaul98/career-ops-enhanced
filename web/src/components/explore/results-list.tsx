@@ -6,6 +6,8 @@ import { cn } from "@/lib/cn";
 import type { DiscoveredOffer } from "@/lib/explore";
 import { CostBadge } from "@/components/cost/cost-badge";
 import { DiscoveryCard } from "./discovery-card";
+import { CompanyEvidence } from "./company-evidence";
+import { comparePriority } from "@/lib/discovery-priority.mjs";
 import { useExplore } from "./explore-provider";
 
 export type EnrichedOffer = DiscoveredOffer & { inPipeline: boolean; evaluatedN?: string };
@@ -13,7 +15,8 @@ export type EnrichedOffer = DiscoveredOffer & { inPipeline: boolean; evaluatedN?
 export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
   const { companiesScanned, partial, error, addToPipeline, added, mode, running } = useExplore();
   const isAi = mode === "ai";
-  const [sort, setSort] = useState<"fresh" | "company">("fresh");
+  const [sort, setSort] = useState<"priority" | "fresh" | "company">("priority");
+  const [histories, setHistories] = useState<Record<string, {status: string; tier?: string; lastYear?: number | null}>>({});
   const [q, setQ] = useState("");
 
   const view = useMemo(() => {
@@ -21,10 +24,11 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
     let list = offers;
     if (needle) list = list.filter((o) => o.title.toLowerCase().includes(needle) || o.company.toLowerCase().includes(needle));
     const sorted = [...list].sort((a, b) =>
-      sort === "fresh" ? (b.postedAt || "").localeCompare(a.postedAt || "") : a.company.localeCompare(b.company),
+      sort === "priority" ? comparePriority(a, b, histories) :
+        sort === "fresh" ? (b.postedAt || "").localeCompare(a.postedAt || "") : a.company.localeCompare(b.company),
     );
     return sorted;
-  }, [offers, q, sort]);
+  }, [offers, q, sort, histories]);
 
   const addable = offers.filter((o) => !o.inPipeline && !o.evaluatedN && !added.has(o.url));
 
@@ -55,7 +59,7 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
             />
           </div>
           <div className="inline-flex rounded-lg border border-border bg-surface/40 p-0.5 text-xs">
-            {(["fresh", "company"] as const).map((s) => (
+            {(["priority", "fresh", "company"] as const).map((s) => (
               <button
                 key={s}
                 type="button"
@@ -78,9 +82,19 @@ export function ResultsList({ offers }: { offers: EnrichedOffer[] }) {
         </div>
       </div>
 
+      <p className="text-[11px] text-muted">
+        Priority is a transparent triage order, not an ATS score, hiring prediction, or verified visa eligibility.
+        Unknown sponsorship remains visible; company DOL history updates only after you check that employer.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {view.map((o) => (
-          <DiscoveryCard key={o.url} offer={o} inPipeline={o.inPipeline} evaluatedN={o.evaluatedN} />
+          <div key={o.url} className="min-w-0">
+            <DiscoveryCard offer={o} inPipeline={o.inPipeline} evaluatedN={o.evaluatedN} />
+            {!isAi && (
+              <CompanyEvidence company={o.company}
+                onHistory={(name, history) => setHistories(prev => ({ ...prev, [name]: history }))} />
+            )}
+          </div>
         ))}
       </div>
 
