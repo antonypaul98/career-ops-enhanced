@@ -5,8 +5,12 @@
  */
 const ALLOWED_TIERS = new Set(["strong", "moderate", "weak", "staffing-shop", "none", "unknown"]);
 const legalSuffix = /\b(?:incorporated|inc|llc|ltd|limited|corp|corporation|co|plc)\b/g;
-const normalizeName = s => String(s || "").normalize("NFKC").toLowerCase()
-  .replace(/[^a-z0-9 ]/g, " ").replace(legalSuffix, "").replace(/\s+/g, " ").trim();
+const canonicalName = s => String(s || "").normalize("NFKC").toLowerCase()
+  .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const normalizeName = s => canonicalName(s).replace(legalSuffix, "").replace(/\s+/g, " ").trim();
+// A legal suffix supplied explicitly by the caller is stronger evidence of
+// their intended DOL record than an ambiguous one-word brand search.
+const explicitLegalSuffix = /\b(?:incorporated|inc|llc|ltd|limited|corp|corporation|plc)\b/;
 
 export function normalizeSponsorLookup(company, raw) {
   if (!raw || typeof raw !== "object" || raw.error || raw.found !== true) {
@@ -14,11 +18,14 @@ export function normalizeSponsorLookup(company, raw) {
   }
   const resolved = String(raw.displayName || "").trim();
   const requested = normalizeName(company);
-  // One-word brands (Amazon, Google, Meta) often map to multiple distinct
-  // filing entities. Never boost them automatically even if a legal suffix
-  // makes a record look like an exact name match.
-  const exact = Boolean(requested && requested.split(" ").length >= 2 &&
-    requested === normalizeName(resolved));
+  // A bare brand such as "Microsoft" is ambiguous even if DOL returns
+  // "Microsoft" as an exact label. But an explicit "Microsoft Corporation"
+  // query can match the full named legal entity when the name is identical.
+  // Neither case establishes the legal employer for a particular job posting.
+  const exactLegalName = explicitLegalSuffix.test(canonicalName(company)) &&
+    canonicalName(company) === canonicalName(resolved);
+  const exact = Boolean(requested && requested === normalizeName(resolved) &&
+    (requested.split(" ").length >= 2 || exactLegalName));
   const tier = ALLOWED_TIERS.has(raw.friendlinessTier) ? raw.friendlinessTier : "unknown";
   const lastYear = Number(raw.totals?.last_year);
   const lca = Number(raw.totals?.n_lca);
