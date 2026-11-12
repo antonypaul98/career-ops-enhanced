@@ -34,10 +34,11 @@ test("strong target fit matters, but unknown employer evidence isn't treated as 
 
 test("only a recent, exact-entity DOL history can modestly improve priority", () => {
   const unknown = priorityReasons(base,null,TODAY).points;
-  assert.equal(priorityReasons(base,{status:"possible_entity",tier:"strong",lastYear:2026},TODAY).points,unknown);
-  assert.equal(priorityReasons(base,{status:"matched",tier:"strong",lastYear:2021},TODAY).points,unknown);
-  assert.equal(priorityReasons(base,{status:"matched",tier:"staffing-shop",lastYear:2026},TODAY).points,unknown);
-  assert.equal(priorityReasons(base,{status:"matched",tier:"strong",lastYear:2026},TODAY).points,unknown + 4);
+  assert.equal(priorityReasons(base,{status:"possible_entity",tier:"strong",lastYear:2026,lca:100},TODAY).points,unknown);
+  assert.equal(priorityReasons(base,{status:"matched",tier:"strong",lastYear:2021,lca:100},TODAY).points,unknown);
+  assert.equal(priorityReasons(base,{status:"matched",tier:"staffing-shop",lastYear:2026,lca:100},TODAY).points,unknown);
+  assert.equal(priorityReasons(base,{status:"matched",tier:"strong",lastYear:2026,lca:100},TODAY).points,unknown + 4);
+  assert.equal(priorityReasons(base,{status:"matched",tier:"strong",lastYear:2026,lca:0},TODAY).points,unknown);
   assert.ok(priorityReasons({...base,sponsorship:"not_offered"},{
     status:"matched",tier:"strong",lastYear:2026},TODAY).points < unknown);
 });
