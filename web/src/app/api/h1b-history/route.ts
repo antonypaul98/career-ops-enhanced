@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { careerOpsRoot } from "@/lib/career-ops";
+import { resolveCodeRoot } from "@/lib/core/code-root.mjs";
 import { normalizeSponsorLookup } from "@/lib/h1b-triage.mjs";
 
 export const runtime = "nodejs";
@@ -29,7 +30,10 @@ export async function POST(req: Request) {
     return Response.json({ status: "blocked", note: "Invalid company name." }, { status: 400, headers });
 
   const root = careerOpsRoot();
-  const file = path.join(root, "plugins", "h1b-sponsor", "check.mjs");
+  // Code can live outside the user-data directory (CAREER_OPS_ROOT).
+  // Select the installed plugin from the checkout, not the data root.
+  const codeRoot = resolveCodeRoot(process.cwd(), process.env);
+  const file = path.join(codeRoot, "plugins", "h1b-sponsor", "check.mjs");
   // Default to local DOL disclosure index only. No implicit company lookup
   // to any third-party endpoint, even if H1B_API_BASE exists in server env.
   const index = process.env.H1B_INDEX_PATH || path.join(root, "data", "h1b", "index.ndjson.gz");
