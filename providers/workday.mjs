@@ -692,6 +692,13 @@ export function parseWorkdayResponse(json, entry) {
       company: entry.name,
       location: j.locationsText || locationFromPath(j.externalPath),
       postedAt: parsePostedOn(j.postedOn),
+      // Preserve only explicit posting-level ATS metadata. The downstream
+      // conservative classifier checks contradictions; generic bulletFields,
+      // salary/benefits wording or category facets are NOT employment proof.
+      ...(typeof j.employmentType === 'string' && j.employmentType.trim()
+        ? { employmentType: j.employmentType.trim() }
+        : typeof j.timeType === 'string' && j.timeType.trim()
+          ? { employmentType: j.timeType.trim() } : {}),
     });
   }
   return jobs;

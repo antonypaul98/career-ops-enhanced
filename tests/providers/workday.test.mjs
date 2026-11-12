@@ -15,6 +15,33 @@ try {
   const workday = workdayModule.default;
   const { parseWorkdayResponse, workdayDedupKey } = workdayModule;
 
+  // Explicit Workday list metadata must survive provider projection so the
+  // conservative employment classifier can use it. Benefits copy and facet
+  // labels alone never establish this particular role's employment status.
+  {
+    const json = { jobPostings: [
+      { title: 'Data Engineer', externalPath: '/job/US/Data-Engineer_R101', timeType: 'FULL_TIME' },
+      { title: 'Platform Engineer', externalPath: '/job/US/Platform-Engineer_R102', employmentType: 'Full time' },
+      { title: 'ML Engineer', externalPath: '/job/US/ML-Engineer_R103', bulletFields: ['Full time'] },
+      { title: 'Cloud Engineer', externalPath: '/job/US/Cloud-Engineer_R104', timeType: 'Part time' },
+    ] };
+    const projected = parseWorkdayResponse(json, {
+      name: 'Fictional ATS Company',
+      careers_url: 'https://fictional.wd1.myworkdayjobs.com/External',
+    });
+    if (projected.length === 4 &&
+        projected[0].employmentType === 'FULL_TIME' &&
+        projected[1].employmentType === 'Full time' &&
+        !Object.hasOwn(projected[2], 'employmentType') &&
+        projected[3].employmentType === 'Part time') {
+      pass('Workday preserves only explicit posting-level employment type, never generic facets');
+    } else {
+      fail('Workday lost or inferred employment type: ' +
+        JSON.stringify(projected.map(item => item.employmentType)));
+    }
+  }
+
+
   // dedupKey (#3439) — one requisition served under several sites of the same
   // tenant must collapse to one key; different tenants/instances must not.
   if (workday.dedupKey === workdayDedupKey) {
