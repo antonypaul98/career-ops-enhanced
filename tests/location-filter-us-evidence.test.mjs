@@ -31,7 +31,8 @@ test('country, contextual state and DC evidence pass while unknown abbreviations
     assert.equal(evidenceOnly(location,'','Engineer - Remote'),false,location);
   }
   for (const location of ['Canada, United States','United Kingdom, United States','Canada CA',
-    'Paris, France, US','London, UK, New York','Remote - IN','Remote in DE','Hybrid - CA','Work from home, CA']) {
+    'Paris, France, US','London, UK, New York','Remote - IN','Remote in DE','Hybrid - CA','Work from home, CA',
+    'Fully remote, CA','100% remote - IN','Fully remote in DE','Partially hybrid, CA']) {
     assert.equal(evidenceOnly(location,'','Engineer - Remote'),false,location);
   }
   assert.equal(evidenceOnly('Albuquerque, New Mexico, United States'),true,'New Mexico is US evidence, not Mexico');

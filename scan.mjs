@@ -535,7 +535,7 @@ function affirmativeUsLocation(value) {
   const code = lower.match(/^(.+?)(?:,\s*|\s+)([a-z]{2})\.?$/);
   return Boolean(code && US_EVIDENCE_CODES.has(code[2])
     && !UNSPECIFIED_LOCATION_RE.test(code[1].trim())
-    && !/^(?:remote|hybrid|on[ -]?site|work|working|home)\b/.test(code[1])
+    && !/\b(?:remote|hybrid|on[ -]?site|work|working|home)\b/.test(code[1])
     && !/[,/;|]/.test(code[1]) && /[\p{L}]/u.test(code[1]));
 }
 
