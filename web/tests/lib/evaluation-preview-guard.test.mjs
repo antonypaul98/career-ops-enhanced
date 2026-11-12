@@ -75,6 +75,8 @@ test("preview loads the evaluator from code root while keeping candidate files i
   assert.equal(codeRoot, path.resolve(fakeCwd, ".."));
   assert.notEqual(codeRoot, privateDataRoot);
   assert.match(routeText, /resolveCodeRoot\(process\.cwd\(\), process\.env\)/);
-  assert.match(routeText, /pathToFileURL\(path\.join\(codeRoot, "enhanced", "resume-authority\.mjs"\)\)/);
-  assert.doesNotMatch(routeText, /pathToFileURL\(path\.join\(root, "enhanced", "resume-authority\.mjs"\)\)/);
+  assert.match(routeText, /loadPreviewCandidate\(/);
+  const authorityHelper = fs.readFileSync(path.join(root, "src/lib/evaluation-preview-authority.mjs"), "utf8");
+  assert.match(authorityHelper, /pathToFileURL\(path\.join\(codeRoot, "enhanced", "resume-authority\.mjs"\)\)/);
+  assert.doesNotMatch(authorityHelper, /pathToFileURL\(path\.join\(root, "enhanced", "resume-authority\.mjs"\)\)/);
 });

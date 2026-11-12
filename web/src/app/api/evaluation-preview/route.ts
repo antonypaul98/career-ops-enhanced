@@ -7,10 +7,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { careerOpsRoot } from "@/lib/career-ops";
 import { resolveCodeRoot } from "@/lib/core/code-root.mjs";
+import { loadPreviewCandidate } from "@/lib/evaluation-preview-authority.mjs";
 import { resolveCli } from "@/lib/clis";
 import { createProcessTreeStopper } from "@/lib/process-tree.mjs";
 import { spawnHeadlessCli } from "@/lib/spawn-cli.mjs";
@@ -58,31 +58,11 @@ export async function POST(req: Request) {
   }
 
   const root = careerOpsRoot();
-  let approvedRecords: unknown[];
-  let mode: string;
-  let verifyAuthority: () => boolean;
-  let authoritySnapshot: unknown;
-  try {
-    const codeRoot = resolveCodeRoot(process.cwd(), process.env);
-    const authorityModule = await import(/* turbopackIgnore: true */
-      pathToFileURL(path.join(codeRoot, "enhanced", "resume-authority.mjs")).href);
-    const authority = authorityModule.loadResumeAuthority({ root, persona: { id: "general" } });
-    authoritySnapshot = authority.snapshot;
-    const originalSnapshot = JSON.stringify(authoritySnapshot);
-    verifyAuthority = () => JSON.stringify(authorityModule.loadResumeAuthority({ root, persona: { id: "general" } }).snapshot) === originalSnapshot;
-    if (authority.contradictions.length || authority.excluded.length || authority.records.some(
-      (record: { ref: string; binding?: { evidence?: { source?: string } } }) =>
-        !record.ref.startsWith("master_profile:") || record.binding?.evidence?.source !== "cv.md")) {
-      return jsonError("Candidate authority has exclusions or contradictions; review required.", 409);
-    }
-    approvedRecords = authorityModule.proposalAuthority(authority).records
-      .filter((record: { kind?: string }) => record.kind !== "identity");
-    if (!approvedRecords.length) return jsonError("No source-verified candidate facts are available.", 409);
-    mode = fs.readFileSync(path.join(root, "modes", "oferta.md"), "utf8");
-    if (mode.length > 240_000) return jsonError("Evaluation mode file exceeds the preview size limit.", 409);
-  } catch {
-    return jsonError("Verified authority and evaluation template must be readable before preview.", 409);
-  }
+  const candidate = await loadPreviewCandidate({
+    root, codeRoot: resolveCodeRoot(process.cwd(), process.env),
+  });
+  if ("error" in candidate) return jsonError(candidate.error || "Candidate authority requires review.", 409);
+  const { approvedRecords, mode, authoritySnapshot, verifyAuthority } = candidate;
 
   const input = checked as {
     ok: true; postingUrl: string; jobDescription: string; jobDescriptionSha256: string;
