@@ -16,7 +16,9 @@ export async function GET(req: Request) {
   const indexPath = await resolvePdfIndexPath();
   const item = readPdfReviewQueue(careerOpsRoot(), indexPath, findReportFile)
     .find(entry => Number(entry.report) === Number(report));
-  if (!item || item.status !== "ready_for_review") {
+  if (!item || item.status !== "ready_for_review" ||
+      !("filePath" in item) || typeof item.filePath !== "string" ||
+      !("sha256" in item) || typeof item.sha256 !== "string") {
     return new Response("Verified PDF unavailable; regenerate or review source evidence.", {
       status: 404, headers: { "Cache-Control": "no-store" },
     });
