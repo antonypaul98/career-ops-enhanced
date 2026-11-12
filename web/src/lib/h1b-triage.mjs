@@ -13,7 +13,12 @@ export function normalizeSponsorLookup(company, raw) {
     return { status: "unresolved", tier: "unknown", note: "No verified employer entity match in the installed index." };
   }
   const resolved = String(raw.displayName || "").trim();
-  const exact = Boolean(normalizeName(company) && normalizeName(company) === normalizeName(resolved));
+  const requested = normalizeName(company);
+  // One-word brands (Amazon, Google, Meta) often map to multiple distinct
+  // filing entities. Never boost them automatically even if a legal suffix
+  // makes a record look like an exact name match.
+  const exact = Boolean(requested && requested.split(" ").length >= 2 &&
+    requested === normalizeName(resolved));
   const tier = ALLOWED_TIERS.has(raw.friendlinessTier) ? raw.friendlinessTier : "unknown";
   const lastYear = Number(raw.totals?.last_year);
   const lca = Number(raw.totals?.n_lca);
