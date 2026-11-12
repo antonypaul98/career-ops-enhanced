@@ -41,6 +41,8 @@ test("company H1B and Reddit research are explicit actions, not silent network s
   assert.match(safety,/Recent Reddit discussions/);
   assert.match(safety,/Verify employer/);
   assert.match(route,/H1B_INDEX_PATH/);
+  assert.match(route,/resolveCodeRoot\(process\.cwd\(\), process\.env\)/);
+  assert.match(route,/path\.join\(codeRoot, "plugins", "h1b-sponsor", "check\.mjs"\)/);
   assert.match(route,/delete env\.H1B_API_BASE/);
   assert.match(route,/delete env\.H1B_API_TOKEN/);
   assert.doesNotMatch(route,/\bfetch\s*\(/);
