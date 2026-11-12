@@ -43,9 +43,11 @@ export const DEFAULT_FILTERS: ExploreFilters = {
   alwaysAllow: [],
   // This fork targets USA job discovery and the candidate's selected role types.
   usOnly: true,
-  employmentTypes: ["c2c", "full_time"],
-  requireSponsorship: true,
-  noClearance: true,
+  // Broad discovery: missing visa/clearance/type evidence must not hide a job.
+  // Eligibility remains separately verified before any application.
+  employmentTypes: ["c2c", "full_time", "unknown"],
+  requireSponsorship: false,
+  noClearance: false,
   sinceDays: 7,
   ats: [...ATS_SOURCES],
   limitPerAts: 150,
