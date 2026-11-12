@@ -170,6 +170,34 @@ export function FilterBuilder({
           ))}
         </div>
         {filters.employmentTypes.length === 0 && <p className="text-[12px] text-faint">No employment selections means any type (still subject to the country filter).</p>}
+        <div className="mt-3 space-y-2 border-t border-border pt-3">
+          <Label hint="Strict evidence filters can hide otherwise relevant postings">Eligibility evidence to require in discovery</Label>
+          <label className="flex cursor-pointer items-start gap-2 text-[13px] text-foreground">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={filters.requireSponsorship}
+              onChange={(e) => set({ requireSponsorship: e.target.checked })}
+            />
+            <span>Require explicit employer sponsorship offer</span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-2 text-[13px] text-foreground">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={filters.noClearance}
+              onChange={(e) => set({ noClearance: e.target.checked })}
+            />
+            <span>Require explicit confirmation that no clearance is needed</span>
+          </label>
+          {(!filters.requireSponsorship || !filters.noClearance) && (
+            <p className="text-[12px] text-amber-600 dark:text-amber-300" role="status">
+              Broader discovery is for review only. Jobs with unknown or adverse sponsorship/clearance
+              evidence may appear. Verify the official posting before considering an application;
+              changing these filters does not authorize submitting.
+            </p>
+          )}
+        </div>
         <p className="text-[11px] text-faint">These are discovery hints, not verified contract terms or application eligibility. Review each JD before applying.</p>
       </div>
 
