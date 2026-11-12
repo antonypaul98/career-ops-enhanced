@@ -277,6 +277,9 @@ const SYSTEM_PATHS = [
   'scripts/export-ats-text.mjs',
   'scripts/native-safari-acceptance.mjs',
   'scripts/followup-sweep.sh',
+  // Optional finished-PDF verifier and its pinned upstream license.
+  'tools/verify_pdf.py',
+  'tools/third_party/ai-job-search/LICENSE',
   'story-provenance-check.mjs',
   'lib/latex-content.mjs',
   'lib/context-budget.mjs',
