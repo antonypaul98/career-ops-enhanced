@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ExternalLink, FileCheck2, ShieldCheck } from "lucide-react";
-import { careerOpsRoot } from "@/lib/career-ops";
+import { careerOpsRoot, findReportFile } from "@/lib/career-ops";
+import { resolvePdfIndexPath } from "@/lib/core/pdf-index";
+import { readPdfReviewQueue } from "@/lib/pdf-review-queue.mjs";
 import { readSubmissionApprovals } from "@/lib/submission-approvals.mjs";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +14,10 @@ const tone: Record<string, string> = {
   inspect: "border-white/10 bg-white/5 text-muted",
 };
 
-export default function ApprovalsPage() {
+export default async function ApprovalsPage() {
   const packages = readSubmissionApprovals(careerOpsRoot());
+  const pdfIndex = await resolvePdfIndexPath();
+  const pdfReviews = readPdfReviewQueue(careerOpsRoot(), pdfIndex, findReportFile);
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <div className="flex items-center gap-3">
@@ -97,6 +101,46 @@ export default function ApprovalsPage() {
           ))}
         </div>
       )}
+      <section className="mt-10 border-t border-white/10 pt-7" aria-labelledby="pdf-review-heading">
+        <h2 id="pdf-review-heading" className="text-lg font-semibold text-landing">Tailored PDF review queue</h2>
+        <p className="mt-2 max-w-3xl text-sm text-muted">
+          These are previously rendered PDFs from your local PDF index, shown only when their
+          PDF, HTML and current source checksums match. A PDF here is not an application
+          package, eligibility confirmation, or permission to submit.
+        </p>
+        {pdfReviews.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">No indexed source-verified PDFs available yet.</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {pdfReviews.map((item: any) => (
+              <div key={item.report} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-landing">Report #{item.report}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {item.status === "ready_for_review" ? item.name : item.error}
+                    </p>
+                  </div>
+                  {item.status === "ready_for_review" ? (
+                    <a href={"/api/review-pdf?n=" + encodeURIComponent(item.report)}
+                      target="_blank" rel="noreferrer"
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-brand hover:underline">
+                      Inspect verified PDF
+                    </a>
+                  ) : (
+                    <span className="text-xs text-amber-200">Evidence requires review</span>
+                  )}
+                </div>
+                {item.status === "ready_for_review" && (
+                  <p className="mt-2 break-all font-mono text-[10px] text-muted">
+                    SHA-256 {item.sha256}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
