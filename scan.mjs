@@ -351,6 +351,9 @@ export function matchedTitleKeywords(title, titleFilter) {
 // ── Location filter ─────────────────────────────────────────────────
 // Optional. If `location_filter` is absent from portals.yml, all locations pass.
 // Semantics (case-insensitive substring, in this order):
+//   - `require_us_evidence: true` adds an affirmative US-location gate before
+//     every acceptance path. Missing/remote-only locations and remote TITLES
+//     are not country evidence. This does not enable or change any default.
 //   - Empty / whitespace-only / non-string location AND no URL hint → pass
 //     (don't penalize missing or malformed provider data), UNLESS
 //     `location_filter.strict: true` and a restricting tier (`allow`, `block`,
@@ -496,6 +499,58 @@ const US_STATE_ALWAYS_ALLOW_MATCHERS = USPS_STATES.flatMap(([name, abbr]) => [
   compileUsStateAbbrev(abbr),
 ]);
 
+// Separate opt-in evidence rules: do not change the legacy always_allow tier.
+// A terminal country/state identifies the advertised location; an interior word
+// ("New York, UK") or a bare ambiguous code ("IN", "CA") is not enough.
+// Country/state names retain Unicode-safe boundaries, so Montréal is not AL.
+const US_EVIDENCE_NAMES = [
+  'united states', 'united states of america', 'usa', 'u.s.', 'u.s.a.', 'us',
+  ...USPS_STATES.map(([name]) => name).filter(name => name !== 'georgia' && name !== 'washington'),
+  'district of columbia', 'washington state',
+].map(name => ({ name, matches: compileLocationKeyword(name) }));
+const US_EVIDENCE_CODES = new Set([...USPS_STATES.map(([, code]) => code), 'dc']);
+const UNSPECIFIED_LOCATION_RE = /^(?:|n\/?a|not specified|unspecified|remote|hybrid|on[ -]?site|\d+ locations?)$/;
+// Explicit foreign/cross-border labels veto a coincident US token. This is a
+// conservative discovery check, not a comprehensive geocoder. Do not use the
+// bare "mexico" veto against the US state "New Mexico".
+const US_EVIDENCE_FOREIGN = compileLocationKeywordList([
+  'canada', 'can', 'united kingdom', 'uk', 'u.k.', 'england', 'scotland', 'wales',
+  'ireland', 'india', 'germany', 'france', 'spain', 'italy', 'portugal', 'netherlands',
+  'poland', 'sweden', 'norway', 'denmark', 'finland', 'switzerland', 'austria',
+  'belgium', 'ukraine', 'romania', 'brazil', 'mexico', 'colombia', 'argentina',
+  'australia', 'new zealand', 'singapore', 'japan', 'china', 'pakistan', 'philippines',
+  'south africa', 'united arab emirates', 'uae', 'vietnam', 'malaysia', 'indonesia',
+  'nigeria', 'kenya', 'israel', 'turkey', 'türkiye', 'europe', 'emea', 'apac', 'latam',
+]);
+
+function affirmativeUsLocation(value) {
+  const lower = value.replace(/\s*[,;|\/-]?\s*\(?\b(?:remote|hybrid|on[ -]?site)\)?\s*$/i, '').trim();
+  if (!lower || /\b(?:outside|excluding|except|not|non|no|worldwide|global|anywhere|international)\b/.test(lower)) return false;
+  const foreignText = lower.replace(/\bnew\s+mexico\b/g, '');
+  if (US_EVIDENCE_FOREIGN.some(matches => matches(foreignText))) return false;
+  // Multiple advertised jurisdictions remain unresolved in this strict mode.
+  if (/[\/;|]|\b(?:or|and)\s+\p{L}/u.test(lower)) return false;
+  if (US_EVIDENCE_NAMES.some(({ name, matches }) => lower.endsWith(name) && matches(lower))) return true;
+  if (/\b(?:atlanta|savannah),?\s+georgia$/.test(lower)) return true;
+  const code = lower.match(/^(.+?)(?:,\s*|\s+)([a-z]{2})\.?$/);
+  return Boolean(code && US_EVIDENCE_CODES.has(code[2])
+    && !UNSPECIFIED_LOCATION_RE.test(code[1].trim())
+    && !/\b(?:remote|hybrid|on[ -]?site|work|working|home)\b/.test(code[1])
+    && !/[,/;|]/.test(code[1]) && /[\p{L}]/u.test(code[1]));
+}
+
+function hasUsLocationEvidence(lower, hint, url) {
+  // URL hints are weaker evidence and only fill an absent/rolled-up display.
+  // A foreign named location cannot be rescued by a US URL or a remote title.
+  if (!UNSPECIFIED_LOCATION_RE.test(lower)) return affirmativeUsLocation(lower);
+  if (!hint) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) return false;
+  } catch { return false; }
+  return affirmativeUsLocation(hint);
+}
+
 // Some providers report a rolled-up display string ("5 Locations", "2 Locations")
 // while the canonical URL still names the real primary location. Workday is the
 // common case: .../job/Hyderabad-Telangana-India/Network-Engineer_R-65193-1 shows
@@ -601,6 +656,7 @@ export function buildLocationFilter(locationFilter) {
   return (location, url, title) => {
     const lower = typeof location === 'string' ? location.trim().toLowerCase() : '';
     const hint = locationHintFromUrl(url);
+    if (locationFilter.require_us_evidence === true && !hasUsLocationEvidence(lower, hint, url)) return false;
     // Nothing to judge on either field → pass (don't penalize missing data),
     // unless the config opted into strict mode: a location-restricted sweep
     // against a provider that never returns a location would otherwise let
