@@ -54,6 +54,24 @@ test("unresolved filing entity stays unknown; no fabricated H1B evidence", () =>
     found:true, displayName:"Google LLC", friendlinessTier:"strong",
     totals:{n_lca:2000,last_year:2026},
   }).status,"possible_entity");
+  // The DOL index has a low-volume "Microsoft" record and a distinct legal
+  // "Microsoft Corporation" record. Avoid treating either search as the other.
+  const bareBrand = normalizeSponsorLookup("Microsoft",{
+    found:true,displayName:"Microsoft",friendlinessTier:"weak",
+    totals:{n_lca:0,last_year:2023},
+  });
+  assert.equal(bareBrand.status,"possible_entity");
+  assert.equal(bareBrand.tier,"unknown");
+  const explicitEntity = normalizeSponsorLookup("Microsoft Corporation",{
+    found:true,displayName:"Microsoft Corporation",friendlinessTier:"strong",
+    totals:{n_lca:100,last_year:2026},
+  });
+  assert.equal(explicitEntity.status,"matched");
+  assert.equal(explicitEntity.tier,"strong");
+  assert.equal(normalizeSponsorLookup("Microsoft Corporation",{
+    found:true,displayName:"Microsoft",friendlinessTier:"weak",
+    totals:{n_lca:0,last_year:2023},
+  }).status,"possible_entity");
   const exact = normalizeSponsorLookup("Fictional Tech",{
     found:true,displayName:"Fictional Tech LLC",friendlinessTier:"moderate",
     totals:{n_lca:42,n_certified:30,last_year:2026},source:"local-dol-index",
