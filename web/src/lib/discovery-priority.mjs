@@ -25,9 +25,10 @@ export function priorityReasons(offer, history = null, now = new Date()) {
 
   // History is a separate *company* signal. An unverified legal-entity match,
   // stale data, missing index, or Reddit anecdote must never add points.
-  if (history?.status === "matched" && history.lastYear >= now.getUTCFullYear() - 2) {
+  if (history?.status === "matched" && Number.isSafeInteger(history.lca) && history.lca > 0 &&
+      history.lastYear >= now.getUTCFullYear() - 2) {
     if (history.tier === "strong" || history.tier === "moderate")
-      add(4, "Recent DOL employer filing history; not proof of sponsorship for this role");
+      add(4, "DOL employer LCA history and recent overall activity; not proof of sponsorship for this role");
     else if (history.tier === "weak")
       add(1, "Some recent employer filing history; not role authorization");
   }
