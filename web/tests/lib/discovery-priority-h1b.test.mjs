@@ -49,6 +49,10 @@ test("unresolved filing entity stays unknown; no fabricated H1B evidence", () =>
     found:true,displayName:"AWS Security Assurances Services LLC",friendlinessTier:"strong",
     totals:{n_lca:800,last_year:2026},
   }).status,"possible_entity");
+  assert.equal(normalizeSponsorLookup("Google",{
+    found:true, displayName:"Google LLC", friendlinessTier:"strong",
+    totals:{n_lca:2000,last_year:2026},
+  }).status,"possible_entity");
   const exact = normalizeSponsorLookup("Fictional Tech",{
     found:true,displayName:"Fictional Tech LLC",friendlinessTier:"moderate",
     totals:{n_lca:42,n_certified:30,last_year:2026},source:"local-dol-index",
