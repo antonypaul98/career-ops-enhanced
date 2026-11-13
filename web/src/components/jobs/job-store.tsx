@@ -62,7 +62,7 @@ function parseVerdict(text: string): JobResult {
 export function JobsProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const seq = useRef(0);
-  const loaded = useRef(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const aborts = useRef(createJobAbortRegistry());
 
   // restore history
@@ -77,18 +77,21 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
-    loaded.current = true;
+    setHistoryLoaded(true);
   }, []);
 
   // persist
   useEffect(() => {
-    if (!loaded.current) return;
+    // Do not overwrite persisted worker history with the initial empty state.
+    // React runs mount effects with the initial render's jobs=[], before the
+    // restoration setJobs() above commits. A ref flips too early for this gate.
+    if (!historyLoaded) return;
     try {
       localStorage.setItem(JOBS_KEY, JSON.stringify(jobs.slice(0, 40)));
     } catch {
       /* quota */
     }
-  }, [jobs]);
+  }, [jobs, historyLoaded]);
 
   const patch = useCallback((id: string, fn: (j: Job) => Job) => {
     setJobs((js) => js.map((j) => (j.id === id ? fn(j) : j)));
