@@ -73,3 +73,65 @@ test("oferta only requires draft answers for scores at least 4.5", () => {
   const high = { ...low, score: 4.5, reportMarkdown: low.reportMarkdown.replace("score: 4", "score: 4.5") };
   assert.equal(parseEvaluationEnvelope(wrap(high)).ok, false);
 });
+
+const { reportMarkdown: ignoredReport, ...metadataOnly } = payload;
+const splitEnvelope = [
+  "narration before",
+  "<<evaluation-json>>",
+  JSON.stringify(metadataOnly),
+  "<<evaluation-report>>",
+  report.trimEnd(),
+  "<</evaluation-report>>",
+  "<</evaluation-json>>",
+  "narration after",
+].join("\n") + "\n";
+
+test("accepts short JSON metadata and raw, unescaped full Markdown", () => {
+  const result = parseEvaluationEnvelope(splitEnvelope, { expectedUrl: payload.postingUrl });
+  assert.equal(result.ok, true);
+  assert.equal(result.score, 4);
+  assert.equal(result.reportMarkdown, report.trimEnd());
+  assert.equal(result.machineSummary.company, "Acme");
+});
+
+test("split report handles literal quotes, fenced YAML, and raw newlines without JSON escaping", () => {
+  const complex = report.replace(
+    "Synthetic fixture description.",
+    'Synthetic fixture with "double quotes", backslash \\\\ and literal newlines.\n\n' +
+      '~~~json\n{"quote":"hello","actual":"raw"}\n~~~\n'
+  );
+  const raw = splitEnvelope.replace(report.trimEnd(), complex.trimEnd());
+  const parsed = parseEvaluationEnvelope(raw, { expectedUrl: payload.postingUrl });
+  assert.equal(parsed.ok, true);
+  assert.match(parsed.reportMarkdown, /"double quotes"/);
+  assert.match(parsed.reportMarkdown, /~~~json/);
+});
+
+test("split format fails closed on ambiguous markers, extra data, or invalid metadata", () => {
+  const cases = [
+    splitEnvelope.replace("<<evaluation-report>>", "<<evaluation-report>>\n<<evaluation-report>>"),
+    splitEnvelope.replace("<</evaluation-report>>", "<</evaluation-report>>\n<</evaluation-report>>"),
+    splitEnvelope.replace("<<evaluation-report>>", "<</evaluation-report>>\n<<evaluation-report>>"),
+    splitEnvelope.replace("<</evaluation-report>>", "<</evaluation-report>>\nINJECTED"),
+    splitEnvelope.replace(JSON.stringify(metadataOnly), '{"company":"Acme"\n"role":"Engineer"}'),
+    splitEnvelope.replace(JSON.stringify(metadataOnly), JSON.stringify({ ...metadataOnly, reportMarkdown: report })),
+    splitEnvelope.replace("## A — Fit", "## Other — Fit"),
+    splitEnvelope.replace("https://example.com/jobs/1", "https://example.com/jobs/attacker"),
+  ];
+  for (const raw of cases) {
+    const parsed = parseEvaluationEnvelope(raw, { expectedUrl: payload.postingUrl });
+    assert.equal(parsed.ok, false, parsed.error);
+  }
+});
+
+test("split report streaming filter hides complete Markdown even across character chunks", () => {
+  const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
+  let displayed = "";
+  for (const character of splitEnvelope) displayed += filter.push(character);
+  displayed += filter.flush();
+  assert.equal(filter.result().ok, true);
+  assert.ok(!displayed.includes("Synthetic fixture description"));
+  assert.ok(!displayed.includes("confidence: high"));
+  assert.ok(displayed.includes("narration before"));
+  assert.ok(displayed.includes("narration after"));
+});
