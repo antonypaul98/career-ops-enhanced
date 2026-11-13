@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createEvaluationEnvelopeFilter, parseEvaluationEnvelope } from "../../src/lib/evaluation-envelope.mjs";
+import { parseOpenCodeEvent } from "../../src/lib/run-cli-support.mjs";
 
 const report = "# Evaluation: Acme — Engineer\n\n**URL:** https://example.com/jobs/1\n\n## Machine Summary\n\n```yaml\ncompany: Acme\nrole: Engineer\nscore: 4\nfinal_decision: REVIEW\nconfidence: high\nwork_auth: confirmed\nrisk_summary: none\nscore_evidence: strong match\n```\n\n## A — Fit\nGood.\n## B — Requirements\nMet.\n## C — Evidence\nVerified.\n## D — Gaps\nNone.\n## E — Eligibility\nConfirmed.\n## F — Recommendation\nReview.\n## G — Posting Legitimacy\nVerified.\n## H — Draft Application Answers\nDraft only.\n## Risk Summary\nNone.\n## Score Evidence\nStrong match.\n## Keywords extracted\nNode.js\n## Keyword Coverage\nCovered.\n## Job Description\nSynthetic fixture description.\n";
 const payload = { company: "Acme", role: "Engineer", score: 4, note: "Synthetic fixture only", postingUrl: "https://example.com/jobs/1", reportMarkdown: report };
@@ -134,4 +135,21 @@ test("split report streaming filter hides complete Markdown even across characte
   assert.ok(!displayed.includes("confidence: high"));
   assert.ok(displayed.includes("narration before"));
   assert.ok(displayed.includes("narration after"));
+});
+
+
+test("OpenCode JSONL fragments reconstruct a complete sealed report byte-for-byte", () => {
+  const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
+  const fragments = splitEnvelope.match(/[\s\S]{1,13}/g) ?? [];
+  let visible = "";
+  for (const text of fragments) {
+    const event = parseOpenCodeEvent(JSON.stringify({ type: "text", part: { type: "text", text } }));
+    assert.ok(event?.text);
+    visible += filter.push(event.text);
+  }
+  visible += filter.flush();
+  const result = filter.result();
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.reportMarkdown, report.trimEnd());
+  assert.ok(!visible.includes("Synthetic fixture description"));
 });
