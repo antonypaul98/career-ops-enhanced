@@ -64,8 +64,9 @@ export function assertResolvedOpenCodeAgentReadOnly(value, options = {}) {
     const expected = allowed.has(key) ? "allow" : "deny";
     if (baseline < 0 || matching[baseline].action !== expected) throw new Error(`OpenCode resolved agent does not ${expected} ${key}; refusing to start.`);
     for (const r of matching.slice(baseline + 1)) {
-      // OpenCode adds its own read-only truncated-output directory. Permit only
-      // this run's isolated directory, never a user's home or an arbitrary path.
+      // OpenCode adds a narrow exception for its own truncated tool-output files.
+      // Accept only the precisely resolved XDG/HOME tool-output pattern; strict
+      // previews use a run-private XDG path. Never allow a whole home directory.
       if (key === "external_directory" && r.action === "allow" &&
           options.toolOutputPattern && r.pattern === options.toolOutputPattern) continue;
       if (!allowed.has(key) && r.action !== "deny") throw new Error(`OpenCode permission exception enables ${key}; refusing to start.`);
