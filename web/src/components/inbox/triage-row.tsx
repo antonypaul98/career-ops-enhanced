@@ -45,8 +45,9 @@ export function TriageRow({
   onSkip: () => void;
 }) {
   const ago = agoLabel(age);
-  // A failed evaluation is still unscored, but must link to its worker error.
-  const evaluated = !!scored && (scored.running || scored.failed || scored.score != null);
+  // Failed evaluations are not scores: show the failure link alongside
+  // Save/Skip so the user can shortlist the posting for a later retry.
+  const evaluated = !!scored && (scored.running || scored.score != null);
 
   return (
     <li
@@ -89,17 +90,23 @@ export function TriageRow({
               <Loader2 className="size-3.5 animate-spin text-brand" />
               <span className="text-brand max-sm:hidden">Scoring…</span>
             </>
-          ) : scored!.failed ? (
-            <>
-              <AlertCircle className="size-3.5 text-red-400" />
-              <span className="text-red-400">Failed · details</span>
-            </>
           ) : (
             <Badge tone={scored!.tone}>{scored!.score}/5</Badge>
           )}
         </Link>
       ) : (
         <div className="flex shrink-0 items-center gap-1">
+          {scored?.failed && (
+            <Link
+              href={`/jobs/${scored.jobId}`}
+              title="View failed scoring details"
+              aria-label="Failed evaluation — view details"
+              className="inline-flex shrink-0 items-center gap-1.5 text-xs text-red-400 hover:underline"
+            >
+              <AlertCircle className="size-3.5" />
+              <span className="max-sm:hidden">Failed · details</span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={onSave}
