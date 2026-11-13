@@ -11,7 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildPrompt, isShellSafeCompanyName } from "../../src/lib/run-prompts.mjs";
 const OPEN_MARK = "<<cv-proposal>>", CLOSE_MARK = "<</cv-proposal>>";
-import { EVALUATION_OPEN_MARK, EVALUATION_CLOSE_MARK } from "../../src/lib/evaluation-envelope.mjs";
+import { EVALUATION_OPEN_MARK, EVALUATION_CLOSE_MARK, EVALUATION_REPORT_OPEN_MARK, EVALUATION_REPORT_CLOSE_MARK } from "../../src/lib/evaluation-envelope.mjs";
 import { grantsWriteCapability, toolScopeFor } from "../../src/lib/claude-invocation.mjs";
 
 const ARGS = { input: "018", memory: "", today: "2026-08-04" };
@@ -80,6 +80,11 @@ test("buildPrompt: prose workers keep VERDICT and evaluation uses one sealed env
   const evaluate = buildPrompt({ kind: "evaluate", ...ARGS });
   assert.equal(evaluate.split(EVALUATION_OPEN_MARK).length - 1, 1);
   assert.equal(evaluate.split(EVALUATION_CLOSE_MARK).length - 1, 1);
+  assert.equal(evaluate.split(EVALUATION_REPORT_OPEN_MARK).length - 1, 1);
+  assert.equal(evaluate.split(EVALUATION_REPORT_CLOSE_MARK).length - 1, 1);
+  assert.match(evaluate, /SINGLE-LINE valid JSON object/);
+  assert.match(evaluate, /literal Markdown with ordinary line breaks/);
+  assert.doesNotMatch(evaluate, /JSON object with exactly these keys: company, role, score, note, postingUrl, and reportMarkdown/);
 });
 
 test("buildPrompt: an unknown kind falls through to the evaluate prompt", () => {
