@@ -69,3 +69,77 @@ test('quota observer is temporary and enabled only for structured dashboard runs
     stream.cleanup(); assert.equal(existsSync(new URL(plugins[0])),false);
   } finally {plain.cleanup();stream.cleanup();}
 });
+
+test("normal OpenCode workers preserve the XDG credential and state locations", () => {
+  const originalData = "/existing-user-xdg-data";
+  const originalState = "/existing-user-xdg-state";
+  const originalConfig = "/existing-user-global-config.jsonc";
+  const launch = prepareOpenCodeReadOnlyLaunch("/fake/opencode", {
+    env: { XDG_DATA_HOME: originalData, XDG_STATE_HOME: originalState, OPENCODE_CONFIG: originalConfig },
+    capabilities: CAPS.networkReadOnly,
+    spawnSyncFn(_bin, args, options) {
+      assert.deepEqual(args, ["debug", "agent", "career-ops-readonly"]);
+      assert.equal(options.env.XDG_DATA_HOME, originalData);
+      assert.equal(options.env.XDG_STATE_HOME, originalState);
+      const privateConfig = readOpenCodeConfigForTest(options.env.OPENCODE_CONFIG);
+      assert.equal(privateConfig.agent["career-ops-readonly"].permission.bash, "deny");
+      assert.equal(privateConfig.agent["career-ops-readonly"].permission.edit, "deny");
+      return { status: 0, stdout: JSON.stringify(privateConfig.agent["career-ops-readonly"]) };
+    },
+  });
+  try {
+    assert.equal(launch.env.XDG_DATA_HOME, originalData);
+    assert.equal(launch.env.XDG_STATE_HOME, originalState);
+    assert.notEqual(launch.env.OPENCODE_CONFIG, originalConfig, "per-run restrictions still override the user's config");
+  } finally {
+    launch.cleanup();
+  }
+});
+
+test("normal OpenCode runs retain the HOME-based credential fallback when XDG is unset", () => {
+  const launch = prepareOpenCodeReadOnlyLaunch("/fake/opencode", {
+    env: { XDG_DATA_HOME: undefined, XDG_STATE_HOME: undefined },
+    capabilities: CAPS.networkReadOnly,
+    spawnSyncFn(_bin, _args, options) {
+      const config = readOpenCodeConfigForTest(options.env.OPENCODE_CONFIG);
+      return { status: 0, stdout: JSON.stringify(config.agent["career-ops-readonly"]) };
+    },
+  });
+  try {
+    assert.equal(launch.env.XDG_DATA_HOME, undefined);
+    assert.equal(launch.env.XDG_STATE_HOME, undefined);
+  } finally {
+    launch.cleanup();
+  }
+});
+
+test("tool-free preview still isolates OpenCode OAuth data and state directories", () => {
+  const userData = "/existing-user-xdg-data";
+  const userState = "/existing-user-xdg-state";
+  const launch = prepareOpenCodeReadOnlyLaunch("/fake/opencode", {
+    env: { XDG_DATA_HOME: userData, XDG_STATE_HOME: userState },
+    capabilities: { writes: false, network: false, tools: false },
+    spawnSyncFn(_bin, args, options) {
+      const config = readOpenCodeConfigForTest(options.env.OPENCODE_CONFIG);
+      if (args[0] === "--version") return { status: 0, stdout: "1.19.4\n" };
+      if (args[1] === "agent") {
+        return { status: 0, stdout: JSON.stringify({
+          ...config.agent["career-ops-readonly"],
+          model: { providerID: "opencode", modelID: "glm-5.3-flash-free" },
+        }) };
+      }
+      if (args[1] === "config") return { status: 0, stdout: JSON.stringify(config) };
+      throw new Error("Unexpected preview verification command");
+    },
+  });
+  try {
+    assert.notEqual(launch.env.XDG_DATA_HOME, userData);
+    assert.notEqual(launch.env.XDG_STATE_HOME, userState);
+    assert.ok(launch.env.XDG_DATA_HOME.startsWith(launch.configPath.slice(0, -"/opencode.json".length)));
+    assert.equal(launch.env.OPENCODE_DISABLE_PROJECT_CONFIG, "1");
+    assert.equal(launch.env.OPENCODE_DISABLE_DEFAULT_PLUGINS, "1");
+    assert.equal(launch.env.CAREER_OPS_SINGLE_REQUEST, "1");
+  } finally {
+    launch.cleanup();
+  }
+});
