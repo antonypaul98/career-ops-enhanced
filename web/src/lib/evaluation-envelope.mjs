@@ -35,7 +35,7 @@ export const EVALUATION_ENVELOPE_INSTRUCTION =
   "Return exactly ONE sealed evaluation. Start with " + EVALUATION_OPEN_MARK + " alone on a line, " +
   "then a SINGLE-LINE valid JSON object containing EXACTLY these FIVE keys: company, role, score, note, postingUrl. " +
   "All string values must be valid JSON strings; score is a numeric 1-5 Global Score. " +
-  "note is one plain line of at most 240 characters and postingUrl is the exact input URL. " +
+  "note is one plain line of at most 240 characters; postingUrl must be the exact input URL. " +
   "Next put " + EVALUATION_REPORT_OPEN_MARK + " alone on a line; then output the COMPLETE modes/oferta.md report " +
   "as literal Markdown with ordinary line breaks, NOT as a quoted/JSON-escaped string. Include its exact Evaluation " +
   "header, Machine Summary, A-H blocks, Risk Summary, Score Evidence, Keywords sections, and archived JD. " +
@@ -194,6 +194,13 @@ export function parseEvaluationEnvelope(text, options = {}) {
     }
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       return { ok: false, error: "Evaluation metadata must be one JSON object." };
+    }
+    // Forbid an embedded reportMarkdown key or any extra metadata. Otherwise
+    // the spread below would silently overwrite a conflicting model claim.
+    const keys = Object.keys(value).sort();
+    const expected = ["company", "note", "postingUrl", "role", "score"];
+    if (JSON.stringify(keys) !== JSON.stringify(expected)) {
+      return { ok: false, error: "Evaluation metadata must have exactly five approved keys." };
     }
     const reportMarkdown = body.slice(reportBodyStart, reportEnd.index)
       .replace(/^\n/, "").replace(/\n$/, "");
