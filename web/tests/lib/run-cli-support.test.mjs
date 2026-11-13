@@ -620,8 +620,21 @@ test("OpenCode JSONL provider quota errors surface promptly without exposing raw
     } },
   });
   const ev = parseOpenCodeEvent(raw);
-  assert.match(ev.error, /free-model usage limit reached/);
-  assert.doesNotMatch(ev.error, /sk-PRIVATE|candidate credentials/);
+  assert.match(ev.error, /model\/provider rate or usage limit reached/);
+  assert.doesNotMatch(ev.error, /free-model|free-provider|sk-PRIVATE|candidate credentials/);
+});
+
+test("OpenCode distinguishes an explicit free-tier event from an unclassified 429", () => {
+  const free = parseOpenCodeEvent(JSON.stringify({ type: "error", error: {
+    name: "FreeUsageLimitError", data: { message: "Free usage limit reached", statusCode: 429 },
+  } }));
+  assert.match(free.error, /free-provider allowance reached/);
+
+  const chatgpt = parseOpenCodeEvent(JSON.stringify({ type: "error", error: {
+    name: "APIError", data: { statusCode: 429, message: "You have reached your usage limit" },
+  } }));
+  assert.match(chatgpt.error, /model\/provider rate or usage limit reached/);
+  assert.doesNotMatch(chatgpt.error, /free-provider/);
 });
 
 test("OpenCode JSONL distinguishes authentication failures and generic errors", () => {

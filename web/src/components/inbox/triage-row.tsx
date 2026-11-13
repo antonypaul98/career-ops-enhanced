@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark, BookmarkCheck, Loader2, X } from "lucide-react";
+import { AlertCircle, Bookmark, BookmarkCheck, Loader2, X } from "lucide-react";
 import type { InboxJob } from "@/lib/career-ops";
 import type { AtsSource } from "@/lib/explore";
 import { ATS_LABEL } from "@/lib/explore";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CompanyLogo } from "@/components/company-logo";
 import { cn } from "@/lib/cn";
 
-export type RowScore = { score: number | null; tone: "good" | "warn" | "bad" | "muted"; jobId: string; running: boolean };
+export type RowScore = { score: number | null; tone: "good" | "warn" | "bad" | "muted"; jobId: string; running: boolean; failed: boolean };
 
 function agoLabel(age: number | null): string | null {
   if (age == null) return null;
@@ -45,7 +45,8 @@ export function TriageRow({
   onSkip: () => void;
 }) {
   const ago = agoLabel(age);
-  const evaluated = !!scored && (scored.running || scored.score != null);
+  // A failed evaluation is still unscored, but must link to its worker error.
+  const evaluated = !!scored && (scored.running || scored.failed || scored.score != null);
 
   return (
     <li
@@ -76,7 +77,7 @@ export function TriageRow({
           {source && <span className="rounded bg-surface-hover px-1 py-px font-medium text-muted">{ATS_LABEL[source]}</span>}
           {ago && <span>{ago}</span>}
           {/* 🔴 CRUDA: honest "not scored" — no fabricated match%. */}
-          {!evaluated && <span className="italic text-muted">not scored</span>}
+          {!scored?.running && scored?.score == null && <span className="italic text-muted">not scored</span>}
         </p>
       </div>
 
@@ -87,6 +88,11 @@ export function TriageRow({
             <>
               <Loader2 className="size-3.5 animate-spin text-brand" />
               <span className="text-brand max-sm:hidden">Scoring…</span>
+            </>
+          ) : scored!.failed ? (
+            <>
+              <AlertCircle className="size-3.5 text-red-400" />
+              <span className="text-red-400">Failed · details</span>
             </>
           ) : (
             <Badge tone={scored!.tone}>{scored!.score}/5</Badge>
