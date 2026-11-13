@@ -1,5 +1,5 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -142,8 +142,12 @@ export function prepareOpenCodeReadOnlyLaunch(binPath, options = {}) {
     throw new Error("OpenCode permission verification returned an unrecognized response; refusing to start.");
   }
   try {
+    // OpenCode resolves its tool-output location from XDG_DATA_HOME, otherwise
+    // from HOME/.local/share. Match that *exact* directory in the resolved
+    // permission exception; never broaden external_directory access.
+    const openCodeDataHome = env.XDG_DATA_HOME || path.join(env.HOME || homedir(), ".local", "share");
     assertResolvedOpenCodeAgentReadOnly(resolved, { capabilities: options.capabilities,
-      toolOutputPattern: path.join(env.XDG_DATA_HOME, "opencode", "tool-output", "*") });
+      toolOutputPattern: path.join(openCodeDataHome, "opencode", "tool-output", "*") });
     if (strict) {
       const model = resolved.model;
       if (model?.providerID !== "opencode" || model?.modelID !== "glm-5.3-flash-free")
