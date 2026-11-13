@@ -8,6 +8,13 @@ import * as yaml from "js-yaml";
 
 export const EVALUATION_OPEN_MARK = "<<evaluation-json>>";
 export const EVALUATION_CLOSE_MARK = "<</evaluation-json>>";
+// Version 2: separate short JSON metadata from raw Markdown. A complete A-H
+// report contains literal newlines, quotes and fenced YAML, which are brittle
+// inside a model-authored JSON string. Legacy single-object JSON remains valid.
+export const EVALUATION_REPORT_OPEN_MARK = "<<evaluation-report>>";
+export const EVALUATION_REPORT_CLOSE_MARK = "<</evaluation-report>>";
+const REPORT_OPEN_RE = /^<<evaluation-report>>[ \t]*$/gm;
+const REPORT_CLOSE_RE = /^<<\/evaluation-report>>[ \t]*$/gm;
 
 const OPEN_RE = /^<<evaluation-json>>[ 	]*$/gm;
 const CLOSE_RE = /^<<\/evaluation-json>>[ 	]*$/m;
@@ -25,12 +32,16 @@ const SAFE_CELL = /^[^\t\r\n]+$/;
 
 export const EVALUATION_ENVELOPE_INSTRUCTION =
   "Do NOT save or edit files, run shell commands, submit applications, or contact anyone. " +
-  "Return the completed evaluation inside exactly one JSON envelope. Put " + EVALUATION_OPEN_MARK + " alone on a line, " +
-  "then one JSON object with exactly these keys: company, role, score, note, postingUrl, and reportMarkdown; " +
-  "then put " + EVALUATION_CLOSE_MARK + " alone on a line. score is the numeric 1-5 Global Score. " +
-  "note is one plain line of at most 240 characters. postingUrl must be the exact input URL. " +
-  "reportMarkdown is the complete modes/oferta.md report, including the exact header, Machine Summary, A-H blocks, " +
-  "Risk Summary, Score Evidence, Keywords sections, and archived JD. Emit no second envelope and no abbreviated report. " +
+  "Return exactly ONE sealed evaluation. Start with " + EVALUATION_OPEN_MARK + " alone on a line, " +
+  "then a SINGLE-LINE valid JSON object containing EXACTLY these FIVE keys: company, role, score, note, postingUrl. " +
+  "All string values must be valid JSON strings; score is a numeric 1-5 Global Score. " +
+  "note is one plain line of at most 240 characters; postingUrl must be the exact input URL. " +
+  "Next put " + EVALUATION_REPORT_OPEN_MARK + " alone on a line; then output the COMPLETE modes/oferta.md report " +
+  "as literal Markdown with ordinary line breaks, NOT as a quoted/JSON-escaped string. Include its exact Evaluation " +
+  "header, Machine Summary, A-H blocks, Risk Summary, Score Evidence, Keywords sections, and archived JD. " +
+  "End the raw Markdown with " + EVALUATION_REPORT_CLOSE_MARK + " alone on a line and finally " +
+  EVALUATION_CLOSE_MARK + " alone on a line. Never repeat any marker or use them as report text. " +
+  "Do not wrap the JSON object or Markdown in extra code fences. Emit no second envelope or abbreviated report. " +
   "If the JD is blocked, incomplete, behind login/consent/CAPTCHA, or requires candidate confirmation, emit NO envelope; " +
   "explain the pause instead. The trusted backend reserves the report number, writes the report and tracker addition, " +
   "and runs merge-tracker.mjs only after this envelope passes validation.";
@@ -157,11 +168,50 @@ export function parseEvaluationEnvelope(text, options = {}) {
   if (!closer) return { ok: false, error: "The evaluation envelope was never closed." };
   const body = after.slice(0, closer.index).replace(/^\n/, "").replace(/\n$/, "");
   if ([...after.matchAll(CLOSE_ALL_RE)].length !== 1) return { ok: false, error: "Found multiple evaluation envelope closers." };
+  // Prefer a short, safely parseable metadata object plus raw Markdown. Never
+  // attempt to "repair" malformed JSON or infer report boundaries: ambiguity
+  // must stop persistence, not fabricate an evaluation result.
+  const reportOpeners = [...body.matchAll(REPORT_OPEN_RE)];
+  const reportClosers = [...body.matchAll(REPORT_CLOSE_RE)];
+  if (reportOpeners.length || reportClosers.length) {
+    if (reportOpeners.length !== 1 || reportClosers.length !== 1) {
+      return { ok: false, error: "Evaluation report must have exactly one opening and closing marker." };
+    }
+    const reportStart = reportOpeners[0];
+    const reportEnd = reportClosers[0];
+    if (reportEnd.index <= reportStart.index) {
+      return { ok: false, error: "Evaluation report markers are out of order." };
+    }
+    const reportBodyStart = reportStart.index + reportStart[0].length;
+    const metadata = body.slice(0, reportStart.index).trim();
+    const trailing = body.slice(reportEnd.index + reportEnd[0].length).trim();
+    if (trailing) return { ok: false, error: "Unexpected text after the evaluation report." };
+    let value;
+    try {
+      value = JSON.parse(metadata);
+    } catch {
+      return { ok: false, error: "Evaluation metadata JSON is invalid; nothing was persisted." };
+    }
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return { ok: false, error: "Evaluation metadata must be one JSON object." };
+    }
+    // Forbid an embedded reportMarkdown key or any extra metadata. Otherwise
+    // the spread below would silently overwrite a conflicting model claim.
+    const keys = Object.keys(value).sort();
+    const expected = ["company", "note", "postingUrl", "role", "score"];
+    if (JSON.stringify(keys) !== JSON.stringify(expected)) {
+      return { ok: false, error: "Evaluation metadata must have exactly five approved keys." };
+    }
+    const reportMarkdown = body.slice(reportBodyStart, reportEnd.index)
+      .replace(/^\n/, "").replace(/\n$/, "");
+    return validateEvaluationPayload({ ...value, reportMarkdown }, options);
+  }
+  // Support existing one-object envelopes generated before the split format.
   let value;
   try {
     value = JSON.parse(body);
-  } catch (error) {
-    return { ok: false, error: "Evaluation envelope JSON is invalid: " + error.message };
+  } catch {
+    return { ok: false, error: "Evaluation envelope JSON is invalid; nothing was persisted." };
   }
   return validateEvaluationPayload(value, options);
 }

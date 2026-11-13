@@ -331,8 +331,11 @@ export function parseOpenCodeEvent(line) {
     if (!part || part.type !== "text" || typeof part.text !== "string" || !part.text) return null;
     // Never forward synthetic continuation prompts or compaction summaries.
     if (part.synthetic === true || part.metadata?.compaction_continue === true || part.metadata?.compaction === true) return null;
-    const value = part.text;
-    return { text: value.endsWith("\n") ? value : value + "\n" };
+    // Preserve OpenCode text bytes exactly. These events can be segments of a
+    // sealed JSON/Markdown envelope; injecting a newline between segments
+    // corrupts JSON strings and breaks marker recognition at arbitrary chunks.
+    // UI clients can style text, but transport must never invent delimiters.
+    return { text: part.text };
   }
 
   if (event.type === "tool_use") {

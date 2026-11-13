@@ -650,7 +650,10 @@ test("OpenCode JSONL distinguishes authentication failures and generic errors", 
 
 test("OpenCode JSONL emits completed text but no synthetic, reasoning or tool payload", () => {
   const textPart = { type: "text", part: { type: "text", text: "VERDICT: ready" } };
-  assert.deepEqual(parseOpenCodeEvent(JSON.stringify(textPart)), { text: "VERDICT: ready\n" });
+  assert.deepEqual(parseOpenCodeEvent(JSON.stringify(textPart)), { text: "VERDICT: ready" });
+  // No synthetic newline may be inserted between structured JSONL fragments.
+  const chunks = ["{\"company\":\"Ac", "me\"}"];
+  assert.equal(chunks.map(text => parseOpenCodeEvent(JSON.stringify({ type: "text", part: { type: "text", text } })).text).join(""), '{"company":"Acme"}');
   assert.equal(parseOpenCodeEvent(JSON.stringify({ type: "text",
     part: { type: "text", text: "internal", synthetic: true },
   })), null);
