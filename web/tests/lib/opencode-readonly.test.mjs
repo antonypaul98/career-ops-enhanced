@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
 import { assertResolvedOpenCodeAgentReadOnly, prepareOpenCodeReadOnlyLaunch, readOpenCodeConfigForTest } from "../../src/lib/opencode-readonly.mjs";
 import { fenceOpenCodeArgs } from "../../src/lib/opencode-fencing.mjs";
 import { CAPS } from "../../src/lib/worker-capabilities.mjs";
@@ -102,7 +104,13 @@ test("normal OpenCode runs retain the HOME-based credential fallback when XDG is
     capabilities: CAPS.networkReadOnly,
     spawnSyncFn(_bin, _args, options) {
       const config = readOpenCodeConfigForTest(options.env.OPENCODE_CONFIG);
-      return { status: 0, stdout: JSON.stringify(config.agent["career-ops-readonly"]) };
+      const agent = config.agent["career-ops-readonly"];
+      const toolOutputPattern = path.join(options.env.HOME || homedir(), ".local", "share", "opencode", "tool-output", "*");
+      // OpenCode can add this narrow allowance to its resolved rule list.
+      // It must be accepted even when XDG_DATA_HOME is not set.
+      const rules = Object.entries(agent.permission).map(([permission, action]) => ({ permission, action, pattern: "*" }));
+      rules.push({ permission: "external_directory", action: "allow", pattern: toolOutputPattern });
+      return { status: 0, stdout: JSON.stringify({ ...agent, permission: rules }) };
     },
   });
   try {
