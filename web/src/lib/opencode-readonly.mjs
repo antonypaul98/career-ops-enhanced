@@ -104,8 +104,12 @@ export function prepareOpenCodeReadOnlyLaunch(binPath, options = {}) {
     .filter(key => typeof inherited[key] === "string").map(key => [key, inherited[key]])) : inherited;
   const cwd = strict ? path.join(dir, "workspace") : options.cwd;
   if (strict) mkdirSync(cwd, { mode: 0o700 });
+  // Regular workers must retain OpenCode's existing data/state locations: OAuth
+  // credentials are resolved through XDG_DATA_HOME (or its normal HOME default).
+  // Isolating those paths breaks signed-in CLI runs, despite a successful probe.
+  // Only the credential-free, tool-free preview uses private XDG directories.
   const env = { ...base, OPENCODE_CONFIG: configPath, PWD: String(cwd ?? process.cwd()),
-    XDG_DATA_HOME: path.join(dir, "data"), XDG_STATE_HOME: path.join(dir, "state") };
+    ...(strict ? { XDG_DATA_HOME: path.join(dir, "data"), XDG_STATE_HOME: path.join(dir, "state") } : {}) };
   if (strict) Object.assign(env, { XDG_CONFIG_HOME: path.join(dir, "config"), XDG_CACHE_HOME: path.join(dir, "cache"),
     OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_DISABLE_PROJECT_CONFIG: "1",
     OPENCODE_DISABLE_DEFAULT_PLUGINS: "1", OPENCODE_DISABLE_EXTERNAL_SKILLS: "1",
