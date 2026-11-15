@@ -37,8 +37,8 @@ export async function readJobStream(stream, onProgress) {
       const verifiedEvaluation = evaluation && typeof evaluation === "object" &&
         Number.isFinite(evaluation.score) && evaluation.score >= 1 && evaluation.score <= 5 &&
         typeof evaluation.note === "string" && evaluation.note.length > 0 && evaluation.note.length <= 240 &&
-        evaluation.note.trim() === evaluation.note && !/[\\r\\n\\t]/.test(evaluation.note) &&
-        typeof evaluation.reportNum === "string" && /^\\d{3,}$/.test(evaluation.reportNum)
+        evaluation.note.trim() === evaluation.note && !/[\r\n\t]/.test(evaluation.note) &&
+        typeof evaluation.reportNum === "string" && /^\d{3,}$/.test(evaluation.reportNum)
         ? { score: evaluation.score, note: evaluation.note, reportNum: evaluation.reportNum }
         : undefined;
       return {
