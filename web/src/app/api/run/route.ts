@@ -579,7 +579,7 @@ export async function POST(req: Request) {
           send({ type: "error", msg: `This run hit an error before finishing, so it isn't recorded as a confident result — re-run it to verify.${detail}`.slice(0, 200) });
         } else if (kind === "evaluate") {
           const envelope = evaluationFilter?.result();
-          if (!envelope?.ok) {
+          if (!envelope?.ok || !("score" in envelope) || !("note" in envelope)) {
             const envelopeError =
               envelope && "error" in envelope && typeof envelope.error === "string"
                 ? envelope.error
