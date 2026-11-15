@@ -597,7 +597,12 @@ export async function POST(req: Request) {
                   signal: runAbort.signal,
                 });
                 send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
-                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
+                // The report body is intentionally hidden from the browser log.
+                // Carry only validated score metadata on the trusted completion
+                // event, AFTER persistence succeeds. Otherwise Job History has
+                // no VERDICT text to read and quietly records a null score.
+                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd,
+                  evaluation: { score: envelope.score, note: envelope.note, reportNum: saved.num } });
               } catch (error) {
                 send({ type: "error", msg: `Report was not recorded: ${error instanceof Error ? error.message : String(error)}`.slice(0, 200) });
               }
