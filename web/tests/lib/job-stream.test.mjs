@@ -117,3 +117,39 @@ test("confirmed success does not wait on or fail with the transport after done",
   assert.deepEqual(result, { status: "done", tokens: 42 });
   assert.equal(cancelled, 1);
 });
+
+
+test("a persisted evaluation receipt carries the exact confirmed score into the worker", async () => {
+  const { result } = await read([
+    record({ type: "status", label: "Saved report 018 and merged tracker" }),
+    record({ type: "done", tokens: 400, evaluation: {
+      score: 2.5, note: "Six years required; candidate experience gap", reportNum: "018",
+    } }),
+  ]);
+  assert.deepEqual(result, { status: "done", tokens: 400, evaluation: {
+    score: 2.5, note: "Six years required; candidate experience gap", reportNum: "018",
+  } });
+});
+
+test("an invalid or forged completion receipt is never treated as a confirmed score", async () => {
+  const invalid = [
+    { score: 0, note: "Synthetic", reportNum: "001" },
+    { score: 6, note: "Synthetic", reportNum: "001" },
+    { score: "4", note: "Synthetic", reportNum: "001" },
+    { score: 4, note: "Line one\nLine two", reportNum: "001" },
+    { score: 4, note: "Synthetic", reportNum: "../cv.md" },
+    { score: 4, note: "Synthetic", reportNum: "1" },
+  ];
+  for (const evaluation of invalid) {
+    const { result } = await read([record({ type: "done", evaluation })]);
+    assert.deepEqual(result, { status: "done" }, JSON.stringify(evaluation));
+  }
+});
+
+test("a failed evaluation cannot be converted into a score by a later done receipt", async () => {
+  const { result } = await read([
+    record({ type: "error", msg: "Envelope validation failed" }),
+    record({ type: "done", evaluation: { score: 4, note: "Synthetic", reportNum: "018" } }),
+  ]);
+  assert.deepEqual(result, { status: "error", message: "Envelope validation failed" });
+});
