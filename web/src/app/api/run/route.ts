@@ -24,6 +24,7 @@ import { claudeCliArgs } from "@/lib/claude-invocation.mjs";
 import { resolveCvTemplate } from "@/lib/core/cv-template.mjs";
 import { acquireTrackerWrite, releaseTrackerWrite } from "@/lib/core/run-registry";
 import { createRunFinalizer } from "@/lib/run-finalizer.mjs";
+import { acquireEvaluation } from "@/lib/evaluation-inflight.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -177,6 +178,17 @@ export async function POST(req: Request) {
   // envelope-parsing routes rely on.
   const args = isClaude ? claudeCliArgs({ kind, prompt }) : (spec.streamArgs ?? spec.args)(prompt);
 
+  // Fail before launching a model when another request for this exact posting
+  // is still running in this web process. This guard is separate from the
+  // tracker-write registry, which tracks writes but permits concurrent workers.
+  const releaseEvaluation = kind === "evaluate" ? acquireEvaluation(input) : null;
+  if (kind === "evaluate" && !releaseEvaluation) {
+    return Response.json({ error: typeof input === "string"
+      ? "This posting is already being evaluated. Open Workers instead of scoring it again."
+      : "Evaluation requires a posting URL string." },
+      { status: typeof input === "string" ? 409 : 400 });
+  }
+
   // Evaluation workers are read-only; the backend persists only after validating their sealed envelope.
   const writeToken = kind === "evaluate" || kind === "pdf" ? acquireTrackerWrite() : null;
 
@@ -203,6 +215,7 @@ export async function POST(req: Request) {
     // of the process and acquireTrackerWrite blocks every later evaluate/pdf run:
     // a refused argv would take the tracker down with it.
     if (writeToken !== null) releaseTrackerWrite(writeToken);
+    releaseEvaluation?.();
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "failed to start the CLI" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
@@ -240,6 +253,7 @@ export async function POST(req: Request) {
   // actually closes and any render/mark work has finished.
   const finishRun = createRunFinalizer(child, () => {
     if (writeToken !== null) releaseTrackerWrite(writeToken);
+    releaseEvaluation?.();
   });
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
