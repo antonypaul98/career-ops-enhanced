@@ -20,6 +20,23 @@ test("the same posting cannot launch two concurrent evaluation workers", () => {
   otherRelease();
 });
 
+test("whitespace and anchor fragments cannot evade same-posting duplicate detection", () => {
+  const base = "https://example.com/jobs/synthetic-003";
+  const release = acquireEvaluation("  " + base + "#details  ");
+  assert.equal(typeof release, "function");
+  assert.equal(acquireEvaluation(base), null, "same server URL without fragment must collide");
+  assert.equal(acquireEvaluation(base + "#requirements"), null, "fragment changes must collide");
+  assert.equal(acquireEvaluation("\t" + base + "\n"), null, "surrounding whitespace must collide");
+  const separateQuery = acquireEvaluation(base + "?application=other");
+  assert.equal(typeof separateQuery, "function", "distinct query parameters remain distinct");
+  release();
+  release();
+  const retry = acquireEvaluation(base + "#details");
+  assert.equal(typeof retry, "function", "releasing a normalized key permits retry");
+  retry();
+  separateQuery();
+});
+
 test("invalid posting identifiers cannot acquire an in-flight evaluation", () => {
   for (const value of ["", "   ", null, undefined, {}, 7]) {
     assert.equal(acquireEvaluation(value), null);
