@@ -229,7 +229,11 @@ export function createEvaluationEnvelopeFilter(options = {}) {
     push(chunk) {
       const text = String(chunk ?? "");
       raw += text;
-      pending += text.replace(/\r\n/g, "\n");
+      // Normalize after appending so a CRLF split across adjacent transport
+      // chunks is still recognized. Per-chunk normalization can miss the opening
+      // seal and expose the private evaluation body to browser logs.
+      pending += text;
+      pending = pending.replace(/\r\n/g, "\n");
       let display = "";
       for (;;) {
         if (!inBody) {

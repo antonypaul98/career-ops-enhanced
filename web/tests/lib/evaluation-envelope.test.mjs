@@ -153,3 +153,30 @@ test("OpenCode JSONL fragments reconstruct a complete sealed report byte-for-byt
   assert.equal(result.reportMarkdown, report.trimEnd());
   assert.ok(!visible.includes("Synthetic fixture description"));
 });
+
+
+test("stream filter keeps CRLF-sealed reports private when chunk boundaries split every CRLF", () => {
+  const crlfEnvelope = splitEnvelope.replaceAll("\n", "\r\n");
+  const chunks = [];
+  let start = 0;
+  for (let index = 0; index < crlfEnvelope.length - 1; index++) {
+    if (crlfEnvelope[index] === "\r" && crlfEnvelope[index + 1] === "\n") {
+      chunks.push(crlfEnvelope.slice(start, index + 1));
+      start = index + 1;
+    }
+  }
+  chunks.push(crlfEnvelope.slice(start));
+  assert.ok(chunks.length > 10);
+
+  const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
+  let visible = "";
+  for (const chunk of chunks) visible += filter.push(chunk);
+  visible += filter.flush();
+
+  const result = filter.result();
+  assert.equal(result.ok, true, result.error);
+  assert.ok(!visible.includes("Synthetic fixture description"));
+  assert.ok(!visible.includes("confidence: high"));
+  assert.ok(visible.includes("narration before"));
+  assert.ok(visible.includes("narration after"));
+});
