@@ -11,13 +11,17 @@ const active = new Set();
  *  @returns {(() => void) | null} null if this URL is already evaluating.
  */
 export function acquireEvaluation(url) {
-  if (typeof url !== "string" || !url.trim()) return null;
-  if (active.has(url)) return null;
-  active.add(url);
+  if (typeof url !== "string") return null;
+  // Whitespace and URL fragments do not change the server-side job posting.
+  // Keep queries intact: a query parameter may identify a different application.
+  const key = url.trim().split("#", 1)[0];
+  if (!key) return null;
+  if (active.has(key)) return null;
+  active.add(key);
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    active.delete(url);
+    active.delete(key);
   };
 }
