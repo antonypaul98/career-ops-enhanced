@@ -251,6 +251,8 @@ export function ExplorerView({
           {phase === "degraded" && (
             <DegradedCard
               onRetry={() => void discover()}
+              onRefine={() => setRefineOpen(true)}
+              strictEvidence={filters.requireSponsorship || filters.noClearance}
               companiesScanned={companiesScanned}
               companiesAvailable={companiesAvailable}
               capHit={capHit}
@@ -303,6 +305,8 @@ function EmptyState({ tone, title, body, note, onRerun, rerunLabel }: { tone: "g
 
 function DegradedCard({
   onRetry,
+  onRefine,
+  strictEvidence,
   companiesScanned,
   companiesAvailable,
   capHit,
@@ -310,6 +314,8 @@ function DegradedCard({
   partial,
 }: {
   onRetry: () => void;
+  onRefine: () => void;
+  strictEvidence: boolean;
   companiesScanned: number;
   companiesAvailable: number;
   capHit: boolean;
@@ -324,7 +330,7 @@ function DegradedCard({
     "The public ATS directories didn’t respond — usually a transient network hiccup or rate-limit, so nothing could be searched. This isn’t “all caught up”; a retry in a moment usually clears it.";
   if (companiesScanned > 0 && capHit) {
     title = "No matches in the slice we searched.";
-    body = `The scan is capped, so it only searched ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} companies — not the whole network. Raise scan depth (Refine search) or narrow your roles, then re-cast to look deeper.`;
+    body = `The scan is capped, so it only searched ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} companies — not the whole network. ${strictEvidence ? "Strict sponsorship or clearance evidence filters can also exclude jobs with unknown status. " : ""}Use Refine search to adjust eligibility filters, scan depth, or roles before trying again.`;
   } else if (companiesScanned > 0 && droppedNoDate > 0) {
     title = "Fresh-looking roles were skipped for missing dates.";
     body = `${droppedNoDate.toLocaleString()} posting${droppedNoDate === 1 ? "" : "s"} matched but had no clear publish date, so the freshness filter dropped them. Widening the time window often brings dated equivalents back.`;
@@ -337,8 +343,8 @@ function DegradedCard({
       <AlertTriangle className="mx-auto size-6 text-amber-500" />
       <p className="mt-2 text-sm font-medium text-foreground">{title}</p>
       <p className="mx-auto mt-1 max-w-md text-[13px] text-muted">{body}</p>
-      <button onClick={onRetry} className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-brand-soft px-3 py-1.5 text-sm font-medium text-brand">
-        <RotateCcw className="size-4" /> Retry the scan
+      <button onClick={capHit ? onRefine : onRetry} className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-brand-soft px-3 py-1.5 text-sm font-medium text-brand">
+        <RotateCcw className="size-4" /> {capHit ? "Refine search before retrying" : "Retry the scan"}
       </button>
     </div>
   );
