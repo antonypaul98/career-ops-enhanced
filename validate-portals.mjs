@@ -277,6 +277,9 @@ export async function validatePortalsConfig(config, { providerIds = new Set() } 
       if (config.location_filter.strict !== undefined && typeof config.location_filter.strict !== 'boolean') {
         add(errors, 'location_filter.strict', 'must be a boolean when set');
       }
+      if (config.location_filter.require_us_evidence !== undefined && typeof config.location_filter.require_us_evidence !== 'boolean') {
+        add(errors, 'location_filter.require_us_evidence', 'must be a boolean when set');
+      }
     }
   }
 
