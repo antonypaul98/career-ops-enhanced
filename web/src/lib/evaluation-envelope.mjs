@@ -249,7 +249,9 @@ export function createEvaluationEnvelopeFilter(options = {}) {
           inBody = true;
           continue;
         }
-        const match = /^<<\/evaluation-json>>[ 	]*\n?/m.exec(pending);
+        // Unseal only on a complete closer line. An optional newline matched
+        // a same-line suffix and exposed private output before validation failed.
+        const match = /^<<\/evaluation-json>>[ 	]*\n/m.exec(pending);
         if (!match) {
           const cut = pending.lastIndexOf("\n") + 1;
           if (cut > 0) pending = pending.slice(cut);
