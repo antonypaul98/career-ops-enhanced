@@ -180,3 +180,22 @@ test("stream filter keeps CRLF-sealed reports private when chunk boundaries spli
   assert.ok(visible.includes("narration before"));
   assert.ok(visible.includes("narration after"));
 });
+
+test("stream filter never reveals same-line data after a malformed closing seal", () => {
+  // A closer must be a complete line. Previously the optional newline let
+  // "<</evaluation-json>>PRIVATE" unseal the stream before validation failed.
+  const malformed = splitEnvelope.replace(
+    "<</evaluation-json>>\n",
+    "<</evaluation-json>>PRIVATE_REPORT_SUFFIX\n",
+  );
+  const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
+  let visible = "";
+  for (const chunk of malformed.match(/[\s\S]{1,11}/g) ?? []) {
+    visible += filter.push(chunk);
+  }
+  visible += filter.flush();
+  assert.equal(filter.result().ok, false, "malformed closer must fail validation");
+  assert.ok(!visible.includes("PRIVATE_REPORT_SUFFIX"), "private suffix must stay sealed");
+  assert.ok(!visible.includes("Synthetic fixture description"), "report body must stay sealed");
+  assert.ok(visible.includes("narration before"));
+});
