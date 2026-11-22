@@ -3,6 +3,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { createProcessTreeStopper } from "./process-tree.mjs";
 import { assertNotEvaluationOnly } from './evaluation-only-boundary.mjs';
+import { assertEvaluationSourcesCurrent } from "./evaluation-source-snapshot.mjs";
 
 const HEADER = "num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport\tnotes\turl";
 
@@ -23,7 +24,7 @@ function safeCell(value, label) {
   return text;
 }
 
-async function writeExclusiveAtomic(finalPath, data, fsOps = {}) {
+async function writeExclusiveAtomic(finalPath, data, fsOps = {}, beforePublish) {
   const mkdirFn = fsOps.mkdir ?? mkdir;
   const openFn = fsOps.open ?? open;
   const linkFn = fsOps.link ?? link;
@@ -38,6 +39,9 @@ async function writeExclusiveAtomic(finalPath, data, fsOps = {}) {
     } finally {
       await handle.close();
     }
+    // File creation/sync can yield while candidate facts change. Validate at
+    // the final publication boundary too, before a canonical path is visible.
+    beforePublish?.();
     await linkFn(temporary, finalPath);
   } finally {
     // A write/sync/close/link failure must never strand a temp file. The final
@@ -110,7 +114,7 @@ async function reserve(root, options) {
  * Persist one already-validated evaluation. The trusted backend determines every
  * path; no model-supplied path or report number crosses this boundary.
  */
-export async function persistEvaluation({ root, payload, today, postedAt, signal }, options = {}) {
+export async function persistEvaluation({ root, payload, today, postedAt, signal, sourceSnapshot }, options = {}) {
   assertNotEvaluationOnly(payload);
   if (signal?.aborted) throw abortError("Evaluation persistence cancelled before validation.");
 
@@ -128,6 +132,13 @@ export async function persistEvaluation({ root, payload, today, postedAt, signal
   if (!reportMarkdown.trim()) throw new Error("Report markdown must be non-empty.");
   const slug = slugify(company);
 
+  const assertCurrent = () => {
+    if (signal?.aborted) throw abortError("Evaluation persistence was cancelled.");
+    if (sourceSnapshot) assertEvaluationSourcesCurrent(sourceSnapshot, { signal });
+  };
+  // /api/run supplies the snapshot captured before prompt construction. Keep
+  // the helper usable by existing already-validated offline callers as well.
+  assertCurrent();
   const reservation = await reserve(root, { ...options, signal });
   try {
     const num = String(reservation.num);
@@ -145,27 +156,35 @@ export async function persistEvaluation({ root, payload, today, postedAt, signal
     let reportWritten = false;
     let additionWritten = false;
     try {
+      // Reservation can wait on another process. Revalidate after that await,
+      // immediately before creating any report or tracker-addition artifact.
+      assertCurrent();
       await writeExclusiveAtomic(
         reportPath,
         reportMarkdown.endsWith("\n") ? reportMarkdown : reportMarkdown + "\n",
         options.fsOps,
+        assertCurrent,
       );
       reportWritten = true;
-      await writeExclusiveAtomic(additionPath, HEADER + "\n" + row + "\n", options.fsOps);
+      await writeExclusiveAtomic(additionPath, HEADER + "\n" + row + "\n", options.fsOps, assertCurrent);
       additionWritten = true;
 
       // The hook exists only to make the cancellation boundary deterministic in
       // tests. Re-check afterwards so cancellation can never start a merge.
       await options.beforeMergeFn?.({ root, signal });
       if (signal?.aborted) throw abortError("Evaluation persistence cancelled before tracker merge.");
+      assertCurrent();
       const merged = options.mergeFn
         ? await options.mergeFn({ root, signal })
         : await runScript(root, [path.join(root, "merge-tracker.mjs")], { ...options, signal });
       return { num, reportRelative, additionPath, merged };
     } catch (error) {
-      // Before an addition exists there is nothing resumable, so remove the
-      // newly-created report. Once both exist, retain both for a safe retry.
-      if (!additionWritten && reportWritten) await unlink(reportPath).catch(() => {});
+      // A stale evaluation must never remain queued for a later merge. Remove
+      // only artifacts exclusively created by this invocation. Actual merge
+      // failures still retain the report/addition pair for a safe retry.
+      const stale = error?.code === "EVALUATION_SOURCES_CHANGED";
+      if (stale && additionWritten) await unlink(additionPath).catch(() => {});
+      if (reportWritten && (stale || !additionWritten)) await unlink(reportPath).catch(() => {});
       throw error;
     }
   } finally {
