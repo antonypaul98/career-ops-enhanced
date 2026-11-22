@@ -43,6 +43,15 @@ test("invalid posting identifiers cannot acquire an in-flight evaluation", () =>
   }
 });
 
+test("SPA job identities stay distinct while tracking links cannot duplicate a worker", () => {
+  const release = acquireEvaluation("https://careers.example.com/#/jobs/100");
+  const other = acquireEvaluation("https://careers.example.com/#/jobs/200");
+  try {
+    assert.equal(typeof other, "function", "different SPA jobs must not collide");
+    assert.equal(acquireEvaluation("https://careers.example.com/?utm_source=mail#/jobs/100"), null);
+  } finally { release?.(); other?.(); }
+});
+
 test("route rejects duplicate evaluations before spawn and releases on every exit path", () => {
   const route = readFileSync(new URL("../../src/app/api/run/route.ts", import.meta.url), "utf8");
   const guard = route.indexOf("const releaseEvaluation = kind === \"evaluate\"");

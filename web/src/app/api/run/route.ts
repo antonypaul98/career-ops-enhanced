@@ -15,6 +15,7 @@ import { renderAndMarkPdf, pdfRunOutcome } from "@/lib/pdf-render.mjs";
 import { createBoundCvFilter, prepareBoundCv, renderDashboardBoundCv } from "@/lib/bound-cv.mjs";
 import { createEvaluationEnvelopeFilter } from "@/lib/evaluation-envelope.mjs";
 import { persistEvaluation } from "@/lib/evaluation-persist.mjs";
+import { assertEvaluationSourcesCurrent, captureEvaluationSources } from "@/lib/evaluation-source-snapshot.mjs";
 import { preflightMaterialized } from "@/lib/materialization-preflight.mjs";
 import { createProcessTreeStopper } from "@/lib/process-tree.mjs";
 import { buildPrompt, isShellSafeCompanyName } from "@/lib/run-prompts.mjs";
@@ -102,6 +103,7 @@ export async function POST(req: Request) {
     );
   }
 
+  let evaluationSources: ReturnType<typeof captureEvaluationSources> | undefined;
   if (kind === "evaluate") {
     const materialized = preflightMaterialized(careerOpsRoot(), [
       required,
@@ -114,6 +116,11 @@ export async function POST(req: Request) {
         status: 409,
         headers: { "Content-Type": "application/json" },
       });
+    }
+    try {
+      evaluationSources = captureEvaluationSources(careerOpsRoot(), lang);
+    } catch (error) {
+      return Response.json({ error: error instanceof Error ? error.message : "Evaluation sources are unreadable." }, { status: 409 });
     }
   }
 
@@ -202,6 +209,14 @@ export async function POST(req: Request) {
   // drift back in on any single call site.
   let child;
   try {
+    if (kind === "evaluate") {
+      assertEvaluationSourcesCurrent(evaluationSources, { signal: req.signal });
+      // The profile also selected the mode before capture. Refuse a change
+      // between that configuration read and the candidate-source snapshot.
+      if (JSON.stringify(readLanguageConfig()) !== JSON.stringify(lang)) {
+        throw new Error("Evaluation configuration changed before this run. Run the evaluation again.");
+      }
+    }
     child = spawnHeadlessCli(
       binPath,
       args,
@@ -609,6 +624,7 @@ export async function POST(req: Request) {
                   today,
                   postedAt,
                   signal: runAbort.signal,
+                  sourceSnapshot: evaluationSources,
                 });
                 send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
                 // The report body is intentionally hidden from the browser log.

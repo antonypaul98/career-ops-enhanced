@@ -331,11 +331,12 @@ export function parseOpenCodeEvent(line) {
     if (!part || part.type !== "text" || typeof part.text !== "string" || !part.text) return null;
     // Never forward synthetic continuation prompts or compaction summaries.
     if (part.synthetic === true || part.metadata?.compaction_continue === true || part.metadata?.compaction === true) return null;
-    // Preserve OpenCode text bytes exactly. These events can be segments of a
-    // sealed JSON/Markdown envelope; injecting a newline between segments
-    // corrupts JSON strings and breaks marker recognition at arbitrary chunks.
-    // UI clients can style text, but transport must never invent delimiters.
-    return { text: part.text };
+    // v1.19.4 run.ts emits text when part.time.end marks a completed part.
+    // Separate completed parts need a line boundary: narration must not join
+    // the next part's private envelope opener. Unfinished fragments retain
+    // exact bytes so a boundary inside JSON or a marker is not corrupted.
+    const completed = typeof part.time?.end === "number" && Number.isFinite(part.time.end);
+    return { text: completed && !part.text.endsWith("\n") ? part.text + "\n" : part.text };
   }
 
   if (event.type === "tool_use") {

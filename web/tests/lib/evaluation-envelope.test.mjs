@@ -87,6 +87,29 @@ const splitEnvelope = [
   "narration after",
 ].join("\n") + "\n";
 
+test("completed OpenCode text parts preserve the private envelope boundary", () => {
+  const filter = createEvaluationEnvelopeFilter({ expectedUrl: payload.postingUrl });
+  let visible = "";
+  for (const [index, text] of ["Reading context.", splitEnvelope.slice(splitEnvelope.indexOf("<<evaluation-json>>"))].entries()) {
+    const event = parseOpenCodeEvent(JSON.stringify({ type: "text", part: {
+      id: `part-${index}`, type: "text", text, time: { start: 1, end: 2 },
+    } }));
+    visible += filter.push(event.text);
+  }
+  visible += filter.flush();
+  assert.ok(!visible.includes("Synthetic fixture description"), "report body must stay private");
+  assert.equal(filter.result().ok, true);
+});
+
+test("invalid Machine Summary diagnostics never include private YAML snippets", () => {
+  const malformed = splitEnvelope.replace("risk_summary: none", "risk_summary: SYNTHETIC_PRIVATE_VALUE\nrisk_summary: duplicate");
+  const result = parseEvaluationEnvelope(malformed);
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Machine Summary YAML is invalid/);
+  assert.ok(!result.error.includes("SYNTHETIC_PRIVATE_VALUE"));
+  assert.ok(!result.error.includes("risk_summary:"));
+});
+
 test("accepts short JSON metadata and raw, unescaped full Markdown", () => {
   const result = parseEvaluationEnvelope(splitEnvelope, { expectedUrl: payload.postingUrl });
   assert.equal(result.ok, true);
