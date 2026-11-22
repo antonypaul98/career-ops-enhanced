@@ -5,6 +5,8 @@
  * time in this web instance. This does not replace the core's cross-process
  * tracker file lock, or prevent separately launched CLI/web processes.
  */
+import { normalizeUrl } from "./core/url-key.mjs";
+
 const active = new Set();
 
 /** @param {string} url
@@ -12,9 +14,9 @@ const active = new Set();
  */
 export function acquireEvaluation(url) {
   if (typeof url !== "string") return null;
-  // Whitespace and URL fragments do not change the server-side job posting.
-  // Keep queries intact: a query parameter may identify a different application.
-  const key = url.trim().split("#", 1)[0];
+  // Share the tracker/discovery identity contract: tracking links are one job,
+  // but known SPA job fragments and functional query parameters identify jobs.
+  const key = normalizeUrl(url);
   if (!key) return null;
   if (active.has(key)) return null;
   active.add(key);

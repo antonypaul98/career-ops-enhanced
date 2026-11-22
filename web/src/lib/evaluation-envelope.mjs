@@ -62,8 +62,10 @@ function machineSummary(markdown) {
       return { ok: false, error: "Machine Summary must be one YAML mapping." };
     }
     return { ok: true, value };
-  } catch (error) {
-    return { ok: false, error: "Machine Summary YAML is invalid: " + error.message };
+  } catch {
+    // Parser diagnostics include source excerpts. This error crosses the
+    // report's privacy boundary into worker history; never return the excerpt.
+    return { ok: false, error: "Machine Summary YAML is invalid. Correct the report format and retry." };
   }
 }
 
