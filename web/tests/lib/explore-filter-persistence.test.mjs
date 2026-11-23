@@ -2,49 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { transformSync } from 'next/dist/build/swc/index.js';
-import * as chips from '../../src/lib/clean-chips.mjs';
+import { stripTypeScriptTypes } from 'node:module';
+import * as codec from '../../src/lib/explore.ts';
 import { saveExploreFilters, restoreExploreFilters } from '../../src/lib/explore-filter-storage.mjs';
 
-function compile(relative, modules) {
-  const source = fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
-  const { code } = transformSync(source, { filename: relative, module: { type: 'commonjs' }, jsc: { parser: { syntax: 'typescript', tsx: relative.endsWith('.tsx') }, target: 'es2022', transform: { react: { runtime: 'automatic' } } } });
-  const exports = {};
-  vm.runInNewContext(code, { exports, require: name => {
-    if (!(name in modules)) throw Error(`Unexpected import ${name}`);
-    return modules[name];
-  }, URLSearchParams, Set, console });
-  return exports;
-}
-const codec = compile('../../src/lib/explore.ts', { './clean-chips.mjs': chips });
 const seed = () => codec.parseExplorePatch({ positive: ['seed role'], allow: ['Boston'], requireSponsorship: true, noClearance: true });
 function memory(initial) {
   let value = initial ?? null;
   return { getItem: () => value, setItem: (_key, next) => { value = next; } };
 }
 function provider(storage) {
-  let first = true;
+  // Execute the actual client callbacks with a fresh state/ref for each mount.
+  // Node's built-in type stripper keeps this runnable in core CI, where the
+  // separate web package (including Next/SWC) has not been installed.
+  const source = fs.readFileSync(new URL('../../src/components/explore/explore-provider.tsx', import.meta.url), 'utf8');
+  const start = source.indexOf('  const setFilters = useCallback(');
+  const end = source.indexOf('  const discover = useCallback(', start);
+  assert.ok(start >= 0 && end > start);
   let filters;
-  const react = {
-    createContext: () => ({ Provider: 'provider' }), useContext: () => null,
-    useCallback: fn => fn, useEffect: () => {}, useMemo: fn => fn(), useRef: current => ({ current }),
-    useState: initial => {
-      const isFilters = first; first = false;
-      if (isFilters) filters = initial;
-      return [initial, next => { if (isFilters) filters = next; }];
-    },
-  };
-  const mod = compile('../../src/components/explore/explore-provider.tsx', {
-    react, 'react/jsx-runtime': { jsx: (_type, props) => props },
-    'next/navigation': { useRouter: () => ({}) }, '@/lib/explore': codec,
-    '@/lib/explore-ai': {}, '@/lib/whats-new.mjs': {}, '@/lib/explore-error.mjs': {},
-    '@/lib/explore-filter-storage.mjs': {
-      saveExploreFilters: f => saveExploreFilters(f, storage),
-      restoreExploreFilters: (f, normalize) => restoreExploreFilters(f, normalize, storage),
-    },
+  const code = stripTypeScriptTypes(source.slice(start, end));
+  const callbacks = vm.runInNewContext(code + '\n({setFilters, initFilters})', {
+    touched: { current: false }, filtersRef: { current: null },
+    useCallback: fn => fn, setFiltersState: next => { filters = next; },
+    parseExplorePatch: codec.parseExplorePatch,
+    saveExploreFilters: f => saveExploreFilters(f, storage),
+    restoreExploreFilters: (f, normalize) => restoreExploreFilters(f, normalize, storage),
   });
-  const ctx = mod.ExploreProvider({ children: null }).value;
-  return { ...ctx, getFilters: () => filters };
+  return { ...callbacks, getFilters: () => filters };
 }
 const plain = value => JSON.parse(JSON.stringify(value));
 
