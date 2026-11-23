@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { closeSync, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
-import { isNestedCheckout } from "../../../lib/mjs-files.mjs";
 
 // These are candidate facts, targeting/style instructions and the evaluation's
 // shared rules. Optional files stay optional for legacy users, but their absence
@@ -24,14 +23,8 @@ function identity(stat) {
   return [stat.dev, stat.ino, stat.mode, stat.size, stat.mtimeNs, stat.ctimeNs].map(String).join(":");
 }
 
-function rejectNestedCheckout() {
-  throw sourceError();
-}
-
-function fingerprint(file, entry) {
-  // Candidate evidence must never silently include a separate Git checkout.
-  // Reject it before reading its contents, including when nested in writing-samples.
-  if (isNestedCheckout(file)) return rejectNestedCheckout();
+function fingerprint(root, entry) {
+  const file = path.join(root, entry.path);
   let linkStat;
   try {
     linkStat = lstatSync(file, { bigint: true });
@@ -43,7 +36,7 @@ function fingerprint(file, entry) {
   if (entry.directory) {
     if (!linkStat.isDirectory()) throw sourceError();
     const children = readdirSync(file).sort().map(name => [name,
-      fingerprint(path.join(file, name), { required: true,
+      fingerprint(root, { path: path.join(entry.path, name), required: true,
         directory: lstatSync(path.join(file, name)).isDirectory() })]);
     if (identity(linkStat) !== identity(lstatSync(file, { bigint: true }))) throw sourceError();
     return [canonical, identity(linkStat), children];
@@ -78,7 +71,7 @@ export function captureEvaluationSources(root, { evalModeFile = "modes/oferta.md
     entries.push(Object.freeze({ path: "writing-samples", required: false, directory: true }));
     const base = path.resolve(root);
     return Object.freeze({ root: base, entries: Object.freeze(entries),
-      fingerprint: JSON.stringify(entries.map(entry => fingerprint(path.join(base, entry.path), entry))) });
+      fingerprint: JSON.stringify(entries.map(entry => fingerprint(base, entry))) });
   } catch {
     throw sourceError();
   }
@@ -91,7 +84,7 @@ export function captureEvaluationSources(root, { evalModeFile = "modes/oferta.md
 export function assertEvaluationSourcesCurrent(snapshot, { signal = undefined } = {}) {
   if (signal?.aborted) throw Object.assign(new Error("Evaluation persistence was cancelled."), { code: "ABORT_ERR" });
   try {
-    if (!snapshot || JSON.stringify(snapshot.entries.map(entry => fingerprint(path.join(snapshot.root, entry.path), entry))) !== snapshot.fingerprint) {
+    if (!snapshot || JSON.stringify(snapshot.entries.map(entry => fingerprint(snapshot.root, entry))) !== snapshot.fingerprint) {
       throw sourceError(true);
     }
   } catch {
