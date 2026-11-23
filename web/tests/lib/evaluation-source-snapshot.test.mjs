@@ -25,6 +25,27 @@ function artifacts(root) {
 test('unchanged legacy CV is valid without requiring new authority files',t=>{
   const f=fixture(t);assert.doesNotThrow(()=>assertEvaluationSourcesCurrent(f.snapshot));
 });
+
+test('nested writing samples are captured and invalidate after changes', t => {
+  const f = fixture(t);
+  const nested = path.join(f.root, 'writing-samples', 'portfolio');
+  fs.mkdirSync(nested, { recursive: true });
+  const sample = path.join(nested, 'sample.md');
+  fs.writeFileSync(sample, 'Synthetic writing sample.\n');
+  const snapshot = captureEvaluationSources(f.root);
+  assert.doesNotThrow(() => assertEvaluationSourcesCurrent(snapshot));
+  fs.appendFileSync(sample, 'Changed synthetic sample.\n');
+  assert.throws(() => assertEvaluationSourcesCurrent(snapshot), { code: 'EVALUATION_SOURCES_CHANGED' });
+});
+test('nested Git checkout in writing samples is rejected before reading its files', t => {
+  const f = fixture(t);
+  const checkout = path.join(f.root, 'writing-samples', 'external');
+  fs.mkdirSync(checkout, { recursive: true });
+  fs.writeFileSync(path.join(checkout, '.git'), 'gitdir: /unrelated/worktree\n');
+  fs.writeFileSync(path.join(checkout, 'sample.md'), 'PRIVATE_SYNTHETIC_MARKER');
+  assert.throws(() => captureEvaluationSources(f.root), { code: 'EVALUATION_SOURCES_UNREADABLE' });
+});
+
 for(const change of ['content','deletion','replacement','optional-addition'])test(change+' invalidates sources without exposing facts',t=>{
   const f=fixture(t);
   if(change==='content')fs.appendFileSync(f.cv,'PRIVATE_SYNTHETIC_MARKER');
