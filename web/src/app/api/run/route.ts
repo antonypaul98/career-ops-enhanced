@@ -15,6 +15,7 @@ import { renderAndMarkPdf, pdfRunOutcome } from "@/lib/pdf-render.mjs";
 import { createBoundCvFilter, prepareBoundCv, renderDashboardBoundCv } from "@/lib/bound-cv.mjs";
 import { createEvaluationEnvelopeFilter } from "@/lib/evaluation-envelope.mjs";
 import { persistEvaluation } from "@/lib/evaluation-persist.mjs";
+import { assertEvaluationSourcesCurrent, captureEvaluationSources } from "@/lib/evaluation-source-snapshot.mjs";
 import { preflightMaterialized } from "@/lib/materialization-preflight.mjs";
 import { createProcessTreeStopper } from "@/lib/process-tree.mjs";
 import { buildPrompt, isShellSafeCompanyName } from "@/lib/run-prompts.mjs";
@@ -24,6 +25,7 @@ import { claudeCliArgs } from "@/lib/claude-invocation.mjs";
 import { resolveCvTemplate } from "@/lib/core/cv-template.mjs";
 import { acquireTrackerWrite, releaseTrackerWrite } from "@/lib/core/run-registry";
 import { createRunFinalizer } from "@/lib/run-finalizer.mjs";
+import { acquireEvaluation } from "@/lib/evaluation-inflight.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,6 +103,7 @@ export async function POST(req: Request) {
     );
   }
 
+  let evaluationSources: ReturnType<typeof captureEvaluationSources> | undefined;
   if (kind === "evaluate") {
     const materialized = preflightMaterialized(careerOpsRoot(), [
       required,
@@ -113,6 +116,11 @@ export async function POST(req: Request) {
         status: 409,
         headers: { "Content-Type": "application/json" },
       });
+    }
+    try {
+      evaluationSources = captureEvaluationSources(careerOpsRoot(), lang);
+    } catch (error) {
+      return Response.json({ error: error instanceof Error ? error.message : "Evaluation sources are unreadable." }, { status: 409 });
     }
   }
 
@@ -177,6 +185,17 @@ export async function POST(req: Request) {
   // envelope-parsing routes rely on.
   const args = isClaude ? claudeCliArgs({ kind, prompt }) : (spec.streamArgs ?? spec.args)(prompt);
 
+  // Fail before launching a model when another request for this exact posting
+  // is still running in this web process. This guard is separate from the
+  // tracker-write registry, which tracks writes but permits concurrent workers.
+  const releaseEvaluation = kind === "evaluate" ? acquireEvaluation(input) : null;
+  if (kind === "evaluate" && !releaseEvaluation) {
+    return Response.json({ error: typeof input === "string"
+      ? "This posting is already being evaluated. Open Workers instead of scoring it again."
+      : "Evaluation requires a posting URL string." },
+      { status: typeof input === "string" ? 409 : 400 });
+  }
+
   // Evaluation workers are read-only; the backend persists only after validating their sealed envelope.
   const writeToken = kind === "evaluate" || kind === "pdf" ? acquireTrackerWrite() : null;
 
@@ -190,6 +209,14 @@ export async function POST(req: Request) {
   // drift back in on any single call site.
   let child;
   try {
+    if (kind === "evaluate") {
+      assertEvaluationSourcesCurrent(evaluationSources, { signal: req.signal });
+      // The profile also selected the mode before capture. Refuse a change
+      // between that configuration read and the candidate-source snapshot.
+      if (JSON.stringify(readLanguageConfig()) !== JSON.stringify(lang)) {
+        throw new Error("Evaluation configuration changed before this run. Run the evaluation again.");
+      }
+    }
     child = spawnHeadlessCli(
       binPath,
       args,
@@ -203,6 +230,7 @@ export async function POST(req: Request) {
     // of the process and acquireTrackerWrite blocks every later evaluate/pdf run:
     // a refused argv would take the tracker down with it.
     if (writeToken !== null) releaseTrackerWrite(writeToken);
+    releaseEvaluation?.();
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "failed to start the CLI" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
@@ -240,6 +268,7 @@ export async function POST(req: Request) {
   // actually closes and any render/mark work has finished.
   const finishRun = createRunFinalizer(child, () => {
     if (writeToken !== null) releaseTrackerWrite(writeToken);
+    releaseEvaluation?.();
   });
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -579,7 +608,7 @@ export async function POST(req: Request) {
           send({ type: "error", msg: `This run hit an error before finishing, so it isn't recorded as a confident result — re-run it to verify.${detail}`.slice(0, 200) });
         } else if (kind === "evaluate") {
           const envelope = evaluationFilter?.result();
-          if (!envelope?.ok) {
+          if (!envelope?.ok || !("score" in envelope) || !("note" in envelope)) {
             const envelopeError =
               envelope && "error" in envelope && typeof envelope.error === "string"
                 ? envelope.error
@@ -595,9 +624,15 @@ export async function POST(req: Request) {
                   today,
                   postedAt,
                   signal: runAbort.signal,
+                  sourceSnapshot: evaluationSources,
                 });
                 send({ type: "status", label: `Saved report ${saved.num} and merged tracker` });
-                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
+                // The report body is intentionally hidden from the browser log.
+                // Carry only validated score metadata on the trusted completion
+                // event, AFTER persistence succeeds. Otherwise Job History has
+                // no VERDICT text to read and quietly records a null score.
+                send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd,
+                  evaluation: { score: envelope.score, note: envelope.note, reportNum: saved.num } });
               } catch (error) {
                 send({ type: "error", msg: `Report was not recorded: ${error instanceof Error ? error.message : String(error)}`.slice(0, 200) });
               }

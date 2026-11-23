@@ -112,7 +112,7 @@ export function InboxTriage({ inbox }: { inbox: InboxJob[] }) {
     }
     const m = new Map<string, RowScore>();
     for (const [url, j] of best) {
-      m.set(url, { score: j.result?.score ?? null, tone: j.result?.tone ?? "muted", jobId: j.id, running: j.status === "running" });
+      m.set(url, { score: j.result?.score ?? null, tone: j.result?.tone ?? "muted", jobId: j.id, running: j.status === "running", failed: j.status === "error" });
     }
     return m;
   }, [jobs]);

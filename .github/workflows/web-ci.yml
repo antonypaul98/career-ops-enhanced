@@ -39,3 +39,34 @@ jobs:
       - run: npm test
       - run: npx tsc --noEmit
       - run: npm run build
+
+  daily-http-acceptance:
+    name: Daily workflow HTTP acceptance (synthetic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BUILD_DIST: .next-daily-check
+      DAILY_ROUTE_ACCEPTANCE: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install core dependencies without running postinstall
+        run: npm install --ignore-scripts
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: web
+      - name: Install isolated Chromium renderer
+        run: npx playwright install chromium --with-deps
+      - name: Build production dashboard in isolated dist directory
+        run: npm run build
+        working-directory: web
+      - name: Exercise synthetic daily workflow over production HTTP
+        run: npm run test:daily-http-acceptance
+        working-directory: web

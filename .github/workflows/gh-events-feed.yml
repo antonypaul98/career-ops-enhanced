@@ -20,6 +20,11 @@ jobs:
           WEBHOOK: ${{ secrets.DISCORD_CONTRIB_WEBHOOK }}
         with:
           script: |
+            const webhook = process.env.WEBHOOK?.trim();
+            if (!webhook) {
+              core.notice('Merge notification skipped: DISCORD_CONTRIB_WEBHOOK is not configured.');
+              return;
+            }
             const pr = context.payload.pull_request;
             const esc = (s) => s.replace(/([*_~`|\\])/g, '\\$1');
             const first = pr.author_association === 'FIRST_TIME_CONTRIBUTOR'
@@ -29,7 +34,7 @@ jobs:
               url: pr.html_url,
               color: 0x57ab5a
             };
-            const r = await fetch(process.env.WEBHOOK, {
+            const r = await fetch(webhook, {
               method: 'POST', headers: { 'content-type': 'application/json' },
               body: JSON.stringify({
                 username: 'career-ops bot',

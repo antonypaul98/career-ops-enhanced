@@ -89,6 +89,30 @@ export function DiscoveryCard({ offer, inPipeline, evaluatedN }: { offer: Discov
         <span className="rounded border border-border px-1.5 py-0.5 font-medium text-muted">{ATS_LABEL[offer.ats as AtsSource] ?? offer.ats}</span>
         {fresh && <span className="text-faint">{fresh}</span>}
         {offer.employmentType && <span className="rounded border border-border px-1.5 py-0.5 font-medium text-muted" title="Advisory classification from posting; check employer terms before applying">{offer.employmentType === "c2c" ? "C2C advertised" : offer.employmentType === "full_time" ? "Full-time advertised" : "Type unverified"}</span>}
+        {offer.sponsorship && (
+          <span
+            className={cn("rounded border px-1.5 py-0.5 font-medium", offer.sponsorship === "offered"
+              ? "border-emerald-500/25 text-emerald-600 dark:text-emerald-400"
+              : offer.sponsorship === "not_offered" ? "border-amber-500/25 text-amber-600 dark:text-amber-300"
+                : "border-border text-muted")}
+            title="Advisory statement from the job posting, not verification of your visa eligibility or H-1B transfer eligibility."
+          >
+            {offer.sponsorship === "offered" ? "Sponsorship advertised"
+              : offer.sponsorship === "not_offered" ? "Sponsorship not offered"
+                : "Sponsorship unverified"}
+          </span>
+        )}
+        {offer.clearance && (
+          <span
+            className={cn("rounded border px-1.5 py-0.5 font-medium", offer.clearance === "required"
+              ? "border-amber-500/25 text-amber-600 dark:text-amber-300" : "border-border text-muted")}
+            title="Advisory clearance wording from the posting; verify eligibility directly with the employer."
+          >
+            {offer.clearance === "not_required" ? "No clearance stated as required"
+              : offer.clearance === "required" ? "Clearance requirement advertised"
+                : "Clearance unverified"}
+          </span>
+        )}
         {unverified && (
           <span
             className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-600 dark:text-amber-300"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark, BookmarkCheck, Loader2, X } from "lucide-react";
+import { AlertCircle, Bookmark, BookmarkCheck, Loader2, X } from "lucide-react";
 import type { InboxJob } from "@/lib/career-ops";
 import type { AtsSource } from "@/lib/explore";
 import { ATS_LABEL } from "@/lib/explore";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CompanyLogo } from "@/components/company-logo";
 import { cn } from "@/lib/cn";
 
-export type RowScore = { score: number | null; tone: "good" | "warn" | "bad" | "muted"; jobId: string; running: boolean };
+export type RowScore = { score: number | null; tone: "good" | "warn" | "bad" | "muted"; jobId: string; running: boolean; failed: boolean };
 
 function agoLabel(age: number | null): string | null {
   if (age == null) return null;
@@ -45,6 +45,8 @@ export function TriageRow({
   onSkip: () => void;
 }) {
   const ago = agoLabel(age);
+  // Failed evaluations are not scores: show the failure link alongside
+  // Save/Skip so the user can shortlist the posting for a later retry.
   const evaluated = !!scored && (scored.running || scored.score != null);
 
   return (
@@ -76,7 +78,7 @@ export function TriageRow({
           {source && <span className="rounded bg-surface-hover px-1 py-px font-medium text-muted">{ATS_LABEL[source]}</span>}
           {ago && <span>{ago}</span>}
           {/* 🔴 CRUDA: honest "not scored" — no fabricated match%. */}
-          {!evaluated && <span className="italic text-muted">not scored</span>}
+          {!scored?.running && scored?.score == null && <span className="italic text-muted">not scored</span>}
         </p>
       </div>
 
@@ -94,6 +96,17 @@ export function TriageRow({
         </Link>
       ) : (
         <div className="flex shrink-0 items-center gap-1">
+          {scored?.failed && (
+            <Link
+              href={`/jobs/${scored.jobId}`}
+              title="View failed scoring details"
+              aria-label="Failed evaluation — view details"
+              className="inline-flex shrink-0 items-center gap-1.5 text-xs text-red-400 hover:underline"
+            >
+              <AlertCircle className="size-3.5" />
+              <span className="max-sm:hidden">Failed · details</span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={onSave}

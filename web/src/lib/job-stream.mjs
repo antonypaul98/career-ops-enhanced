@@ -1,6 +1,7 @@
 /**
  * @typedef {{ type: "text", text: string } | { type: "tool", name: string } | { type: "status", label: string }} JobProgress
- * @typedef {{ status: "done", tokens?: number, costUsd?: number } | { status: "error", message: string }} JobCompletion
+ * @typedef {{ score: number, note: string, reportNum: string }} ConfirmedEvaluation
+ * @typedef {{ status: "done", tokens?: number, costUsd?: number, evaluation?: ConfirmedEvaluation } | { status: "error", message: string }} JobCompletion
  */
 
 /**
@@ -30,10 +31,21 @@ export async function readJobStream(stream, onProgress) {
       return { status: "error", message: typeof event.msg === "string" && event.msg ? event.msg : "Error" };
     }
     if (event?.type === "done") {
+      // The trusted server sends this only AFTER saving a validated evaluation.
+      // Never infer a job score from the (privacy-filtered) model output.
+      const evaluation = event.evaluation;
+      const verifiedEvaluation = evaluation && typeof evaluation === "object" &&
+        Number.isFinite(evaluation.score) && evaluation.score >= 1 && evaluation.score <= 5 &&
+        typeof evaluation.note === "string" && evaluation.note.length > 0 && evaluation.note.length <= 240 &&
+        evaluation.note.trim() === evaluation.note && !/[\r\n\t]/.test(evaluation.note) &&
+        typeof evaluation.reportNum === "string" && /^\d{3,}$/.test(evaluation.reportNum)
+        ? { score: evaluation.score, note: evaluation.note, reportNum: evaluation.reportNum }
+        : undefined;
       return {
         status: "done",
         ...(typeof event.tokens === "number" ? { tokens: event.tokens } : {}),
         ...(typeof event.costUsd === "number" ? { costUsd: event.costUsd } : {}),
+        ...(verifiedEvaluation ? { evaluation: verifiedEvaluation } : {}),
       };
     }
     if (event?.type === "text" && typeof event.text === "string") onProgress(event);

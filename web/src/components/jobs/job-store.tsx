@@ -62,7 +62,7 @@ function parseVerdict(text: string): JobResult {
 export function JobsProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const seq = useRef(0);
-  const loaded = useRef(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const aborts = useRef(createJobAbortRegistry());
 
   // restore history
@@ -77,18 +77,21 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
-    loaded.current = true;
+    setHistoryLoaded(true);
   }, []);
 
   // persist
   useEffect(() => {
-    if (!loaded.current) return;
+    // Do not overwrite persisted worker history with the initial empty state.
+    // React runs mount effects with the initial render's jobs=[], before the
+    // restoration setJobs() above commits. A ref flips too early for this gate.
+    if (!historyLoaded) return;
     try {
       localStorage.setItem(JOBS_KEY, JSON.stringify(jobs.slice(0, 40)));
     } catch {
       /* quota */
     }
-  }, [jobs]);
+  }, [jobs, historyLoaded]);
 
   const patch = useCallback((id: string, fn: (j: Job) => Job) => {
     setJobs((js) => js.map((j) => (j.id === id ? fn(j) : j)));
@@ -148,9 +151,18 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
         let verdictLine = ""; // latched separately so the 8000-char tail can't drop it
         let doneTokens = 0; // per-run token cost, forwarded on the done event (#6)
         let doneCostUsd: number | null = null;
+        let confirmedEvaluation: { score: number; note: string; reportNum: string } | undefined;
         const finish = (status: "done" | "error", lastLabel?: string) => {
           aborts.current.forget(id, controller);
-          const result = status === "done" ? parseVerdict(verdictLine || text) : undefined;
+          const result = status !== "done" ? undefined : opts.kind === "evaluate"
+            // The backend validates and persists the sealed report before its
+            // done event. Its receipt is the only authoritative score: the
+            // underlying report is intentionally withheld from the stream.
+            ? (confirmedEvaluation
+                ? { score: confirmedEvaluation.score, summary: confirmedEvaluation.note.slice(0, 90),
+                    tone: scoreTone(`${confirmedEvaluation.score}`) }
+                : { score: null, summary: "", tone: "muted" as const })
+            : parseVerdict(verdictLine || text);
           const cost = status === "done" && doneTokens > 0 ? { tokens: doneTokens, usd: doneCostUsd ?? undefined } : undefined;
           patch(id, (j) => ({
             ...j,
@@ -210,6 +222,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
           }
           doneTokens = completion.tokens ?? 0;
           doneCostUsd = completion.costUsd ?? null;
+          confirmedEvaluation = completion.evaluation;
           finish("done", "Done");
         } catch {
           // cancelJob already records the user-requested terminal state. Do not

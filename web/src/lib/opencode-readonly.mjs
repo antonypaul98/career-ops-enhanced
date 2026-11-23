@@ -1,5 +1,5 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -64,8 +64,9 @@ export function assertResolvedOpenCodeAgentReadOnly(value, options = {}) {
     const expected = allowed.has(key) ? "allow" : "deny";
     if (baseline < 0 || matching[baseline].action !== expected) throw new Error(`OpenCode resolved agent does not ${expected} ${key}; refusing to start.`);
     for (const r of matching.slice(baseline + 1)) {
-      // OpenCode adds its own read-only truncated-output directory. Permit only
-      // this run's isolated directory, never a user's home or an arbitrary path.
+      // OpenCode adds a narrow exception for its own truncated tool-output files.
+      // Accept only the precisely resolved XDG/HOME tool-output pattern; strict
+      // previews use a run-private XDG path. Never allow a whole home directory.
       if (key === "external_directory" && r.action === "allow" &&
           options.toolOutputPattern && r.pattern === options.toolOutputPattern) continue;
       if (!allowed.has(key) && r.action !== "deny") throw new Error(`OpenCode permission exception enables ${key}; refusing to start.`);
@@ -104,8 +105,12 @@ export function prepareOpenCodeReadOnlyLaunch(binPath, options = {}) {
     .filter(key => typeof inherited[key] === "string").map(key => [key, inherited[key]])) : inherited;
   const cwd = strict ? path.join(dir, "workspace") : options.cwd;
   if (strict) mkdirSync(cwd, { mode: 0o700 });
+  // Regular workers must retain OpenCode's existing data/state locations: OAuth
+  // credentials are resolved through XDG_DATA_HOME (or its normal HOME default).
+  // Isolating those paths breaks signed-in CLI runs, despite a successful probe.
+  // Only the credential-free, tool-free preview uses private XDG directories.
   const env = { ...base, OPENCODE_CONFIG: configPath, PWD: String(cwd ?? process.cwd()),
-    XDG_DATA_HOME: path.join(dir, "data"), XDG_STATE_HOME: path.join(dir, "state") };
+    ...(strict ? { XDG_DATA_HOME: path.join(dir, "data"), XDG_STATE_HOME: path.join(dir, "state") } : {}) };
   if (strict) Object.assign(env, { XDG_CONFIG_HOME: path.join(dir, "config"), XDG_CACHE_HOME: path.join(dir, "cache"),
     OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_DISABLE_PROJECT_CONFIG: "1",
     OPENCODE_DISABLE_DEFAULT_PLUGINS: "1", OPENCODE_DISABLE_EXTERNAL_SKILLS: "1",
@@ -138,8 +143,12 @@ export function prepareOpenCodeReadOnlyLaunch(binPath, options = {}) {
     throw new Error("OpenCode permission verification returned an unrecognized response; refusing to start.");
   }
   try {
+    // OpenCode resolves its tool-output location from XDG_DATA_HOME, otherwise
+    // from HOME/.local/share. Match that *exact* directory in the resolved
+    // permission exception; never broaden external_directory access.
+    const openCodeDataHome = env.XDG_DATA_HOME || path.join(env.HOME || homedir(), ".local", "share");
     assertResolvedOpenCodeAgentReadOnly(resolved, { capabilities: options.capabilities,
-      toolOutputPattern: path.join(env.XDG_DATA_HOME, "opencode", "tool-output", "*") });
+      toolOutputPattern: path.join(openCodeDataHome, "opencode", "tool-output", "*") });
     if (strict) {
       const model = resolved.model;
       if (model?.providerID !== "opencode" || model?.modelID !== "glm-5.3-flash-free")
