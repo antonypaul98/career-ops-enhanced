@@ -76,10 +76,11 @@ export function ExplorerView({
       // Force scan mode: a session restored in "ai" mode (sessionStorage rehydrate)
       // must not show the AI-search UI for this scan-only hand-off.
       setMode("scan");
-      initFilters(seed.filters);
+      initFilters(seed.filters, false);
       void loadFresh();
     } else {
-      initFilters(sp.toString() ? paramsToFilters(sp) : seed.filters);
+      // Explicit shared/onboarding URLs win; otherwise restore the user's edits.
+      initFilters(sp.toString() ? paramsToFilters(sp) : seed.filters, !sp.toString());
       // Onboarding hand-off: ?run=1 auto-fires the free scan + flags the first-run
       // banner (the "matches found from your CV, free" reveal).
       if (sp.get("run") === "1") {

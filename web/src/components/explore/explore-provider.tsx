@@ -18,6 +18,7 @@ import {
 import { makeAiStreamParser, type AiTraceChunk } from "@/lib/explore-ai";
 import { MAX_OFFER_LIMIT } from "@/lib/whats-new.mjs";
 import { isScannerMissing } from "@/lib/explore-error.mjs";
+import { restoreExploreFilters, saveExploreFilters } from "@/lib/explore-filter-storage.mjs";
 
 export type Phase =
   | "idle"
@@ -46,7 +47,7 @@ type ExploreCtx = {
   setFilters: (f: ExploreFilters) => void;
   /** Set filters from a seed/URL only if the user/assistant hasn't touched them
    *  yet — so a fresh page mount can't clobber assistant-set filters. */
-  initFilters: (f: ExploreFilters) => void;
+  initFilters: (f: ExploreFilters, restoreSaved?: boolean) => void;
   phase: Phase;
   running: boolean;
   offers: DiscoveredOffer[];
@@ -147,11 +148,13 @@ export function ExploreProvider({ children }: { children: React.ReactNode }) {
     touched.current = true;
     filtersRef.current = f;
     setFiltersState(f);
+    saveExploreFilters(f);
   }, []);
-  const initFilters = useCallback((f: ExploreFilters) => {
+  const initFilters = useCallback((f: ExploreFilters, restoreSaved = true) => {
     if (touched.current) return;
-    filtersRef.current = f;
-    setFiltersState(f);
+    const next = restoreSaved ? restoreExploreFilters(f, parseExplorePatch) : f;
+    filtersRef.current = next;
+    setFiltersState(next);
   }, []);
 
   const discover = useCallback(async () => {
