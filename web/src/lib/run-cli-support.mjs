@@ -331,8 +331,12 @@ export function parseOpenCodeEvent(line) {
     if (!part || part.type !== "text" || typeof part.text !== "string" || !part.text) return null;
     // Never forward synthetic continuation prompts or compaction summaries.
     if (part.synthetic === true || part.metadata?.compaction_continue === true || part.metadata?.compaction === true) return null;
-    const value = part.text;
-    return { text: value.endsWith("\n") ? value : value + "\n" };
+    // v1.19.4 run.ts emits text when part.time.end marks a completed part.
+    // Separate completed parts need a line boundary: narration must not join
+    // the next part's private envelope opener. Unfinished fragments retain
+    // exact bytes so a boundary inside JSON or a marker is not corrupted.
+    const completed = typeof part.time?.end === "number" && Number.isFinite(part.time.end);
+    return { text: completed && !part.text.endsWith("\n") ? part.text + "\n" : part.text };
   }
 
   if (event.type === "tool_use") {
@@ -361,11 +365,17 @@ export function parseOpenCodeEvent(line) {
       (typeof error?.message === "string" ? error.message : "");
     // Provider messages can contain URLs, credentials or model prompts. Report
     // only an actionable classification instead of copying untrusted details.
-    if (status === 429 || /(?:quota|rate.?limit|usage.?limit|free.*limit|too many requests|resource exhausted|429)/i.test(diagnostic)) {
-      return { error: "OpenCode free-model usage limit reached. Wait for the provider allowance to reset; no report or PDF was saved." };
+    // An HTTP 429 does NOT identify the provider or model. In particular it
+    // also occurs for OpenAI models accessed via ChatGPT OAuth. Only classify
+    // an explicitly named free-tier failure as a free-provider allowance error.
+    if (error?.name === "FreeUsageLimitError" || /free[ _-]?(?:tier|usage)[ _-]?limit/i.test(diagnostic)) {
+      return { error: "OpenCode free-provider allowance reached. Wait for its reset; no report or PDF was saved." };
+    }
+    if (status === 429 || /(?:quota|rate.?limit|usage.?limit|too many requests|resource exhausted|429)/i.test(diagnostic)) {
+      return { error: "OpenCode model/provider rate or usage limit reached. Check the selected model's allowance; no report or PDF was saved." };
     }
     if (status === 401 || status === 403 || /(?:unauthorized|invalid api key|not authenticated|forbidden)/i.test(diagnostic)) {
-      return { error: "OpenCode authentication or access failed. Check the free-provider connection; no report or PDF was saved." };
+      return { error: "OpenCode authentication or access failed. Check the selected provider connection; no report or PDF was saved." };
     }
     return { error: "OpenCode provider failed before completing. No report or PDF was saved." };
   }

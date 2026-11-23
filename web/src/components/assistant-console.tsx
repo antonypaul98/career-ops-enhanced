@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Send, X, Loader2, Settings, RotateCcw, ArrowUpRight, Sparkles, Maximize2, Minimize2 } from "lucide-react";
+import { Send, X, Loader2, Settings, RotateCcw, ArrowUpRight, Sparkles, Maximize2, Minimize2, ChevronLeft, ChevronRight } from "lucide-react";
 import { CoMark } from "@/components/co-mark";
 import { useJobs } from "@/components/jobs/job-store";
 import { usePipeline } from "@/components/pipeline/pipeline-provider";
@@ -135,6 +135,7 @@ function msgText(m: Msg): string {
 
 export function AssistantConsole() {
   const [open, setOpen] = useState(false);
+  const [launcherExpanded, setLauncherExpanded] = useState(false);
   const [cliId, setCliId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [chats, setChats] = useState<{ id: string; title: string; revision: number }[]>([]);
@@ -661,14 +662,31 @@ export function AssistantConsole() {
   return (
     <>
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-50 flex items-center justify-center gap-2 rounded-full border border-border bg-surface/90 py-1.5 pl-1.5 pr-4 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover max-sm:min-h-[44px]"
-          aria-label="Open assistant"
+        <div
+          className="fixed bottom-5 right-0 z-50 flex items-center gap-1 rounded-l-full border border-r-0 border-border bg-surface/95 py-1.5 pl-1.5 pr-3 shadow-lg backdrop-blur transition-transform duration-200 motion-reduce:transition-none"
+          style={{ transform: launcherExpanded ? "translateX(0)" : "translateX(calc(100% - 28px))" }}
         >
-          <CoMark size={26} />
-          <span className="text-sm font-medium">Ask</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setLauncherExpanded((expanded) => !expanded)}
+            aria-label={launcherExpanded ? "Tuck away assistant" : "Show assistant"}
+            aria-expanded={launcherExpanded}
+            className="inline-flex h-9 w-6 shrink-0 items-center justify-center rounded-l-full text-brand-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          >
+            {launcherExpanded ? <ChevronRight className="size-4" aria-hidden /> : <ChevronLeft className="size-4" aria-hidden />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Open assistant"
+            aria-hidden={!launcherExpanded}
+            tabIndex={launcherExpanded ? 0 : -1}
+            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-full px-1 transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          >
+            <CoMark size={26} />
+            <span className="text-sm font-medium">Ask</span>
+          </button>
+        </div>
       )}
 
       {open && (
