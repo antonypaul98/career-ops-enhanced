@@ -37,13 +37,17 @@ test('nested writing samples are captured and invalidate after changes', t => {
   fs.appendFileSync(sample, 'Changed synthetic sample.\n');
   assert.throws(() => assertEvaluationSourcesCurrent(snapshot), { code: 'EVALUATION_SOURCES_CHANGED' });
 });
-test('nested Git checkout in writing samples is rejected before reading its files', t => {
+test('nested Git checkout in explicit writing samples stays source-tracked', t => {
   const f = fixture(t);
   const checkout = path.join(f.root, 'writing-samples', 'external');
   fs.mkdirSync(checkout, { recursive: true });
   fs.writeFileSync(path.join(checkout, '.git'), 'gitdir: /unrelated/worktree\n');
-  fs.writeFileSync(path.join(checkout, 'sample.md'), 'PRIVATE_SYNTHETIC_MARKER');
-  assert.throws(() => captureEvaluationSources(f.root), { code: 'EVALUATION_SOURCES_UNREADABLE' });
+  const sample = path.join(checkout, 'sample.md');
+  fs.writeFileSync(sample, 'PRIVATE_SYNTHETIC_MARKER');
+  const snapshot = captureEvaluationSources(f.root);
+  assert.doesNotThrow(() => assertEvaluationSourcesCurrent(snapshot));
+  fs.appendFileSync(sample, 'Changed synthetic evidence.\n');
+  assert.throws(() => assertEvaluationSourcesCurrent(snapshot), { code: 'EVALUATION_SOURCES_CHANGED' });
 });
 
 for(const change of ['content','deletion','replacement','optional-addition'])test(change+' invalidates sources without exposing facts',t=>{
