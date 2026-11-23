@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const file = path.join(codeRoot, "plugins", "h1b-sponsor", "check.mjs");
   // Default to local DOL disclosure index only. No implicit company lookup
   // to any third-party endpoint, even if H1B_API_BASE exists in server env.
-  const index = process.env.H1B_INDEX_PATH || path.join(root, "data", "h1b", "index.ndjson.gz");
+  const index = path.resolve(root, process.env.H1B_INDEX_PATH || path.join("data", "h1b", "index.ndjson.gz"));
   if (!fs.existsSync(file) || !fs.existsSync(index))
     return Response.json({
       status: "index_missing",
@@ -46,8 +46,9 @@ export async function POST(req: Request) {
   const env = { ...process.env };
   delete env.H1B_API_BASE;
   delete env.H1B_API_TOKEN;
+  env.H1B_INDEX_PATH = index;
   try {
-    const { stdout } = await execFileAsync(process.execPath, [file, company, "--json"], {
+    const { stdout } = await execFileAsync(process.execPath, [file, company, "--json", "--cache-dir", path.join(root, "data", "cache", "h1b")], {
       cwd: root, env, timeout: 15_000, maxBuffer: 192 * 1024,
       windowsHide: true,
     });

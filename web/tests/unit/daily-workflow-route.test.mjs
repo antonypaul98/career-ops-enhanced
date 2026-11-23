@@ -9,6 +9,7 @@ import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
+import { gzipSync } from 'node:zlib';
 import { dailyWorkflowFixture, metadata, postingUrl, report, webRoot } from '../helpers/daily-workflow-fixture.mjs';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -70,6 +71,27 @@ test('daily evaluation → canonical tracker → C05 PDF → read-only HTTP revi
     }, 'Production server failed to start: ' + logs, 20_000);
   };
   await start();
+  await t.test('local sponsorship lookup uses the isolated data-root index and cache', async () => {
+    const query = () => fetch(base + '/api/h1b-history', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ company: 'Fictional Local LLC' }),
+    });
+    assert.equal((await (await query()).json()).status, 'index_missing');
+    fs.mkdirSync(local('data/h1b'), { recursive: true });
+    fs.writeFileSync(local('data/h1b/index.ndjson.gz'), gzipSync(JSON.stringify({
+      k: 'fictional-local', n: 'Fictional Local LLC', filed: 42, cert: 30,
+      first: 2024, last: 2026, pwd: 0, perm: 0,
+    }) + '\n'));
+    const response = await query();
+    assert.equal(response.status, 200);
+    const history = await response.json();
+    assert.equal(history.status, 'matched');
+    assert.equal(history.lca, 42);
+    assert.ok(fs.readdirSync(local('data/cache/h1b')).some(name => name.endsWith('.json')),
+      'lookup cache belongs beside the isolated data, never in the installed code checkout');
+    assert.match(history.note, /not approval/);
+    assert.deepEqual(fs.readFileSync(local('data/applications.md')), initialTracker);
+  });
   const setBehavior = name => fs.writeFileSync(local('behavior'), name);
   const request = (kind = 'evaluate', input = postingUrl) => fetch(base + '/api/run', {
     method: 'POST', headers: { 'content-type': 'application/json' },
